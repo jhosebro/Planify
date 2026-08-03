@@ -1,0 +1,407 @@
+import React, { useCallback, useMemo, useState } from 'react';
+import { colors } from '@/theme';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { TransactionService } from '@/services/transactions/transactionService';
+import { AccountService } from '@/services/accounts/accountService';
+import type { MainStackParamList } from '@/navigation/types';
+import type { Account, Transaction } from '@/types';
+
+type TransactionsNavProp = NativeStackNavigationProp<MainStackParamList>;
+
+type DateFilter = 'all' | 'this_month' | 'last_month' | 'last_3_months';
+
+function formatAmount(centavos: number): string {
+  const amount = centavos / 100;
+  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDate(date: Date): string {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function getDateRange(filter: DateFilter): { dateFrom?: Date; dateTo?: Date } {
+  const now = new Date();
+
+  switch (filter) {
+    case 'this_month': {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return { dateFrom: from, dateTo: to };
+    }
+    case 'last_month': {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { dateFrom: from, dateTo: to };
+    }
+    case 'last_3_months': {
+      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return { dateFrom: from, dateTo: to };
+    }
+    case 'all':
+    default:
+      return {};
+  }
+}
+
+const DATE_FILTER_OPTIONS: { key: DateFilter; label: string }[] = [
+  { key: 'all', label: 'Todo' },
+  { key: 'this_month', label: 'Este mes' },
+  { key: 'last_month', label: 'Mes anterior' },
+  { key: 'last_3_months', label: '3 meses' },
+];
+
+export function TransactionsScreen() {
+  const navigation = useNavigation<TransactionsNavProp>();
+  const transactionService = useMemo(() => new TransactionService(), []);
+  const accountService = useMemo(() => new AccountService(), []);
+
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [accountList, history] = await Promise.all([
+        accountService.getActiveAccounts(),
+        transactionService.getHistory({
+          accountId: accountFilter,
+          ...getDateRange(dateFilter),
+        }),
+      ]);
+      setAccounts(accountList);
+      setTransactions(history);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [transactionService, accountService, dateFilter, accountFilter]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const handleAddTransaction = () => {
+    navigation.navigate('AddTransaction');
+  };
+
+  const handleDeleteTransaction = useCallback(async (id: string) => {
+    try {
+      await transactionService.delete(id);
+      loadData();
+    } catch {
+      Alert.alert('Error', 'No se pudo eliminar el movimiento.');
+    }
+  }, [transactionService, loadData]);
+
+  return (
+    <View style={styles.container}>
+      {/* Date Filter */}
+      <View style={styles.filterSection}>
+        <View style={styles.dateFilterRow}>
+          {DATE_FILTER_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.key}
+              style={[
+                styles.filterChip,
+                dateFilter === option.key && styles.filterChipActive,
+              ]}
+              onPress={() => setDateFilter(option.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: dateFilter === option.key }}
+              accessibilityLabel={`Filtrar por ${option.label}`}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  dateFilter === option.key && styles.filterChipTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Account Filter */}
+        {accounts.length > 0 && (
+          <View style={styles.accountFilterRow}>
+            <TouchableOpacity
+              style={[styles.accountChip, !accountFilter && styles.accountChipActive]}
+              onPress={() => setAccountFilter(undefined)}
+            >
+              <Text style={[styles.accountChipText, !accountFilter && styles.accountChipTextActive]}>
+                Todas
+              </Text>
+            </TouchableOpacity>
+            {accounts.map((acc) => (
+              <TouchableOpacity
+                key={acc.id}
+                style={[styles.accountChip, accountFilter === acc.id && styles.accountChipActive]}
+                onPress={() => setAccountFilter(acc.id === accountFilter ? undefined : acc.id)}
+              >
+                <Text
+                  style={[
+                    styles.accountChipText,
+                    accountFilter === acc.id && styles.accountChipTextActive,
+                  ]}
+                >
+                  {acc.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Transaction List */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => <TransactionItem transaction={item} accounts={accounts} onDelete={handleDeleteTransaction} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No hay movimientos registrados.</Text>
+              <Text style={styles.emptySubtext}>Crea un movimiento para comenzar.</Text>
+            </View>
+          }
+        />
+      )}
+
+      {/* FAB to add transaction */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleAddTransaction}
+        accessibilityRole="button"
+        accessibilityLabel="Agregar movimiento"
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Transaction Item ────────────────────────────────────────────────────────
+
+interface TransactionItemProps {
+  transaction: Transaction;
+  accounts: Account[];
+  onDelete: (id: string) => void;
+}
+
+function TransactionItem({ transaction, accounts, onDelete }: TransactionItemProps) {
+  const isExpense = transaction.type === 'expense';
+  const sign = isExpense ? '-' : '+';
+  const color = isExpense ? colors.redExpenses : colors.greenEarns;
+  const accountName = accounts.find((a) => a.id === transaction.accountId)?.name ?? '';
+
+  const handleLongPress = () => {
+    Alert.alert(
+      'Eliminar movimiento',
+      `¿Estás seguro de eliminar este ${isExpense ? 'gasto' : 'ingreso'} de ${formatAmount(transaction.amount)}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
+      ]
+    );
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.transactionRow}
+      onLongPress={handleLongPress}
+      accessibilityRole="button"
+      accessibilityHint="Mantén presionado para eliminar"
+    >
+      <View style={styles.transactionIcon}>
+        <Text style={styles.transactionIconText}>{isExpense ? '↓' : '↑'}</Text>
+      </View>
+      <View style={styles.transactionInfo}>
+        <Text style={styles.transactionDescription}>
+          {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
+        </Text>
+        <Text style={styles.transactionMeta}>
+          {accountName}{accountName ? ' · ' : ''}{formatDate(transaction.date)}
+        </Text>
+      </View>
+      <Text style={[styles.transactionAmount, { color }]}>
+        {sign}{formatAmount(transaction.amount)}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterSection: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F0',
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  accountFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  accountChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    backgroundColor: '#fff',
+  },
+  accountChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#EBF4FF',
+  },
+  accountChipText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  accountChipTextActive: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  transactionRow: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  transactionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F4FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  transactionIconText: {
+    fontSize: 16,
+  },
+  transactionInfo: {
+    flex: 1,
+  },
+  transactionDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  transactionMeta: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  transactionAmount: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  fabText: {
+    fontSize: 28,
+    color: '#fff',
+    fontWeight: '400',
+    marginTop: -2,
+  },
+});
