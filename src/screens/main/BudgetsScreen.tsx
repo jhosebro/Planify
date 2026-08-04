@@ -17,6 +17,7 @@ import { ReminderService } from '@/services/reminders';
 import type { BudgetConsumption, Reminder } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 import { RemindersList } from '@/components/RemindersList';
+import { BottomModal } from '@/components/BottomModal';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -175,42 +176,31 @@ export function BudgetsScreen() {
       }
     />
 
-    {/* Manual Spend Overlay */}
-    {spendingBudgetId && (
-      <View style={styles.spendOverlay}>
-        <View style={styles.spendCard}>
-          <Text style={styles.spendTitle}>Registrar gasto</Text>
-          <Text style={styles.spendSubtitle}>
-            ¿Cuánto gastaste en {spendingCategoryName}?
-          </Text>
-          <TextInput
-            style={styles.spendInput}
-            value={spendAmount}
-            onChangeText={handleSpendAmountChange}
-            placeholder="0"
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            autoFocus
-            accessibilityLabel="Monto del gasto manual"
-          />
-          <Text style={styles.spendHint}>Este gasto no crea un movimiento en tus cuentas.</Text>
-          <View style={styles.spendButtons}>
-            <TouchableOpacity
-              style={styles.spendCancelBtn}
-              onPress={() => setSpendingBudgetId(null)}
-            >
-              <Text style={styles.spendCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.spendConfirmBtn}
-              onPress={handleConfirmSpent}
-            >
-              <Text style={styles.spendConfirmText}>Registrar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    )}
+    {/* Manual Spend Modal */}
+    <BottomModal
+      visible={!!spendingBudgetId}
+      title="Registrar gasto"
+      subtitle={`¿Cuánto gastaste en ${spendingCategoryName}?`}
+      onClose={() => setSpendingBudgetId(null)}
+    >
+      <TextInput
+        style={styles.spendInput}
+        value={spendAmount}
+        onChangeText={handleSpendAmountChange}
+        placeholder="0"
+        placeholderTextColor="#999"
+        keyboardType="numeric"
+        autoFocus
+        accessibilityLabel="Monto del gasto manual"
+      />
+      <Text style={styles.spendHint}>Este gasto no crea un movimiento en tus cuentas.</Text>
+      <TouchableOpacity
+        style={styles.spendConfirmBtn}
+        onPress={handleConfirmSpent}
+      >
+        <Text style={styles.spendConfirmText}>Registrar</Text>
+      </TouchableOpacity>
+    </BottomModal>
   </View>
   );
 }
@@ -295,33 +285,34 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
       : colors.greenEarns;
 
   return (
-    <TouchableOpacity
-      style={styles.budgetCard}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Presupuesto ${consumption.categoryName}, ${consumption.percentage.toFixed(1)} por ciento consumido`}
-    >
-      <View style={styles.budgetHeader}>
-        <Text style={styles.budgetCategory}>{consumption.categoryName}</Text>
-        <Text style={[styles.budgetPercentageText, { color: barColor }]}>
-          {consumption.percentage.toFixed(1)}%
-        </Text>
-      </View>
-      <View style={styles.progressBarBackground}>
-        <View
-          style={[
-            styles.progressBarFill,
-            { width: `${percentage}%`, backgroundColor: barColor },
-          ]}
-        />
-      </View>
+    <View style={styles.budgetCard}>
+      <TouchableOpacity
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalle presupuesto ${consumption.categoryName ?? 'Sin categoría'}`}
+      >
+        <View style={styles.budgetHeader}>
+          <Text style={styles.budgetCategory}>{consumption.categoryName ?? 'Sin categoría'}</Text>
+          <Text style={[styles.budgetPercentageText, { color: barColor }]}>
+            {consumption.percentage.toFixed(1)}%
+          </Text>
+        </View>
+        <View style={styles.progressBarBackground}>
+          <View
+            style={[
+              styles.progressBarFill,
+              { width: `${percentage}%`, backgroundColor: barColor },
+            ]}
+          />
+        </View>
+      </TouchableOpacity>
       <View style={styles.budgetFooter}>
         <Text style={styles.budgetAmountText}>
           {formatAmount(consumption.spent)} / {formatAmount(consumption.limit)}
         </Text>
         <TouchableOpacity
           style={styles.addSpentButton}
-          onPress={(e) => { e.stopPropagation(); onAddSpent(); }}
+          onPress={onAddSpent}
           accessibilityRole="button"
           accessibilityLabel="Registrar gasto manual"
         >
@@ -331,7 +322,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
       {consumption.isOverBudget && (
         <Text style={styles.overBudgetBadge}>¡Excedido!</Text>
       )}
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -528,41 +519,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  spendOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  spendCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 340,
-  },
-  spendTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.secondary,
-    marginBottom: 4,
-  },
-  spendSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
   spendInput: {
     backgroundColor: colors.backgroundPrimary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '600',
     borderWidth: 1,
     borderColor: '#DDD',
@@ -573,33 +535,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 8,
+    marginBottom: 16,
     textAlign: 'center',
-  },
-  spendButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 20,
-  },
-  spendCancelBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  spendCancelText: {
-    fontSize: 15,
-    color: '#666',
-    fontWeight: '500',
   },
   spendConfirmBtn: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   spendConfirmText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

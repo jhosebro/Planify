@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import {
   Alert,
@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ReminderService } from '@/services/reminders';
 import { AccountService } from '@/services/accounts';
+import { BottomModal } from '@/components/BottomModal';
 import type { Account, Reminder } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -59,6 +60,11 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
   const reminderService = useMemo(() => new ReminderService(), []);
   const accountService = useMemo(() => new AccountService(), []);
 
+  // Account picker state
+  const [payingReminder, setPayingReminder] = useState<Reminder | null>(null);
+  const [availableAccounts, setAvailableAccounts] = useState<Account[]>([]);
+  const [paying, setPaying] = useState(false);
+
   const overdueReminders = useMemo(
     () => reminders.filter((r) => r.isOverdue && !r.isPaid),
     [reminders]
@@ -73,38 +79,34 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
     async (reminder: Reminder) => {
       try {
         const accounts = await accountService.getActiveAccounts();
-
         if (accounts.length === 0) {
           Alert.alert('Error', 'No tienes cuentas activas para registrar el pago.');
           return;
         }
-
-        // Show account selection alert
-        const accountOptions = accounts.map((account: Account) => ({
-          text: `${account.name} (${formatAmount(account.balance)})`,
-          onPress: async () => {
-            try {
-              await reminderService.markAsPaid(reminder.id, account.id);
-              onRefresh();
-            } catch (error) {
-              Alert.alert('Error', 'No se pudo marcar como pagado.');
-            }
-          },
-        }));
-
-        Alert.alert(
-          'Seleccionar cuenta',
-          `Se registrará un gasto de ${formatAmount(reminder.amount)} en la cuenta seleccionada.`,
-          [
-            ...accountOptions,
-            { text: 'Cancelar', style: 'cancel' },
-          ]
-        );
+        setAvailableAccounts(accounts);
+        setPayingReminder(reminder);
       } catch (error) {
         Alert.alert('Error', 'No se pudieron obtener las cuentas.');
       }
     },
-    [accountService, reminderService, onRefresh]
+    [accountService]
+  );
+
+  const handleSelectAccount = useCallback(
+    async (accountId: string) => {
+      if (!payingReminder) return;
+      setPaying(true);
+      try {
+        await reminderService.markAsPaid(payingReminder.id, accountId);
+        setPayingReminder(null);
+        onRefresh();
+      } catch (error) {
+        Alert.alert('Error', 'No se pudo marcar como pagado.');
+      } finally {
+        setPaying(false);
+      }
+    },
+    [payingReminder, reminderService, onRefresh]
   );
 
   if (overdueReminders.length === 0 && pendingReminders.length === 0) {
@@ -147,6 +149,28 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
             />
           ))}
         </View>
+      )}
+
+      {/* Account Picker Modal */}
+      {payingReminder && (
+        <BottomModal
+          visible={!!payingReminder}
+          title="Seleccionar cuenta"
+          subtitle={`Se registrará un gasto de ${formatAmount(payingReminder.amount)} por "${payingReminder.description}"`}
+          onClose={() => setPayingReminder(null)}
+        >
+          {availableAccounts.map((account) => (
+            <TouchableOpacity
+              key={account.id}
+              style={styles.pickerOption}
+              onPress={() => handleSelectAccount(account.id)}
+              disabled={paying}
+            >
+              <Text style={styles.pickerOptionName}>{account.name}</Text>
+              <Text style={styles.pickerOptionBalance}>{formatAmount(account.balance)}</Text>
+            </TouchableOpacity>
+          ))}
+        </BottomModal>
       )}
     </View>
   );
@@ -298,5 +322,24 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: 14,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: colors.backgroundPrimary,
+    marginBottom: 8,
+  },
+  pickerOptionName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.secondary,
+  },
+  pickerOptionBalance: {
+    fontSize: 14,
+    color: '#666',
   },
 });
