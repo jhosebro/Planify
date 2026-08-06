@@ -6,6 +6,7 @@ import { DashboardScreen } from '@/screens/main/DashboardScreen';
 import { TransactionsScreen } from '@/screens/main/TransactionsScreen';
 import { AccountsScreen } from '@/screens/main/AccountsScreen';
 import { BudgetsScreen } from '@/screens/main/BudgetsScreen';
+import { GoalsScreen } from '@/screens/main/GoalsScreen';
 import { SettingsScreen } from '@/screens/main/SettingsScreen';
 import type { TabParamList } from './types';
 
@@ -16,6 +17,7 @@ const TAB_ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.gly
   Transactions: { focused: 'swap-vertical', unfocused: 'swap-vertical-outline' },
   Accounts: { focused: 'wallet', unfocused: 'wallet-outline' },
   Budgets: { focused: 'pie-chart', unfocused: 'pie-chart-outline' },
+  Goals: { focused: 'trophy', unfocused: 'trophy-outline' },
   Settings: { focused: 'settings', unfocused: 'settings-outline' },
 };
 
@@ -53,6 +55,11 @@ export function TabNavigator() {
         name="Budgets"
         component={BudgetsScreen}
         options={{ title: 'Presupuestos' }}
+      />
+      <Tab.Screen
+        name="Goals"
+        component={GoalsScreen}
+        options={{ title: 'Metas' }}
       />
       <Tab.Screen
         name="Settings"

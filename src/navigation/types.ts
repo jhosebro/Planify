@@ -14,6 +14,7 @@ export type TabParamList = {
   Transactions: undefined;
   Accounts: undefined;
   Budgets: undefined;
+  Goals: undefined;
   Settings: undefined;
 };
 
@@ -24,11 +25,13 @@ export type MainStackParamList = {
   AddTransfer: undefined;
   AddBudget: undefined;
   AddReminder: { reminderId?: string } | undefined;
+  AddGoal: { goalId?: string } | undefined;
   GenerateReport: undefined;
   // Details
   AccountDetail: { accountId: string };
   TransactionDetail: { transactionId: string };
   BudgetDetail: { budgetId: string };
+  GoalDetail: { goalId: string };
 };
 
 export type RootStackParamList = {
