@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,14 +13,71 @@ import {
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
+import { useResponsiveLayout, type ResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { SimpleLineChart } from '@/components/SimpleLineChart';
 import { DashboardService } from '@/services/dashboard';
 import type { DashboardData, CategoryDistribution, MonthlyTrend } from '@/types/dashboard';
 import type { BudgetConsumption, Transaction } from '@/types';
 
+// ─── Chart Error Boundary ────────────────────────────────────────────────────
+
+class ChartErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallbackText?: string },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallbackText?: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ padding: 24, alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, color: '#999', textAlign: 'center' }}>
+            {this.props.fallbackText ?? 'No se pudo mostrar el gráfico.'}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/**
+ * Defers chart rendering to the next frame so the ErrorBoundary can catch
+ * crashes that happen during the initial synchronous render.
+ */
+function DeferredChart({ children, fallbackText }: { children: React.ReactNode; fallbackText?: string }) {
+  const [ready, setReady] = useState(false);
+
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <ChartErrorBoundary fallbackText={fallbackText}>
+      {children}
+    </ChartErrorBoundary>
+  );
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - 32;
+const CHART_WIDTH = Math.max(Dimensions.get('window').width - 32, 280);
 
 type DateRangeOption = 'this_month' | 'last_3_months' | 'last_6_months' | 'custom';
 
@@ -74,6 +132,7 @@ function getDateRange(option: DateRangeOption): DateRange {
 }
 
 function formatMonth(monthStr: string): string {
+  if (!monthStr || !monthStr.includes('-')) return monthStr ?? '';
   const [, month] = monthStr.split('-');
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const idx = parseInt(month, 10) - 1;
@@ -90,6 +149,8 @@ function formatDate(date: Date): string {
 
 export function DashboardScreen() {
   const dashboardService = useMemo(() => new DashboardService(), []);
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,24 +196,49 @@ export function DashboardScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={[
+      styles.contentContainer,
+      isDesktop && { paddingHorizontal: layout.contentPadding, maxWidth: layout.contentMaxWidth, alignSelf: 'center', width: '100%' },
+    ]}>
       {/* Date Range Selector */}
       <DateRangeSelector selected={selectedRange} onSelect={setSelectedRange} />
 
       {/* Total Balance */}
       <TotalBalanceCard balance={data.totalBalance} />
 
-      {/* Category Distribution Pie Chart */}
-      <CategoryDistributionChart distribution={data.categoryDistribution} />
+      {/* Desktop: Two-column grid for charts */}
+      {isDesktop ? (
+        <View style={desktopStyles.gridRow}>
+          <View style={desktopStyles.gridCol}>
+            <CategoryDistributionChart distribution={data.categoryDistribution} layout={layout} />
+          </View>
+          <View style={desktopStyles.gridCol}>
+            <MonthlyTrendsChart trends={data.monthlyTrends} layout={layout} />
+          </View>
+        </View>
+      ) : (
+        <>
+          <CategoryDistributionChart distribution={data.categoryDistribution} layout={layout} />
+          <MonthlyTrendsChart trends={data.monthlyTrends} layout={layout} />
+        </>
+      )}
 
-      {/* Monthly Trends Line Chart */}
-      <MonthlyTrendsChart trends={data.monthlyTrends} />
-
-      {/* Budget Progress Bars */}
-      <BudgetProgressSection budgets={data.activeBudgets} />
-
-      {/* Recent Transactions */}
-      <RecentTransactionsSection transactions={data.recentTransactions} />
+      {/* Desktop: Two-column grid for budgets and transactions */}
+      {isDesktop ? (
+        <View style={desktopStyles.gridRow}>
+          <View style={desktopStyles.gridCol}>
+            <BudgetProgressSection budgets={data.activeBudgets} />
+          </View>
+          <View style={desktopStyles.gridCol}>
+            <RecentTransactionsSection transactions={data.recentTransactions} />
+          </View>
+        </View>
+      ) : (
+        <>
+          <BudgetProgressSection budgets={data.activeBudgets} />
+          <RecentTransactionsSection transactions={data.recentTransactions} />
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -220,9 +306,10 @@ function TotalBalanceCard({ balance }: TotalBalanceCardProps) {
 
 interface CategoryDistributionChartProps {
   distribution: CategoryDistribution[];
+  layout: ResponsiveLayout;
 }
 
-function CategoryDistributionChart({ distribution }: CategoryDistributionChartProps) {
+function CategoryDistributionChart({ distribution, layout }: CategoryDistributionChartProps) {
   if (distribution.length === 0) {
     return (
       <View style={styles.chartCard}>
@@ -240,21 +327,30 @@ function CategoryDistributionChart({ distribution }: CategoryDistributionChartPr
     legendFontSize: 12,
   }));
 
+  // Use a responsive chart width based on layout
+  const chartWidth = Platform.OS === 'web' && layout.isDesktop
+    ? Math.max(Math.min(layout.contentMaxWidth / 2 - 80, 440), 280)
+    : CHART_WIDTH;
+
   return (
-    <View style={styles.chartCard}>
+    <View style={[styles.chartCard, { overflow: 'hidden' }]}>
       <Text style={styles.chartTitle}>Distribución por Categoría</Text>
-      <PieChart
-        data={pieData}
-        width={CHART_WIDTH}
-        height={200}
-        chartConfig={{
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor="population"
-        backgroundColor="transparent"
-        paddingLeft="0"
-        absolute={false}
-      />
+      {chartWidth > 0 && (
+        <DeferredChart fallbackText="No se pudo mostrar el gráfico de categorías.">
+          <PieChart
+            data={pieData}
+            width={chartWidth}
+            height={200}
+            chartConfig={{
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+            }}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="0"
+            absolute={false}
+          />
+        </DeferredChart>
+      )}
     </View>
   );
 }
@@ -263,9 +359,10 @@ function CategoryDistributionChart({ distribution }: CategoryDistributionChartPr
 
 interface MonthlyTrendsChartProps {
   trends: MonthlyTrend[];
+  layout: ResponsiveLayout;
 }
 
-function MonthlyTrendsChart({ trends }: MonthlyTrendsChartProps) {
+function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   if (trends.length === 0) {
     return (
       <View style={styles.chartCard}>
@@ -290,12 +387,17 @@ function MonthlyTrendsChart({ trends }: MonthlyTrendsChartProps) {
     );
   }
 
-  // Ensure datasets have at least a small value to prevent chart-kit crashes
-  const safeIncome = incomeData.some((v) => v > 0) ? incomeData : incomeData.map(() => 0.01);
-  const safeExpense = expenseData.some((v) => v > 0) ? expenseData : expenseData.map(() => 0.01);
+  // react-native-chart-kit needs at least 2 data points to render correctly
+  const safeLabels = labels.length < 2 ? [...labels, ''] : labels;
+  const safeIncome = incomeData.length < 2
+    ? [...incomeData, incomeData[incomeData.length - 1] ?? 0]
+    : incomeData;
+  const safeExpense = expenseData.length < 2
+    ? [...expenseData, expenseData[expenseData.length - 1] ?? 0]
+    : expenseData;
 
   const lineData = {
-    labels,
+    labels: safeLabels,
     datasets: [
       {
         data: safeIncome,
@@ -311,30 +413,55 @@ function MonthlyTrendsChart({ trends }: MonthlyTrendsChartProps) {
     legend: ['Ingresos', 'Gastos'],
   };
 
+  // Use a responsive chart width
+  const chartWidth = Platform.OS === 'web' && layout.isDesktop
+    ? Math.max(Math.min(layout.contentMaxWidth / 2 - 80, 440), 280)
+    : CHART_WIDTH;
+
+  // LineChart from react-native-chart-kit crashes on web — use SimpleLineChart instead
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.chartCard, { overflow: 'hidden' }]}>
+        <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
+        <SimpleLineChart
+          labels={labels}
+          datasets={[
+            { data: incomeData, color: colors.greenEarns, label: 'Ingresos' },
+            { data: expenseData, color: colors.redExpenses, label: 'Gastos' },
+          ]}
+          width={chartWidth}
+          height={220}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.chartCard}>
+    <View style={[styles.chartCard, { overflow: 'hidden' }]}>
       <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
-      <LineChart
-        data={lineData}
-        width={CHART_WIDTH}
-        height={220}
-        chartConfig={{
-          backgroundColor: '#fff',
-          backgroundGradientFrom: '#fff',
-          backgroundGradientTo: '#fff',
-          decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(74, 144, 217, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
-          style: { borderRadius: 8 },
-          propsForDots: {
-            r: '4',
-            strokeWidth: '1',
-            stroke: colors.primary,
-          },
-        }}
-        bezier
-        style={styles.lineChart}
-      />
+      {chartWidth > 0 && (
+        <LineChart
+          data={lineData}
+          width={chartWidth}
+          height={220}
+          chartConfig={{
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(74, 144, 217, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
+            style: { borderRadius: 8 },
+            propsForDots: {
+              r: '4',
+              strokeWidth: '1',
+              stroke: colors.primary,
+            },
+          }}
+          bezier
+          style={styles.lineChart}
+        />
+      )}
     </View>
   );
 }
@@ -663,5 +790,18 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 14,
     fontWeight: '600',
+  },
+});
+
+// ─── Desktop-specific Styles ─────────────────────────────────────────────────
+
+const desktopStyles = StyleSheet.create({
+  gridRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  gridCol: {
+    flex: 1,
   },
 });

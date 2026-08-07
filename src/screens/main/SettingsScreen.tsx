@@ -1,8 +1,9 @@
 import React from 'react';
 import { colors } from '@/theme';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
 import type { MainStackParamList } from '@/navigation/types';
@@ -34,6 +35,8 @@ const SYNC_STATUS_MAP: Record<SyncStatus, SyncStatusConfig> = {
  */
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsNavProp>();
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const { status, lastSyncAt, pendingCount } = useSyncStore();
   const { userId, clearAuth } = useAuthStore();
 
@@ -61,7 +64,10 @@ export function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={[
+      styles.contentContainer,
+      isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+    ]}>
       {/* Sync Status Section */}
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Estado de Sincronización</Text>

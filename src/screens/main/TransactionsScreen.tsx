@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { TransactionService } from '@/services/transactions/transactionService';
 import { AccountService } from '@/services/accounts/accountService';
 import type { MainStackParamList } from '@/navigation/types';
@@ -66,6 +68,8 @@ const DATE_FILTER_OPTIONS: { key: DateFilter; label: string }[] = [
 
 export function TransactionsScreen() {
   const navigation = useNavigation<TransactionsNavProp>();
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const transactionService = useMemo(() => new TransactionService(), []);
   const accountService = useMemo(() => new AccountService(), []);
 
@@ -114,9 +118,9 @@ export function TransactionsScreen() {
   }, [transactionService, loadData]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && { alignItems: 'center' }]}>
       {/* Date Filter */}
-      <View style={styles.filterSection}>
+      <View style={[styles.filterSection, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
         <View style={styles.dateFilterRow}>
           {DATE_FILTER_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -182,7 +186,10 @@ export function TransactionsScreen() {
         <FlatList
           data={transactions}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+          ]}
           renderItem={({ item }) => <TransactionItem transaction={item} accounts={accounts} onDelete={handleDeleteTransaction} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -195,7 +202,7 @@ export function TransactionsScreen() {
 
       {/* FAB to add transaction */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, isDesktop && styles.fabDesktop]}
         onPress={handleAddTransaction}
         accessibilityRole="button"
         accessibilityLabel="Agregar movimiento"
@@ -403,5 +410,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '400',
     marginTop: -2,
+  },
+  fabDesktop: {
+    bottom: 32,
+    right: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
 });

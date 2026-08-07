@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { DesktopSidebar } from './DesktopSidebar';
 import { DashboardScreen } from '@/screens/main/DashboardScreen';
 import { TransactionsScreen } from '@/screens/main/TransactionsScreen';
 import { AccountsScreen } from '@/screens/main/AccountsScreen';
@@ -21,7 +24,53 @@ const TAB_ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.gly
   Settings: { focused: 'settings', unfocused: 'settings-outline' },
 };
 
-export function TabNavigator() {
+const SCREENS: Record<keyof TabParamList, React.ComponentType> = {
+  Dashboard: DashboardScreen,
+  Transactions: TransactionsScreen,
+  Accounts: AccountsScreen,
+  Budgets: BudgetsScreen,
+  Goals: GoalsScreen,
+  Settings: SettingsScreen,
+};
+
+const SCREEN_TITLES: Record<keyof TabParamList, string> = {
+  Dashboard: 'Inicio',
+  Transactions: 'Movimientos',
+  Accounts: 'Cuentas',
+  Budgets: 'Presupuestos',
+  Goals: 'Metas',
+  Settings: 'Ajustes',
+};
+
+/**
+ * Desktop layout: sidebar + content area.
+ * Replaces bottom tabs with a persistent sidebar on wide screens.
+ */
+function DesktopTabLayout() {
+  const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>('Dashboard');
+  const ActiveScreen = SCREENS[currentRoute];
+
+  return (
+    <View style={desktopStyles.container}>
+      <DesktopSidebar currentRoute={currentRoute} onNavigate={setCurrentRoute} />
+      <View style={desktopStyles.mainContent}>
+        {/* Desktop Header Bar */}
+        <View style={desktopStyles.header}>
+          <Text style={desktopStyles.headerTitle}>{SCREEN_TITLES[currentRoute]}</Text>
+        </View>
+        {/* Screen Content */}
+        <View style={desktopStyles.screenContainer}>
+          <ActiveScreen />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Mobile/Tablet layout: standard bottom tab navigator.
+ */
+function MobileTabLayout() {
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
@@ -69,3 +118,49 @@ export function TabNavigator() {
     </Tab.Navigator>
   );
 }
+
+/**
+ * Responsive tab navigator that switches between sidebar (desktop web)
+ * and bottom tabs (mobile/tablet).
+ */
+export function TabNavigator() {
+  const { isDesktop } = useResponsiveLayout();
+
+  if (Platform.OS === 'web' && isDesktop) {
+    return <DesktopTabLayout />;
+  }
+
+  return <MobileTabLayout />;
+}
+
+const desktopStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+  },
+  header: {
+    height: 60,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.secondary,
+  },
+  screenContainer: {
+    flex: 1,
+  },
+});

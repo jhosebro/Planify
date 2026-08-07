@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { AccountService } from '@/services/accounts/accountService';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, AccountType } from '@/types';
@@ -32,6 +34,8 @@ function formatAmount(centavos: number): string {
 
 export function AccountsScreen() {
   const navigation = useNavigation<AccountsNavProp>();
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const accountService = useMemo(() => new AccountService(), []);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -74,9 +78,9 @@ export function AccountsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && { alignItems: 'center' }]}>
       {/* Total Balance Header */}
-      <View style={styles.balanceCard}>
+      <View style={[styles.balanceCard, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
         <Text style={styles.balanceLabel}>Saldo Total</Text>
         <Text style={[styles.balanceAmount, totalBalance < 0 && styles.negativeAmount]}>
           {formatAmount(totalBalance)}
@@ -87,10 +91,13 @@ export function AccountsScreen() {
       <FlatList
         data={accounts}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' }]}
+        numColumns={isDesktop ? 2 : 1}
+        key={isDesktop ? 'desktop-2col' : 'mobile-1col'}
+        columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.accountCard}
+            style={[styles.accountCard, isDesktop && { flex: 1 }]}
             onPress={() => handleAccountPress(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Cuenta ${item.name}, saldo ${formatAmount(item.balance)}`}

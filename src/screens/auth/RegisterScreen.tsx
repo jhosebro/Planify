@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +24,8 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterScreen() {
   const navigation = useNavigation<RegisterNavProp>();
+  const { width } = Dimensions.get('window');
+  const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,10 +80,14 @@ export function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, isDesktopWeb && styles.containerDesktop]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Crear Cuenta</Text>
+        <View style={[isDesktopWeb && styles.desktopCard]}>
+          {isDesktopWeb && (
+            <Text style={styles.brandText}>Planify</Text>
+          )}
+          <Text style={styles.title}>Crear Cuenta</Text>
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -140,6 +147,7 @@ export function RegisterScreen() {
         >
           <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesión</Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -155,6 +163,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: '#fff',
+  },
+  containerDesktop: {
+    backgroundColor: colors.backgroundPrimary,
+    alignItems: 'center',
+  },
+  desktopCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 48,
+    width: '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  brandText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   title: {
     fontSize: 28,

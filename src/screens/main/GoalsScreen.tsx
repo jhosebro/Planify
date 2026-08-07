@@ -3,6 +3,7 @@ import { colors } from '@/theme';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { GoalService } from '@/services/goals';
 import type { Goal } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
@@ -31,6 +33,8 @@ const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
 
 export function GoalsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const goalService = useMemo(() => new GoalService(), []);
 
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -65,9 +69,15 @@ export function GoalsScreen() {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+      ]}
       data={activeGoals}
       keyExtractor={(item) => item.id}
+      numColumns={isDesktop ? 2 : 1}
+      key={isDesktop ? 'desktop-2col' : 'mobile-1col'}
+      columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
@@ -100,7 +110,7 @@ export function GoalsScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <GoalCard goal={item} onPress={() => navigation.navigate('GoalDetail', { goalId: item.id })} />
+        <GoalCard goal={item} onPress={() => navigation.navigate('GoalDetail', { goalId: item.id })} isDesktop={isDesktop} />
       )}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
@@ -151,12 +161,12 @@ export function GoalsScreen() {
 
 // ─── Goal Card ───────────────────────────────────────────────────────────────
 
-function GoalCard({ goal, onPress }: { goal: Goal; onPress: () => void }) {
+function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => void; isDesktop?: boolean }) {
   const priority = PRIORITY_LABELS[goal.priority] ?? PRIORITY_LABELS.medium;
   const daysLeft = Math.max(0, Math.ceil((goal.targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <TouchableOpacity style={styles.goalCard} onPress={onPress}>
+    <TouchableOpacity style={[styles.goalCard, isDesktop && { flex: 1 }]} onPress={onPress}>
       <View style={styles.goalHeader}>
         <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
         <View style={[styles.priorityBadge, { backgroundColor: priority.color + '20' }]}>

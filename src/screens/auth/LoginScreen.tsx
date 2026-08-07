@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,6 +21,8 @@ type LoginNavProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
+  const { width } = Dimensions.get('window');
+  const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,67 +64,72 @@ export function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, isDesktopWeb && styles.containerDesktop]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Iniciar Sesión</Text>
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        <TextInput
-          style={styles.input}
-          placeholder="Correo electrónico"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          accessibilityLabel="Correo electrónico"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          textContentType="password"
-          accessibilityLabel="Contraseña"
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-          accessibilityLabel="Iniciar sesión"
-          accessibilityRole="button"
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        <View style={[isDesktopWeb && styles.desktopCard]}>
+          {isDesktopWeb && (
+            <Text style={styles.brandText}>Planify</Text>
           )}
-        </TouchableOpacity>
+          <Text style={styles.title}>Iniciar Sesión</Text>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('ForgotPassword')}
-          style={styles.link}
-          accessibilityLabel="¿Olvidaste tu contraseña?"
-          accessibilityRole="link"
-        >
-          <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Register')}
-          style={styles.link}
-          accessibilityLabel="Crear una cuenta"
-          accessibilityRole="link"
-        >
-          <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
-        </TouchableOpacity>
+          <TextInput
+            style={[styles.input, isDesktopWeb && styles.inputDesktop]}
+            placeholder="Correo electrónico"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            accessibilityLabel="Correo electrónico"
+          />
+
+          <TextInput
+            style={[styles.input, isDesktopWeb && styles.inputDesktop]}
+            placeholder="Contraseña"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            textContentType="password"
+            accessibilityLabel="Contraseña"
+          />
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled, isDesktopWeb && styles.buttonDesktop]}
+            onPress={handleLogin}
+            disabled={loading}
+            accessibilityLabel="Iniciar sesión"
+            accessibilityRole="button"
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={styles.link}
+            accessibilityLabel="¿Olvidaste tu contraseña?"
+            accessibilityRole="link"
+          >
+            <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Register')}
+            style={styles.link}
+            accessibilityLabel="Crear una cuenta"
+            accessibilityRole="link"
+          >
+            <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -137,6 +145,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: '#fff',
+  },
+  containerDesktop: {
+    backgroundColor: colors.backgroundPrimary,
+    alignItems: 'center',
+  },
+  desktopCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 48,
+    width: '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  brandText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   title: {
     fontSize: 28,
@@ -156,6 +188,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     color: '#1a1a1a',
   },
+  inputDesktop: {
+    height: 52,
+    fontSize: 15,
+    borderRadius: 10,
+  },
   button: {
     height: 48,
     backgroundColor: colors.primary,
@@ -163,6 +200,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+  },
+  buttonDesktop: {
+    height: 52,
+    borderRadius: 10,
+    marginTop: 16,
   },
   buttonDisabled: {
     opacity: 0.7,

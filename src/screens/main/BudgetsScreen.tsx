@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { BudgetService } from '@/services/budgets';
 import { ReminderService } from '@/services/reminders';
 import type { BudgetConsumption, Reminder } from '@/types';
@@ -30,6 +32,8 @@ function formatAmount(centavos: number): string {
 
 export function BudgetsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const layout = useResponsiveLayout();
+  const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const budgetService = useMemo(() => new BudgetService(), []);
   const reminderService = useMemo(() => new ReminderService(), []);
 
@@ -123,7 +127,10 @@ export function BudgetsScreen() {
   <View style={{flex: 1}}>
     <FlatList
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[
+        styles.contentContainer,
+        isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+      ]}
       data={consumptions}
       keyExtractor={(item) => item.budgetId}
       ListHeaderComponent={
