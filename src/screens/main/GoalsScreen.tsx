@@ -22,7 +22,7 @@ function formatAmount(centavos: number): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -47,12 +47,29 @@ const SCREEN_TITLES: Record<keyof TabParamList, string> = {
  * Replaces bottom tabs with a persistent sidebar on wide screens.
  */
 function DesktopTabLayout() {
-  const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>('Dashboard');
+  const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
+    // Restore last active tab from sessionStorage on web
+    if (Platform.OS === 'web') {
+      try {
+        const saved = window.sessionStorage.getItem('planify_active_tab');
+        if (saved && saved in SCREENS) return saved as keyof TabParamList;
+      } catch {}
+    }
+    return 'Dashboard';
+  });
+
+  const handleNavigate = useCallback((route: keyof TabParamList) => {
+    setCurrentRoute(route);
+    if (Platform.OS === 'web') {
+      try { window.sessionStorage.setItem('planify_active_tab', route); } catch {}
+    }
+  }, []);
+
   const ActiveScreen = SCREENS[currentRoute];
 
   return (
     <View style={desktopStyles.container}>
-      <DesktopSidebar currentRoute={currentRoute} onNavigate={setCurrentRoute} />
+      <DesktopSidebar currentRoute={currentRoute} onNavigate={handleNavigate} />
       <View style={desktopStyles.mainContent}>
         {/* Desktop Header Bar */}
         <View style={desktopStyles.header}>

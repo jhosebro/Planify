@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import {
   ActivityIndicator,
@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { GoalService } from '@/services/goals';
@@ -30,7 +30,7 @@ function formatWithThousands(value: string): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 export function GoalDetailScreen() {
@@ -43,6 +43,7 @@ export function GoalDetailScreen() {
   const [contributions, setContributions] = useState<GoalContribution[]>([]);
   const [actions, setActions] = useState<GoalAction[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
 
   // Contribute modal
   const [showContribute, setShowContribute] = useState(false);
@@ -52,8 +53,8 @@ export function GoalDetailScreen() {
   // Add action
   const [newAction, setNewAction] = useState('');
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const [g, c, a] = await Promise.all([
         goalService.getById(goalId),
@@ -70,7 +71,17 @@ export function GoalDetailScreen() {
     }
   }, [goalId, goalService]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // Reload on every focus (initial mount + returning from edit modal)
+  useFocusEffect(
+    useCallback(() => {
+      if (hasLoadedOnce.current) {
+        loadData(false);
+      } else {
+        loadData(true);
+        hasLoadedOnce.current = true;
+      }
+    }, [loadData])
+  );
 
   const handleContribute = async () => {
     const raw = contributeAmount.replace(/\./g, '');

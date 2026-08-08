@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import {
   Alert,
@@ -11,8 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { GoalService } from '@/services/goals';
 import type { GoalPriority, GoalType, InstallmentFrequency } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
@@ -30,8 +31,8 @@ function getDaysInMonth(year: number, month: number): number {
 
 export function AddGoalModal() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
-  const route = (navigation.getState()?.routes ?? []).find(r => r.name === 'AddGoal');
-  const goalId = (route?.params as any)?.goalId as string | undefined;
+  const route = useRoute<RouteProp<MainStackParamList, 'AddGoal'>>();
+  const goalId = route.params?.goalId;
   const isEditMode = !!goalId;
 
   const goalService = useMemo(() => new GoalService(), []);
@@ -56,7 +57,7 @@ export function AddGoalModal() {
 
   // Load existing goal for edit mode
   React.useEffect(() => {
-    if (goalId && !loaded) {
+    if (goalId) {
       goalService.getById(goalId).then((g) => {
         if (g) {
           setName(g.name);
@@ -65,22 +66,24 @@ export function AddGoalModal() {
           setPriority(g.priority);
           setType(g.type);
           setFrequency(g.installmentFrequency);
-          setYear(g.targetDate.getFullYear());
-          setMonth(g.targetDate.getMonth());
-          setDay(g.targetDate.getDate());
+          // Use UTC to avoid timezone offset issues with date-only values
+          setYear(g.targetDate.getUTCFullYear());
+          setMonth(g.targetDate.getUTCMonth());
+          setDay(g.targetDate.getUTCDate());
           setLoaded(true);
         }
+      }).catch((err) => {
+        console.error('Error loading goal for edit:', err);
       });
     }
-  }, [goalId, loaded]);
+  }, [goalId, goalService]);
   const formattedDate = `${day.toString().padStart(2, '0')} ${MONTHS[month]} ${year}`;
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!name.trim()) { Alert.alert('Error', 'El nombre es obligatorio.'); return; }
     const amount = parseInt(displayAmount.replace(/\./g, ''), 10);
     if (isNaN(amount) || amount <= 0) { Alert.alert('Error', 'El costo estimado debe ser mayor a 0.'); return; }
 
-    setSaving(true);
     setSaving(true);
     try {
       const goalData = {
@@ -89,7 +92,8 @@ export function AddGoalModal() {
         targetAmount: amount * 100,
         priority,
         type,
-        targetDate: new Date(year, month, day),
+        // Create date in UTC to avoid timezone offset when converting to ISO string
+        targetDate: new Date(Date.UTC(year, month, day)),
         installmentFrequency: frequency,
       };
 
@@ -100,11 +104,12 @@ export function AddGoalModal() {
       }
       navigation.goBack();
     } catch (error) {
+      console.error('[AddGoalModal] submit error:', error);
       Alert.alert('Error', isEditMode ? 'No se pudo actualizar la meta.' : 'No se pudo crear la meta.');
     } finally {
       setSaving(false);
     }
-  }, [goalService, goalId, isEditMode, name, description, displayAmount, priority, type, year, month, day, frequency, navigation]);
+  };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
