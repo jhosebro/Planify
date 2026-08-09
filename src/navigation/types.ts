@@ -21,7 +21,7 @@ export type TabParamList = {
 export type MainStackParamList = {
   Tabs: undefined;
   // Modals
-  AddTransaction: undefined;
+  AddTransaction: { transactionId?: string } | undefined;
   AddTransfer: undefined;
   AddBudget: undefined;
   AddReminder: { reminderId?: string } | undefined;

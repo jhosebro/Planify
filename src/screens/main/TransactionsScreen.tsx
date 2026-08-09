@@ -190,7 +190,7 @@ export function TransactionsScreen() {
             styles.listContent,
             isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
           ]}
-          renderItem={({ item }) => <TransactionItem transaction={item} accounts={accounts} onDelete={handleDeleteTransaction} />}
+          renderItem={({ item }) => <TransactionItem transaction={item} accounts={accounts} onDelete={handleDeleteTransaction} onEdit={(id) => navigation.navigate('AddTransaction', { transactionId: id })} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No hay movimientos registrados.</Text>
@@ -219,9 +219,10 @@ interface TransactionItemProps {
   transaction: Transaction;
   accounts: Account[];
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
-function TransactionItem({ transaction, accounts, onDelete }: TransactionItemProps) {
+function TransactionItem({ transaction, accounts, onDelete, onEdit }: TransactionItemProps) {
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
   const color = isExpense ? colors.redExpenses : colors.greenEarns;
@@ -229,11 +230,12 @@ function TransactionItem({ transaction, accounts, onDelete }: TransactionItemPro
 
   const handleLongPress = () => {
     Alert.alert(
-      'Eliminar movimiento',
-      `¿Estás seguro de eliminar este ${isExpense ? 'gasto' : 'ingreso'} de ${formatAmount(transaction.amount)}?`,
+      'Opciones',
+      `${isExpense ? 'Gasto' : 'Ingreso'} de ${formatAmount(transaction.amount)}`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Editar', onPress: () => onEdit(transaction.id) },
         { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
+        { text: 'Cancelar', style: 'cancel' },
       ]
     );
   };
@@ -241,9 +243,10 @@ function TransactionItem({ transaction, accounts, onDelete }: TransactionItemPro
   return (
     <TouchableOpacity
       style={styles.transactionRow}
+      onPress={() => onEdit(transaction.id)}
       onLongPress={handleLongPress}
       accessibilityRole="button"
-      accessibilityHint="Mantén presionado para eliminar"
+      accessibilityHint="Toca para editar, mantén presionado para más opciones"
     >
       <View style={styles.transactionIcon}>
         <Text style={styles.transactionIconText}>{isExpense ? '↓' : '↑'}</Text>

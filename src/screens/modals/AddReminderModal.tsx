@@ -147,7 +147,7 @@ export function AddReminderModal() {
     } finally {
       setSaving(false);
     }
-  }, [reminderService, description, displayAmount, selectedDate, frequency, navigation]);
+  }, [reminderService, reminderId, isEditMode, description, displayAmount, selectedDate, frequency, categoryId, navigation]);
 
   return (
     <KeyboardAvoidingView

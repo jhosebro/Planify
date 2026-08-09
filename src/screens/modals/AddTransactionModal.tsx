@@ -11,8 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { TransactionService } from '@/services/transactions/transactionService';
 import { AccountService } from '@/services/accounts/accountService';
 import { CategorySelector } from '@/components/CategorySelector';
@@ -52,6 +53,10 @@ function getDaysInMonth(year: number, month: number): number {
 
 export function AddTransactionModal() {
   const navigation = useNavigation<AddTransactionNavProp>();
+  const route = useRoute<RouteProp<MainStackParamList, 'AddTransaction'>>();
+  const transactionId = route.params?.transactionId;
+  const isEditMode = !!transactionId;
+
   const transactionService = useMemo(() => new TransactionService(), []);
   const accountService = useMemo(() => new AccountService(), []);
 
@@ -86,6 +91,27 @@ export function AddTransactionModal() {
       if (accountList.length > 0 && !selectedAccountId) {
         setSelectedAccountId(accountList[0].id);
       }
+
+      // Load existing transaction for edit mode
+      if (transactionId) {
+        const { data } = await (await import('@/lib/supabase')).supabase
+          .from('transactions')
+          .select()
+          .eq('id', transactionId)
+          .single();
+
+        if (data) {
+          setType(data.type);
+          setDisplayAmount(formatWithThousands(Math.round(data.amount / 100).toString()));
+          setSelectedAccountId(data.account_id);
+          setCategoryId(data.category_id);
+          setDescription(data.description ?? '');
+          const txDate = new Date(data.date);
+          setSelectedYear(txDate.getFullYear());
+          setSelectedMonth(txDate.getMonth());
+          setSelectedDay(txDate.getDate());
+        }
+      }
     } catch (error) {
       console.error('Error loading form data:', error);
     }
@@ -118,17 +144,28 @@ export function AddTransactionModal() {
 
     setSubmitting(true);
     try {
-      await transactionService.create({
-        accountId: selectedAccountId,
-        type,
-        amount: amountCentavos,
-        categoryId,
-        date: selectedDate,
-        description: description.trim() || undefined,
-      });
+      if (isEditMode && transactionId) {
+        await transactionService.update(transactionId, {
+          accountId: selectedAccountId,
+          type,
+          amount: amountCentavos,
+          categoryId,
+          date: selectedDate,
+          description: description.trim() || undefined,
+        });
+      } else {
+        await transactionService.create({
+          accountId: selectedAccountId,
+          type,
+          amount: amountCentavos,
+          categoryId,
+          date: selectedDate,
+          description: description.trim() || undefined,
+        });
+      }
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'No se pudo registrar el movimiento. Intenta de nuevo.');
+      Alert.alert('Error', 'No se pudo guardar el movimiento. Intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +177,7 @@ export function AddTransactionModal() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Nuevo Movimiento</Text>
+        <Text style={styles.title}>{isEditMode ? 'Editar Movimiento' : 'Nuevo Movimiento'}</Text>
 
         {/* Transaction Type Selector */}
         <Text style={styles.label}>Tipo</Text>
@@ -293,7 +330,7 @@ export function AddTransactionModal() {
             disabled={submitting}
           >
             <Text style={styles.submitButtonText}>
-              {submitting ? 'Guardando...' : 'Guardar'}
+              {submitting ? 'Guardando...' : (isEditMode ? 'Guardar cambios' : 'Guardar')}
             </Text>
           </TouchableOpacity>
         </View>
