@@ -13,6 +13,7 @@ export type TabParamList = {
   Dashboard: undefined;
   Transactions: undefined;
   Accounts: undefined;
+  Debts: undefined;
   Budgets: undefined;
   Goals: undefined;
   Settings: undefined;
@@ -26,6 +27,7 @@ export type MainStackParamList = {
   AddBudget: undefined;
   AddReminder: { reminderId?: string } | undefined;
   AddGoal: { goalId?: string } | undefined;
+  AddDebt: { category?: 'credit_card' | 'installment' | 'personal'; direction?: 'i_owe' | 'they_owe_me' } | undefined;
   GenerateReport: undefined;
   ExportForAI: undefined;
   // Details
@@ -33,6 +35,7 @@ export type MainStackParamList = {
   TransactionDetail: { transactionId: string };
   BudgetDetail: { budgetId: string };
   GoalDetail: { goalId: string };
+  DebtDetail: { debtId: string };
 };
 
 export type RootStackParamList = {

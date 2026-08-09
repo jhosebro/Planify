@@ -9,6 +9,7 @@ import { DesktopSidebar } from './DesktopSidebar';
 import { DashboardScreen } from '@/screens/main/DashboardScreen';
 import { TransactionsScreen } from '@/screens/main/TransactionsScreen';
 import { AccountsScreen } from '@/screens/main/AccountsScreen';
+import { DebtsScreen } from '@/screens/main/DebtsScreen';
 import { BudgetsScreen } from '@/screens/main/BudgetsScreen';
 import { GoalsScreen } from '@/screens/main/GoalsScreen';
 import { SettingsScreen } from '@/screens/main/SettingsScreen';
@@ -20,6 +21,7 @@ const TAB_ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.gly
   Dashboard: { focused: 'home', unfocused: 'home-outline' },
   Transactions: { focused: 'swap-vertical', unfocused: 'swap-vertical-outline' },
   Accounts: { focused: 'wallet', unfocused: 'wallet-outline' },
+  Debts: { focused: 'card', unfocused: 'card-outline' },
   Budgets: { focused: 'pie-chart', unfocused: 'pie-chart-outline' },
   Goals: { focused: 'trophy', unfocused: 'trophy-outline' },
   Settings: { focused: 'settings', unfocused: 'settings-outline' },
@@ -29,6 +31,7 @@ const SCREENS: Record<keyof TabParamList, React.ComponentType> = {
   Dashboard: DashboardScreen,
   Transactions: TransactionsScreen,
   Accounts: AccountsScreen,
+  Debts: DebtsScreen,
   Budgets: BudgetsScreen,
   Goals: GoalsScreen,
   Settings: SettingsScreen,
@@ -38,6 +41,7 @@ const SCREEN_TITLES: Record<keyof TabParamList, string> = {
   Dashboard: 'Inicio',
   Transactions: 'Movimientos',
   Accounts: 'Cuentas',
+  Debts: 'Deudas',
   Budgets: 'Presupuestos',
   Goals: 'Metas',
   Settings: 'Ajustes',
@@ -123,6 +127,11 @@ function MobileTabLayout() {
         name="Accounts"
         component={AccountsScreen}
         options={{ title: 'Cuentas' }}
+      />
+      <Tab.Screen
+        name="Debts"
+        component={DebtsScreen}
+        options={{ title: 'Deudas' }}
       />
       <Tab.Screen
         name="Budgets"

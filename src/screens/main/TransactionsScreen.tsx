@@ -235,15 +235,21 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
   const accountName = accounts.find((a) => a.id === transaction.accountId)?.name ?? '';
 
   const handleLongPress = () => {
-    Alert.alert(
-      'Opciones',
-      `${isExpense ? 'Gasto' : 'Ingreso'} de ${formatAmount(transaction.amount)}`,
-      [
-        { text: 'Editar', onPress: () => onEdit(transaction.id) },
-        { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
-        { text: 'Cancelar', style: 'cancel' },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Eliminar este ${isExpense ? 'gasto' : 'ingreso'} de ${formatAmount(transaction.amount)}?`)) {
+        onDelete(transaction.id);
+      }
+    } else {
+      Alert.alert(
+        'Opciones',
+        `${isExpense ? 'Gasto' : 'Ingreso'} de ${formatAmount(transaction.amount)}`,
+        [
+          { text: 'Editar', onPress: () => onEdit(transaction.id) },
+          { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
+          { text: 'Cancelar', style: 'cancel' },
+        ]
+      );
+    }
   };
 
   return (
@@ -268,6 +274,20 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
       <Text style={[styles.transactionAmount, { color }]}>
         {sign}{formatAmount(transaction.amount)}
       </Text>
+      {Platform.OS === 'web' && (
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => {
+            if (window.confirm('¿Eliminar este movimiento?')) {
+              onDelete(transaction.id);
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Eliminar movimiento"
+        >
+          <Text style={styles.deleteBtnText}>🗑️</Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 }
@@ -383,6 +403,15 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  deleteBtn: {
+    marginLeft: 10,
+    padding: 6,
+    borderRadius: 6,
+    opacity: 0.6,
+  },
+  deleteBtnText: {
+    fontSize: 14,
   },
   emptyContainer: {
     alignItems: 'center',

@@ -6,12 +6,14 @@ import { AddTransferModal } from '@/screens/modals/AddTransferModal';
 import { AddBudgetModal } from '@/screens/modals/AddBudgetModal';
 import { AddReminderModal } from '@/screens/modals/AddReminderModal';
 import { AddGoalModal } from '@/screens/modals/AddGoalModal';
+import { AddDebtModal } from '@/screens/modals/AddDebtModal';
 import { GenerateReportModal } from '@/screens/modals/GenerateReportModal';
 import { ExportForAIModal } from '@/screens/modals/ExportForAIModal';
 import { AccountDetailScreen } from '@/screens/main/AccountDetailScreen';
 import { TransactionDetailScreen } from '@/screens/main/TransactionDetailScreen';
 import { BudgetDetailScreen } from '@/screens/main/BudgetDetailScreen';
 import { GoalDetailScreen } from '@/screens/main/GoalDetailScreen';
+import { DebtDetailScreen } from '@/screens/main/DebtDetailScreen';
 import type { MainStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -53,6 +55,11 @@ export function MainStack() {
           options={{ title: 'Nueva Meta' }}
         />
         <Stack.Screen
+          name="AddDebt"
+          component={AddDebtModal}
+          options={{ title: 'Nueva Deuda' }}
+        />
+        <Stack.Screen
           name="GenerateReport"
           component={GenerateReportModal}
           options={{ title: 'Generar Reporte' }}
@@ -85,6 +92,11 @@ export function MainStack() {
           name="BudgetDetail"
           component={BudgetDetailScreen}
           options={{ title: 'Detalle de Presupuesto' }}
+        />
+        <Stack.Screen
+          name="DebtDetail"
+          component={DebtDetailScreen}
+          options={{ title: 'Detalle de Deuda' }}
         />
       </Stack.Group>
     </Stack.Navigator>

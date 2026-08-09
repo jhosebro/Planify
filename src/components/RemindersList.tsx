@@ -3,6 +3,7 @@ import { colors } from '@/theme';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -128,6 +129,39 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
     [payingReminder, reminderService, onRefresh]
   );
 
+  const handleDelete = useCallback(
+    (reminder: Reminder) => {
+      const doDelete = async () => {
+        try {
+          await reminderService.delete(reminder.id);
+          onRefresh();
+        } catch (error) {
+          if (Platform.OS === 'web') {
+            window.alert('No se pudo eliminar el recordatorio.');
+          } else {
+            Alert.alert('Error', 'No se pudo eliminar el recordatorio.');
+          }
+        }
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm(`¿Eliminar el recordatorio "${reminder.description}"?`)) {
+          doDelete();
+        }
+      } else {
+        Alert.alert(
+          'Eliminar recordatorio',
+          `¿Eliminar "${reminder.description}"?`,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+          ]
+        );
+      }
+    },
+    [reminderService, onRefresh]
+  );
+
   if (overdueReminders.length === 0 && currentMonthReminders.length === 0 && upcomingReminders.length === 0) {
     return (
       <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground }]}>
@@ -149,6 +183,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
               isOverdue
               onMarkAsPaid={() => handleMarkAsPaid(reminder)}
               onEdit={() => navigation.navigate('AddReminder', { reminderId: reminder.id })}
+              onDelete={() => handleDelete(reminder)}
             />
           ))}
         </View>
@@ -165,6 +200,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
               isOverdue={false}
               onMarkAsPaid={() => handleMarkAsPaid(reminder)}
               onEdit={() => navigation.navigate('AddReminder', { reminderId: reminder.id })}
+              onDelete={() => handleDelete(reminder)}
             />
           ))}
         </View>
@@ -182,6 +218,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
               isOverdue={false}
               onMarkAsPaid={() => handleMarkAsPaid(reminder)}
               onEdit={() => navigation.navigate('AddReminder', { reminderId: reminder.id })}
+              onDelete={() => handleDelete(reminder)}
             />
           ))}
         </View>
@@ -219,9 +256,10 @@ interface ReminderItemProps {
   isOverdue: boolean;
   onMarkAsPaid: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }
 
-function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit }: ReminderItemProps) {
+function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: ReminderItemProps) {
   const colors = useThemeColors();
 
   return (
@@ -237,6 +275,14 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit }: ReminderIte
         </View>
       </TouchableOpacity>
       <View style={styles.reminderActions}>
+        <TouchableOpacity
+          style={[styles.deleteReminderBtn, { backgroundColor: colors.backgroundPrimary }]}
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel={`Eliminar ${reminder.description}`}
+        >
+          <Text style={styles.deleteReminderBtnText}>🗑️</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.editButton, { backgroundColor: colors.backgroundPrimary }]}
           onPress={onEdit}
@@ -354,6 +400,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editButtonText: {
+    fontSize: 14,
+  },
+  deleteReminderBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteReminderBtnText: {
     fontSize: 14,
   },
   pickerOption: {

@@ -6,6 +6,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -180,6 +181,14 @@ interface CreateAccountFormProps {
   onCancel: () => void;
 }
 
+function showAlert(title: string, message: string) {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
 function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccountFormProps) {
   const colors = useThemeColors();
   const [name, setName] = useState('');
@@ -200,15 +209,17 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
   };
 
   const handleSubmit = async () => {
+    console.log('[AccountsScreen] handleSubmit called', { name, type, initialBalance });
+
     if (!name.trim()) {
-      Alert.alert('Error', 'El nombre de la cuenta es obligatorio.');
+      showAlert('Error', 'El nombre de la cuenta es obligatorio.');
       return;
     }
 
     const numericValue = parseInt(initialBalance || '0', 10);
     const balanceCentavos = numericValue * 100;
     if (isNaN(balanceCentavos)) {
-      Alert.alert('Error', 'El saldo inicial debe ser un número válido.');
+      showAlert('Error', 'El saldo inicial debe ser un número válido.');
       return;
     }
 
@@ -220,8 +231,9 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
         initialBalance: balanceCentavos,
       });
       onCreated();
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo crear la cuenta. Intenta de nuevo.');
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      showAlert('Error', error.message ?? 'No se pudo crear la cuenta. Intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -279,7 +291,7 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
           <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.border }]} onPress={onCancel}>
             <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <Pressable
             style={[styles.submitButton, { backgroundColor: colors.primary }, submitting && { opacity: 0.6 }]}
             onPress={handleSubmit}
             disabled={submitting}
@@ -287,7 +299,7 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
             <Text style={styles.submitButtonText}>
               {submitting ? 'Creando...' : 'Crear Cuenta'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </View>

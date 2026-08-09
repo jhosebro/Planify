@@ -138,6 +138,7 @@ export class ReminderService {
         category_id: categoryId,
         description: reminder.description,
         date: new Date().toISOString(),
+        linked_reminder_id: id,
       })
       .select()
       .single();

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { TransactionService } from '@/services/transactions/transactionService';
 import { AccountService } from '@/services/accounts/accountService';
+import { DebtService } from '@/services/debts';
 import { CategorySelector } from '@/components/CategorySelector';
 import { CyclicDatePicker } from '@/components/CyclicDatePicker';
 import type { MainStackParamList } from '@/navigation/types';
@@ -57,9 +58,11 @@ export function AddTransactionModal() {
   const route = useRoute<RouteProp<MainStackParamList, 'AddTransaction'>>();
   const transactionId = route.params?.transactionId;
   const isEditMode = !!transactionId;
+  const themeColors = useThemeColors();
 
   const transactionService = useMemo(() => new TransactionService(), []);
   const accountService = useMemo(() => new AccountService(), []);
+  const debtService = useMemo(() => new DebtService(), []);
 
   const [type, setType] = useState<TransactionType>('expense');
   const [displayAmount, setDisplayAmount] = useState('');
@@ -67,6 +70,11 @@ export function AddTransactionModal() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Credit card installment fields
+  const [isInstallment, setIsInstallment] = useState(false);
+  const [installmentCount, setInstallmentCount] = useState('');
+  const [paidInstallments, setPaidInstallments] = useState('');
 
   // Date picker state
   const today = new Date();
@@ -80,6 +88,10 @@ export function AddTransactionModal() {
   const formattedDate = `${selectedDay.toString().padStart(2, '0')} ${MONTHS[selectedMonth]} ${selectedYear}`;
 
   const [accounts, setAccounts] = useState<Account[]>([]);
+
+  // Derived: is the selected account a credit card?
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const isCreditCard = selectedAccount?.type === 'credit_card' && type === 'expense';
 
   useEffect(() => {
     loadData();
@@ -163,6 +175,71 @@ export function AddTransactionModal() {
           date: selectedDate,
           description: description.trim() || undefined,
         });
+
+        // If expense on a credit card, update linked debt or create installment debt
+        const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+        if (selectedAccount?.type === 'credit_card' && type === 'expense') {
+          try {
+            const allDebts = await debtService.getAll();
+
+            if (isInstallment && installmentCount) {
+              // Create a new installment debt for this purchase
+              const totalInst = parseInt(installmentCount, 10);
+              const paidInst = parseInt(paidInstallments || '0', 10);
+              const instAmount = Math.round(amountCentavos / totalInst);
+              const paidAmount = instAmount * paidInst;
+
+              const newDebt = await debtService.create({
+                category: 'credit_card',
+                direction: 'i_owe',
+                name: `${description.trim() || selectedAccount.name} (${totalInst} cuotas)`,
+                description: `Compra a ${totalInst} cuotas en ${selectedAccount.name}`,
+                totalAmount: amountCentavos,
+                totalInstallments: totalInst,
+                installmentAmount: instAmount,
+                linkedAccountId: selectedAccountId,
+              });
+
+              // If already paid some installments, update directly
+              if (paidInst > 0) {
+                const { supabase } = await import('@/lib/supabase');
+                await supabase
+                  .from('debts')
+                  .update({
+                    paid_amount: paidAmount,
+                    paid_installments: paidInst,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', newDebt.id);
+              }
+            } else {
+              // Regular CC expense: find or create the main debt for this card
+              let linkedDebt = allDebts.find(
+                (d) => d.linkedAccountId === selectedAccountId && d.status === 'active' && !d.totalInstallments
+              );
+
+              if (linkedDebt) {
+                // Update existing main debt
+                await debtService.update(linkedDebt.id, {
+                  totalAmount: linkedDebt.totalAmount + amountCentavos,
+                });
+              } else {
+                // Auto-create the main debt for this credit card
+                await debtService.create({
+                  category: 'credit_card',
+                  direction: 'i_owe',
+                  name: selectedAccount.name,
+                  description: `Gastos corrientes de ${selectedAccount.name}`,
+                  totalAmount: amountCentavos,
+                  linkedAccountId: selectedAccountId,
+                });
+              }
+            }
+          } catch (debtError) {
+            // Don't fail the transaction if debt update fails
+            console.warn('Could not update linked debt:', debtError);
+          }
+        }
       }
       navigation.goBack();
     } catch (error) {
@@ -174,84 +251,137 @@ export function AddTransactionModal() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: themeColors.backgroundPrimary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>{isEditMode ? 'Editar Movimiento' : 'Nuevo Movimiento'}</Text>
+        <Text style={[styles.title, { color: themeColors.textPrimary }]}>{isEditMode ? 'Editar Movimiento' : 'Nuevo Movimiento'}</Text>
 
         {/* Transaction Type Selector */}
-        <Text style={styles.label}>Tipo</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Tipo</Text>
         <View style={styles.typeRow}>
           <TouchableOpacity
-            style={[styles.typeButton, type === 'expense' && styles.typeButtonExpense]}
+            style={[styles.typeButton, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, type === 'expense' && { backgroundColor: themeColors.redExpenses + '18', borderColor: themeColors.redExpenses }]}
             onPress={() => setType('expense')}
             accessibilityRole="button"
             accessibilityState={{ selected: type === 'expense' }}
           >
-            <Text style={[styles.typeButtonText, type === 'expense' && styles.typeButtonTextActive]}>
+            <Text style={[styles.typeButtonText, { color: themeColors.textSecondary }, type === 'expense' && { color: themeColors.textPrimary }]}>
               Gasto
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.typeButton, type === 'income' && styles.typeButtonIncome]}
+            style={[styles.typeButton, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, type === 'income' && { backgroundColor: themeColors.greenEarns + '18', borderColor: themeColors.greenEarns }]}
             onPress={() => setType('income')}
             accessibilityRole="button"
             accessibilityState={{ selected: type === 'income' }}
           >
-            <Text style={[styles.typeButtonText, type === 'income' && styles.typeButtonTextActive]}>
+            <Text style={[styles.typeButtonText, { color: themeColors.textSecondary }, type === 'income' && { color: themeColors.textPrimary }]}>
               Ingreso
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Amount with thousand separators */}
-        <Text style={styles.label}>Monto ($)</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Monto ($)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
           value={displayAmount}
           onChangeText={handleAmountChange}
           placeholder="0"
-          placeholderTextColor="#999"
+          placeholderTextColor={themeColors.textTertiary}
           keyboardType="numeric"
           accessibilityLabel="Monto del movimiento"
         />
 
         {/* Account Selector */}
-        <Text style={styles.label}>Cuenta</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Cuenta</Text>
         <View style={styles.selectorRow}>
           {accounts.map((acc) => (
             <TouchableOpacity
               key={acc.id}
-              style={[styles.selectorChip, selectedAccountId === acc.id && styles.selectorChipActive]}
+              style={[styles.selectorChip, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, selectedAccountId === acc.id && { borderColor: themeColors.primary, backgroundColor: themeColors.primary + '15' }]}
               onPress={() => setSelectedAccountId(acc.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: selectedAccountId === acc.id }}
             >
-              <Text style={[styles.selectorChipText, selectedAccountId === acc.id && styles.selectorChipTextActive]}>
+              <Text style={[styles.selectorChipText, { color: themeColors.textSecondary }, selectedAccountId === acc.id && { color: themeColors.primary }]}>
                 {acc.name}
               </Text>
-              <Text style={[styles.selectorChipBalance, selectedAccountId === acc.id && styles.selectorChipTextActive]}>
+              <Text style={[styles.selectorChipBalance, { color: themeColors.textTertiary }, selectedAccountId === acc.id && { color: themeColors.primary }]}>
                 {formatAccountBalance(acc.balance)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
+        {/* Credit Card Installment Options */}
+        {isCreditCard && (
+          <View style={[styles.installmentSection, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}>
+            <TouchableOpacity
+              style={styles.installmentToggle}
+              onPress={() => setIsInstallment(!isInstallment)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: isInstallment }}
+            >
+              <View style={[styles.checkbox, { borderColor: themeColors.border }, isInstallment && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }]}>
+                {isInstallment && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={[styles.installmentToggleText, { color: themeColors.textPrimary }]}>
+                Este gasto es a cuotas
+              </Text>
+            </TouchableOpacity>
+
+            {isInstallment && (
+              <View style={styles.installmentFields}>
+                <View style={styles.installmentRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.installmentLabel, { color: themeColors.textSecondary }]}>Total de cuotas</Text>
+                    <TextInput
+                      style={[styles.installmentInput, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+                      value={installmentCount}
+                      onChangeText={setInstallmentCount}
+                      placeholder="Ej: 6"
+                      placeholderTextColor={themeColors.textTertiary}
+                      keyboardType="number-pad"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.installmentLabel, { color: themeColors.textSecondary }]}>Cuotas ya pagadas</Text>
+                    <TextInput
+                      style={[styles.installmentInput, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+                      value={paidInstallments}
+                      onChangeText={setPaidInstallments}
+                      placeholder="0"
+                      placeholderTextColor={themeColors.textTertiary}
+                      keyboardType="number-pad"
+                    />
+                  </View>
+                </View>
+                {installmentCount && parseFormattedAmount(displayAmount) > 0 && (
+                  <Text style={[styles.installmentHint, { color: themeColors.textTertiary }]}>
+                    💡 Cuota de ~${(parseFormattedAmount(displayAmount) / parseInt(installmentCount || '1', 10)).toLocaleString('es')} cada una
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Category Selector */}
-        <Text style={styles.label}>Categoría</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Categoría</Text>
         <CategorySelector selectedId={categoryId} onSelect={setCategoryId} />
 
         {/* Date Picker */}
-        <Text style={styles.label}>Fecha</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Fecha</Text>
         <TouchableOpacity
-          style={styles.dateButton}
+          style={[styles.dateButton, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.border }]}
           onPress={() => setShowDatePicker(!showDatePicker)}
           accessibilityLabel="Seleccionar fecha"
           accessibilityRole="button"
         >
-          <Text style={styles.dateButtonText}>{formattedDate}</Text>
-          <Text style={styles.dateButtonIcon}>{showDatePicker ? '▲' : '▼'}</Text>
+          <Text style={[styles.dateButtonText, { color: themeColors.textPrimary }]}>{formattedDate}</Text>
+          <Text style={[styles.dateButtonIcon, { color: themeColors.textTertiary }]}>{showDatePicker ? '▲' : '▼'}</Text>
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -266,13 +396,13 @@ export function AddTransactionModal() {
         )}
 
         {/* Description */}
-        <Text style={styles.label}>Descripción (opcional)</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>Descripción (opcional)</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[styles.input, styles.textArea, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
           value={description}
           onChangeText={setDescription}
           placeholder="Descripción del movimiento..."
-          placeholderTextColor="#999"
+          placeholderTextColor={themeColors.textTertiary}
           multiline
           numberOfLines={3}
           accessibilityLabel="Descripción del movimiento"
@@ -281,10 +411,10 @@ export function AddTransactionModal() {
         {/* Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <Text style={[styles.cancelButtonText, { color: themeColors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: themeColors.primary }, submitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -303,7 +433,6 @@ export function AddTransactionModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
   },
   scrollContent: {
     padding: 20,
@@ -312,24 +441,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.secondary,
     marginBottom: 20,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#555',
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#DDD',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: colors.secondary,
-    backgroundColor: '#fff',
   },
   textArea: {
     height: 80,
@@ -344,25 +468,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DDD',
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  typeButtonExpense: {
-    backgroundColor: '#FDECEC',
-    borderColor: colors.redExpenses,
-  },
-  typeButtonIncome: {
-    backgroundColor: '#ECFDF0',
-    borderColor: colors.greenEarns,
   },
   typeButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#666',
-  },
-  typeButtonTextActive: {
-    color: colors.secondary,
   },
   selectorRow: {
     flexDirection: 'row',
@@ -374,108 +484,84 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DDD',
-    backgroundColor: '#fff',
-  },
-  selectorChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#E6F4FF',
   },
   selectorChipText: {
     fontSize: 13,
-    color: '#666',
     fontWeight: '500',
   },
   selectorChipBalance: {
     fontSize: 11,
-    color: '#999',
     marginTop: 2,
   },
-  selectorChipTextActive: {
-    color: colors.primary,
+
+  // Installment section
+  installmentSection: {
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
   },
-  noCategoriesText: {
+  installmentToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmark: {
+    color: '#fff',
     fontSize: 13,
-    color: '#999',
-    fontStyle: 'italic',
+    fontWeight: '700',
+  },
+  installmentToggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  installmentFields: {
+    marginTop: 14,
+  },
+  installmentRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  installmentLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  installmentInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  installmentHint: {
+    fontSize: 12,
+    marginTop: 10,
   },
 
   // Date picker
   dateButton: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#DDD',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   dateButtonText: {
     fontSize: 16,
-    color: colors.secondary,
   },
   dateButtonIcon: {
     fontSize: 12,
-    color: '#999',
-  },
-  datePickerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#EEE',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  dateLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  dateControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  dateArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.backgroundPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateArrowText: {
-    fontSize: 14,
-    color: colors.primary,
-  },
-  dateValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.secondary,
-    minWidth: 80,
-    textAlign: 'center',
-  },
-  dateConfirmButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  dateConfirmText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
   },
 
   // Buttons
@@ -492,11 +578,9 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#666',
     fontWeight: '500',
   },
   submitButton: {
-    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

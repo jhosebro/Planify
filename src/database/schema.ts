@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   description TEXT,
   date TEXT NOT NULL,
   linked_transfer_id TEXT,
+  linked_reminder_id TEXT REFERENCES reminders(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );`;
@@ -96,6 +97,36 @@ CREATE TABLE IF NOT EXISTS sync_queue (
   is_synced INTEGER NOT NULL DEFAULT 0
 );`;
 
+export const CREATE_DEBTS_TABLE = `
+CREATE TABLE IF NOT EXISTS debts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  category TEXT NOT NULL CHECK (category IN ('credit_card', 'installment', 'personal')),
+  direction TEXT NOT NULL CHECK (direction IN ('i_owe', 'they_owe_me')),
+  name TEXT NOT NULL,
+  description TEXT,
+  total_amount INTEGER NOT NULL CHECK (total_amount >= 0),
+  paid_amount INTEGER NOT NULL DEFAULT 0,
+  total_installments INTEGER,
+  paid_installments INTEGER DEFAULT 0,
+  installment_amount INTEGER,
+  counterparty TEXT,
+  linked_account_id TEXT REFERENCES accounts(id),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paid_off')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);`;
+
+export const CREATE_DEBT_PAYMENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS debt_payments (
+  id TEXT PRIMARY KEY,
+  debt_id TEXT NOT NULL REFERENCES debts(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  note TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);`;
+
 /**
  * All CREATE TABLE statements in dependency order.
  */
@@ -107,5 +138,7 @@ export const ALL_CREATE_STATEMENTS = [
   CREATE_TRANSFERS_TABLE,
   CREATE_BUDGETS_TABLE,
   CREATE_REMINDERS_TABLE,
+  CREATE_DEBTS_TABLE,
+  CREATE_DEBT_PAYMENTS_TABLE,
   CREATE_SYNC_QUEUE_TABLE,
 ];

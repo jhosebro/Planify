@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { ALL_CREATE_STATEMENTS, CREATE_TRANSFERS_TABLE } from './schema';
+import { ALL_CREATE_STATEMENTS, CREATE_TRANSFERS_TABLE, CREATE_DEBTS_TABLE, CREATE_DEBT_PAYMENTS_TABLE } from './schema';
 
 const DATABASE_NAME = 'planify.db';
 
@@ -8,7 +8,7 @@ const DATABASE_NAME = 'planify.db';
  * Current database schema version.
  * Increment this when adding new migrations.
  */
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 4;
 
 /**
  * Migration functions indexed by target version.
@@ -31,6 +31,15 @@ const migrations: Record<number, (db: SQLiteDatabase) => Promise<void>> = {
   2: async (db) => {
     // Add transfers table
     await db.execAsync(CREATE_TRANSFERS_TABLE);
+  },
+  3: async (db) => {
+    // Add debts and debt_payments tables
+    await db.execAsync(CREATE_DEBTS_TABLE);
+    await db.execAsync(CREATE_DEBT_PAYMENTS_TABLE);
+  },
+  4: async (db) => {
+    // Add linked_reminder_id to transactions
+    await db.execAsync(`ALTER TABLE transactions ADD COLUMN linked_reminder_id TEXT REFERENCES reminders(id);`);
   },
   // Future migrations go here:
 };

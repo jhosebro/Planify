@@ -223,15 +223,17 @@ interface GeneralBudgetCardProps {
 
 function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) {
   const colors = useThemeColors();
-  // Total limit = sum of all budget limits + sum of pending reminder amounts
-  const pendingReminders = reminders.filter((r) => !r.isPaid);
+  // Total limit = sum of all budget limits + sum of pending recurring reminder amounts
+  // Only include monthly/biweekly/weekly reminders (exclude once and yearly)
+  const recurringFrequencies = ['monthly', 'biweekly', 'weekly'];
+  const pendingReminders = reminders.filter((r) => !r.isPaid && recurringFrequencies.includes(r.frequency));
   const totalBudgetLimits = consumptions.reduce((sum, c) => sum + c.limit, 0);
   const totalReminderAmounts = pendingReminders.reduce((sum, r) => sum + r.amount, 0);
   const totalLimit = totalBudgetLimits + totalReminderAmounts;
 
-  // Total spent = sum of all budget spent + sum of paid reminder amounts this display
+  // Total spent = sum of all budget spent + sum of paid recurring reminder amounts
+  const paidReminders = reminders.filter((r) => r.isPaid && recurringFrequencies.includes(r.frequency));
   const totalBudgetSpent = consumptions.reduce((sum, c) => sum + c.spent, 0);
-  const paidReminders = reminders.filter((r) => r.isPaid);
   const totalReminderSpent = paidReminders.reduce((sum, r) => sum + r.amount, 0);
   const totalSpent = totalBudgetSpent + totalReminderSpent;
 
