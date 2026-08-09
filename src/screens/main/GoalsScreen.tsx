@@ -1,9 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   ActivityIndicator,
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -31,7 +33,61 @@ const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
   low: { label: 'Baja', color: colors.greenEarns },
 };
 
+// ─── Filter & Sort Types ─────────────────────────────────────────────────────
+
+type GoalFilterType = 'all' | 'personal' | 'couple';
+type GoalFilterPriority = 'all' | 'high' | 'medium' | 'low';
+type GoalSortKey = 'date_asc' | 'date_desc' | 'progress_asc' | 'progress_desc' | 'amount_asc' | 'amount_desc' | 'priority';
+
+const FILTER_TYPE_OPTIONS: { key: GoalFilterType; label: string }[] = [
+  { key: 'all', label: 'Todas' },
+  { key: 'personal', label: '👤 Personal' },
+  { key: 'couple', label: '👥 Pareja' },
+];
+
+const FILTER_PRIORITY_OPTIONS: { key: GoalFilterPriority; label: string; color?: string }[] = [
+  { key: 'all', label: 'Todas' },
+  { key: 'high', label: 'Alta', color: colors.redExpenses },
+  { key: 'medium', label: 'Media', color: colors.tertiary },
+  { key: 'low', label: 'Baja', color: colors.greenEarns },
+];
+
+const SORT_OPTIONS: { key: GoalSortKey; label: string }[] = [
+  { key: 'date_asc', label: 'Más cercana' },
+  { key: 'date_desc', label: 'Más lejana' },
+  { key: 'progress_desc', label: 'Mayor progreso' },
+  { key: 'progress_asc', label: 'Menor progreso' },
+  { key: 'amount_desc', label: 'Mayor monto' },
+  { key: 'amount_asc', label: 'Menor monto' },
+  { key: 'priority', label: 'Prioridad' },
+];
+
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+function sortGoals(goals: Goal[], sortKey: GoalSortKey): Goal[] {
+  const sorted = [...goals];
+  switch (sortKey) {
+    case 'date_asc':
+      return sorted.sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+    case 'date_desc':
+      return sorted.sort((a, b) => b.targetDate.getTime() - a.targetDate.getTime());
+    case 'progress_desc':
+      return sorted.sort((a, b) => b.progress - a.progress);
+    case 'progress_asc':
+      return sorted.sort((a, b) => a.progress - b.progress);
+    case 'amount_desc':
+      return sorted.sort((a, b) => b.targetAmount - a.targetAmount);
+    case 'amount_asc':
+      return sorted.sort((a, b) => a.targetAmount - b.targetAmount);
+    case 'priority':
+      return sorted.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1));
+    default:
+      return sorted;
+  }
+}
+
 export function GoalsScreen() {
+  const colors = useThemeColors();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -39,6 +95,12 @@ export function GoalsScreen() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter & sort state
+  const [filterType, setFilterType] = useState<GoalFilterType>('all');
+  const [filterPriority, setFilterPriority] = useState<GoalFilterPriority>('all');
+  const [sortKey, setSortKey] = useState<GoalSortKey>('date_asc');
+  const [showFilters, setShowFilters] = useState(false);
 
   const loadGoals = useCallback(async () => {
     setLoading(true);
@@ -54,13 +116,24 @@ export function GoalsScreen() {
 
   useFocusEffect(useCallback(() => { loadGoals(); }, [loadGoals]));
 
-  const activeGoals = goals
-    .filter((g) => g.status === 'active')
-    .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
-  const pausedGoals = goals
-    .filter((g) => g.status === 'paused')
-    .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+  // Apply filters and sorting
+  const activeGoals = useMemo(() => {
+    let filtered = goals.filter((g) => g.status === 'active');
+    if (filterType !== 'all') filtered = filtered.filter((g) => g.type === filterType);
+    if (filterPriority !== 'all') filtered = filtered.filter((g) => g.priority === filterPriority);
+    return sortGoals(filtered, sortKey);
+  }, [goals, filterType, filterPriority, sortKey]);
+
+  const pausedGoals = useMemo(() => {
+    let filtered = goals.filter((g) => g.status === 'paused');
+    if (filterType !== 'all') filtered = filtered.filter((g) => g.type === filterType);
+    if (filterPriority !== 'all') filtered = filtered.filter((g) => g.priority === filterPriority);
+    return sortGoals(filtered, sortKey);
+  }, [goals, filterType, filterPriority, sortKey]);
+
   const completedGoals = goals.filter((g) => g.status === 'completed');
+
+  const hasActiveFilters = filterType !== 'all' || filterPriority !== 'all' || sortKey !== 'date_asc';
 
   if (loading) {
     return (
@@ -72,7 +145,7 @@ export function GoalsScreen() {
 
   return (
     <FlatList
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
       contentContainerStyle={[
         styles.content,
         isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
@@ -85,14 +158,107 @@ export function GoalsScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <Text style={styles.sectionTitle}>🎯 Mis Metas</Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => navigation.navigate('AddGoal')}
-            >
-              <Text style={styles.addButtonText}>+ Nueva</Text>
-            </TouchableOpacity>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>🎯 Mis Metas</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[styles.filterToggle, { backgroundColor: colors.cardBackground, borderColor: colors.border }, hasActiveFilters && styles.filterToggleActive]}
+                onPress={() => setShowFilters(!showFilters)}
+                accessibilityRole="button"
+                accessibilityLabel="Mostrar filtros y ordenamiento"
+              >
+                <Text style={[styles.filterToggleText, { color: colors.textSecondary }, hasActiveFilters && styles.filterToggleTextActive]}>
+                  {showFilters ? '✕' : '⚙️'} Filtros
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => navigation.navigate('AddGoal')}
+              >
+                <Text style={styles.addButtonText}>+ Nueva</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {/* Filters & Sort Panel */}
+          {showFilters && (
+            <View style={[styles.filtersCard, { backgroundColor: colors.cardBackground }]}>
+              {/* Sort */}
+              <Text style={[styles.filterLabel, { color: colors.textTertiary }]}>Ordenar por</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                <View style={styles.filterChipsRow}>
+                  {SORT_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.key}
+                      style={[styles.filterChip, { borderColor: colors.border }, sortKey === opt.key && styles.filterChipActive]}
+                      onPress={() => setSortKey(opt.key)}
+                    >
+                      <Text style={[styles.filterChipText, { color: colors.textSecondary }, sortKey === opt.key && styles.filterChipTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* Filter by type */}
+              <Text style={[styles.filterLabel, { color: colors.textTertiary }]}>Tipo</Text>
+              <View style={styles.filterChipsRow}>
+                {FILTER_TYPE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.filterChip, { borderColor: colors.border }, filterType === opt.key && styles.filterChipActive]}
+                    onPress={() => setFilterType(opt.key)}
+                  >
+                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterType === opt.key && styles.filterChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Filter by priority */}
+              <Text style={[styles.filterLabel, { color: colors.textTertiary }]}>Prioridad</Text>
+              <View style={styles.filterChipsRow}>
+                {FILTER_PRIORITY_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.filterChip,
+                      { borderColor: colors.border },
+                      filterPriority === opt.key && styles.filterChipActive,
+                      filterPriority === opt.key && opt.color ? { backgroundColor: opt.color } : undefined,
+                    ]}
+                    onPress={() => setFilterPriority(opt.key)}
+                  >
+                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterPriority === opt.key && styles.filterChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Reset */}
+              {hasActiveFilters && (
+                <TouchableOpacity
+                  style={styles.resetButton}
+                  onPress={() => { setFilterType('all'); setFilterPriority('all'); setSortKey('date_asc'); }}
+                >
+                  <Text style={styles.resetButtonText}>Limpiar filtros</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Active filters badge */}
+          {hasActiveFilters && !showFilters && (
+            <View style={styles.activeFiltersBadge}>
+              <Text style={styles.activeFiltersText}>
+                Filtros activos: {filterType !== 'all' ? `Tipo: ${filterType === 'personal' ? 'Personal' : 'Pareja'}` : ''}
+                {filterPriority !== 'all' ? ` Prioridad: ${FILTER_PRIORITY_OPTIONS.find(o => o.key === filterPriority)?.label}` : ''}
+                {sortKey !== 'date_asc' ? ` • Orden: ${SORT_OPTIONS.find(o => o.key === sortKey)?.label}` : ''}
+              </Text>
+            </View>
+          )}
 
           {/* Summary card */}
           {activeGoals.length > 0 && (
@@ -119,8 +285,8 @@ export function GoalsScreen() {
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🎯</Text>
-          <Text style={styles.emptyText}>No tienes metas activas</Text>
-          <Text style={styles.emptySubtext}>Crea una meta para empezar a materializar tus objetivos.</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes metas activas</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea una meta para empezar a materializar tus objetivos.</Text>
         </View>
       }
       ListFooterComponent={
@@ -132,14 +298,14 @@ export function GoalsScreen() {
               {pausedGoals.map((g) => (
                 <TouchableOpacity
                   key={g.id}
-                  style={styles.pausedItem}
+                  style={[styles.pausedItem, { backgroundColor: colors.cardBackground }]}
                   onPress={() => navigation.navigate('GoalDetail', { goalId: g.id })}
                 >
                   <View>
                     <Text style={styles.pausedName}>{g.name}</Text>
-                    <Text style={styles.pausedProgress}>{g.progress.toFixed(0)}% • {formatAmount(g.savedAmount)} / {formatAmount(g.targetAmount)}</Text>
+                    <Text style={[styles.pausedProgress, { color: colors.textTertiary }]}>{g.progress.toFixed(0)}% • {formatAmount(g.savedAmount)} / {formatAmount(g.targetAmount)}</Text>
                   </View>
-                  <Text style={styles.pausedArrow}>›</Text>
+                  <Text style={[styles.pausedArrow, { color: colors.textTertiary }]}>›</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -148,11 +314,11 @@ export function GoalsScreen() {
           {/* Completed Goals */}
           {completedGoals.length > 0 && (
             <View style={styles.completedSection}>
-              <Text style={styles.completedTitle}>✅ Completadas ({completedGoals.length})</Text>
+              <Text style={[styles.completedTitle, { color: colors.textSecondary }]}>✅ Completadas ({completedGoals.length})</Text>
               {completedGoals.map((g) => (
-                <View key={g.id} style={styles.completedItem}>
-                  <Text style={styles.completedName}>{g.name}</Text>
-                  <Text style={styles.completedAmount}>{formatAmount(g.targetAmount)}</Text>
+                <View key={g.id} style={[styles.completedItem, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.completedName, { color: colors.textTertiary }]}>{g.name}</Text>
+                  <Text style={[styles.completedAmount, { color: colors.textTertiary }]}>{formatAmount(g.targetAmount)}</Text>
                 </View>
               ))}
             </View>
@@ -166,11 +332,12 @@ export function GoalsScreen() {
 // ─── Goal Card ───────────────────────────────────────────────────────────────
 
 function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => void; isDesktop?: boolean }) {
+  const colors = useThemeColors();
   const priority = PRIORITY_LABELS[goal.priority] ?? PRIORITY_LABELS.medium;
   const daysLeft = Math.max(0, Math.ceil((goal.targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <TouchableOpacity style={[styles.goalCard, isDesktop && { flex: 1 }]} onPress={onPress}>
+    <TouchableOpacity style={[styles.goalCard, { backgroundColor: colors.cardBackground }, isDesktop && { flex: 1 }]} onPress={onPress}>
       <View style={styles.goalHeader}>
         <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
         <View style={[styles.priorityBadge, { backgroundColor: priority.color + '20' }]}>
@@ -179,17 +346,17 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
       </View>
 
       <View style={styles.goalProgressRow}>
-        <View style={styles.goalBarBg}>
+        <View style={[styles.goalBarBg, { backgroundColor: colors.border }]}>
           <View style={[styles.goalBarFill, { width: `${goal.progress}%` }]} />
         </View>
         <Text style={styles.goalPercent}>{goal.progress.toFixed(0)}%</Text>
       </View>
 
       <View style={styles.goalFooter}>
-        <Text style={styles.goalAmount}>
+        <Text style={[styles.goalAmount, { color: colors.textSecondary }]}>
           {formatAmount(goal.savedAmount)} / {formatAmount(goal.targetAmount)}
         </Text>
-        <Text style={styles.goalDate}>
+        <Text style={[styles.goalDate, { color: colors.textTertiary }]}>
           {daysLeft > 0 ? `${daysLeft} días` : 'Vencida'}
         </Text>
       </View>
@@ -198,7 +365,7 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
         <Text style={styles.goalInstallment}>
           💡 Ahorra {formatAmount(goal.suggestedInstallment)} / {goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'quincena' : 'semana'}
         </Text>
-        {goal.type === 'couple' && <Text style={styles.goalTypeBadge}>👥 Pareja</Text>}
+        {goal.type === 'couple' && <Text style={[styles.goalTypeBadge, { color: colors.textSecondary }]}>👥 Pareja</Text>}
       </View>
     </TouchableOpacity>
   );
@@ -211,9 +378,32 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.secondary },
   addButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  // Filter toggle
+  filterToggle: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#DDD' },
+  filterToggleActive: { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
+  filterToggleText: { fontSize: 13, fontWeight: '500', color: '#666' },
+  filterToggleTextActive: { color: colors.primary },
+
+  // Filters card
+  filtersCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
+  filterLabel: { fontSize: 12, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 12 },
+  filterScroll: { marginBottom: 4 },
+  filterChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, backgroundColor: colors.backgroundPrimary, borderWidth: 1, borderColor: '#E8E8E8' },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { fontSize: 13, fontWeight: '500', color: '#666' },
+  filterChipTextActive: { color: '#fff' },
+  resetButton: { marginTop: 14, alignItems: 'center', paddingVertical: 8 },
+  resetButtonText: { fontSize: 13, color: colors.redExpenses, fontWeight: '500' },
+
+  // Active filters badge
+  activeFiltersBadge: { backgroundColor: colors.primary + '10', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  activeFiltersText: { fontSize: 12, color: colors.primary, fontWeight: '500' },
 
   summaryCard: { backgroundColor: colors.primary, borderRadius: 16, padding: 20, marginBottom: 20 },
   summaryLabel: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },

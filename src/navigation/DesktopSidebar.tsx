@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import type { TabParamList } from './types';
 
 interface SidebarItem {
@@ -30,13 +31,15 @@ interface DesktopSidebarProps {
  * Renders a vertical nav bar for screens wider than 1024px on web.
  */
 export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps) {
+  const colors = useThemeColors();
+
   if (Platform.OS !== 'web') return null;
 
   return (
-    <View style={styles.sidebar}>
+    <View style={[styles.sidebar, { backgroundColor: colors.cardBackground, borderRightColor: colors.border }]}>
       {/* Brand */}
-      <View style={styles.brandContainer}>
-        <Text style={styles.brandText}>Planify</Text>
+      <View style={[styles.brandContainer, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
       </View>
 
       {/* Navigation Items */}
@@ -48,7 +51,10 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
           return (
             <TouchableOpacity
               key={item.key}
-              style={[styles.navItem, isActive && styles.navItemActive]}
+              style={[
+                styles.navItem,
+                isActive && [styles.navItemActive, { backgroundColor: colors.primary + '15' }],
+              ]}
               onPress={() => onNavigate(item.key)}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
@@ -57,9 +63,13 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
               <Ionicons
                 name={iconName}
                 size={22}
-                color={isActive ? colors.primary : '#666'}
+                color={isActive ? colors.primary : colors.textSecondary}
               />
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+              <Text style={[
+                styles.navLabel,
+                { color: colors.textSecondary },
+                isActive && { color: colors.primary, fontWeight: '600' },
+              ]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -68,8 +78,8 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
       </View>
 
       {/* Footer */}
-      <View style={styles.sidebarFooter}>
-        <Text style={styles.footerText}>© 2025 Planify</Text>
+      <View style={[styles.sidebarFooter, { borderTopColor: colors.border }]}>
+        <Text style={[styles.footerText, { color: colors.textTertiary }]}>© 2025 Planify</Text>
       </View>
     </View>
   );
@@ -78,9 +88,7 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
 const styles = StyleSheet.create({
   sidebar: {
     width: 240,
-    backgroundColor: '#fff',
     borderRightWidth: 1,
-    borderRightColor: '#EEEEEE',
     paddingVertical: 24,
     paddingHorizontal: 12,
     justifyContent: 'flex-start',
@@ -90,12 +98,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   brandText: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.primary,
     letterSpacing: -0.5,
   },
   navItems: {
@@ -110,26 +116,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 10,
   },
-  navItemActive: {
-    backgroundColor: '#EBF5FF',
-  },
+  navItemActive: {},
   navLabel: {
     fontSize: 15,
-    color: '#666',
     fontWeight: '500',
-  },
-  navLabelActive: {
-    color: colors.primary,
-    fontWeight: '600',
   },
   sidebarFooter: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
     alignItems: 'center',
   },
   footerText: {
     fontSize: 12,
-    color: '#BBB',
   },
 });

@@ -4,8 +4,10 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore, type ThemeMode } from '@/store/themeStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { SyncStatus } from '@/types';
 
@@ -35,10 +37,12 @@ const SYNC_STATUS_MAP: Record<SyncStatus, SyncStatusConfig> = {
  */
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsNavProp>();
+  const themeColors = useThemeColors();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const { status, lastSyncAt, pendingCount } = useSyncStore();
   const { userId, clearAuth } = useAuthStore();
+  const { mode, setMode } = useThemeStore();
 
   const syncConfig = SYNC_STATUS_MAP[status] ?? SYNC_STATUS_MAP.pending;
 
@@ -64,13 +68,13 @@ export function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.backgroundPrimary }]} contentContainerStyle={[
       styles.contentContainer,
       isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
     ]}>
       {/* Sync Status Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Estado de Sincronización</Text>
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Estado de Sincronización</Text>
         <SyncStatusIndicator
           status={status}
           label={syncConfig.label}
@@ -81,18 +85,46 @@ export function SettingsScreen() {
       </View>
 
       {/* Account Info Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Cuenta</Text>
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Cuenta</Text>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{userId ?? 'No disponible'}</Text>
+          <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Email</Text>
+          <Text style={[styles.infoValue, { color: themeColors.textPrimary }]}>{userId ?? 'No disponible'}</Text>
+        </View>
+      </View>
+
+      {/* Theme Section */}
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Apariencia</Text>
+        <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
+          Elige el tema de la aplicación.
+        </Text>
+        <View style={styles.themeRow}>
+          <ThemeOption
+            label="☀️ Claro"
+            isActive={mode === 'light'}
+            onPress={() => setMode('light')}
+            themeColors={themeColors}
+          />
+          <ThemeOption
+            label="🌙 Oscuro"
+            isActive={mode === 'dark'}
+            onPress={() => setMode('dark')}
+            themeColors={themeColors}
+          />
+          <ThemeOption
+            label="📱 Sistema"
+            isActive={mode === 'system'}
+            onPress={() => setMode('system')}
+            themeColors={themeColors}
+          />
         </View>
       </View>
 
       {/* Export Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Exportar Datos</Text>
-        <Text style={styles.sectionDescription}>
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Exportar Datos</Text>
+        <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
           Genera reportes en PDF o CSV con los movimientos de tu cuenta.
         </Text>
         <TouchableOpacity
@@ -106,9 +138,9 @@ export function SettingsScreen() {
       </View>
 
       {/* Export for AI Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Asesoría con IA</Text>
-        <Text style={styles.sectionDescription}>
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Asesoría con IA</Text>
+        <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
           Exporta tus datos financieros con un prompt listo para pegar en ChatGPT y recibir asesoría personalizada.
         </Text>
         <TouchableOpacity
@@ -122,14 +154,14 @@ export function SettingsScreen() {
       </View>
 
       {/* Logout Section */}
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
         <TouchableOpacity
-          style={styles.logoutButton}
+          style={[styles.logoutButton, { borderColor: themeColors.redExpenses }]}
           onPress={handleLogout}
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
         >
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          <Text style={[styles.logoutButtonText, { color: themeColors.redExpenses }]}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -147,6 +179,8 @@ interface SyncStatusIndicatorProps {
 }
 
 function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }: SyncStatusIndicatorProps) {
+  const themeColors = useThemeColors();
+
   return (
     <View style={styles.syncContainer}>
       <View style={styles.syncStatusRow}>
@@ -155,17 +189,17 @@ function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }:
       </View>
 
       {lastSyncAt && (
-        <Text style={styles.syncDetail}>
+        <Text style={[styles.syncDetail, { color: themeColors.textTertiary }]}>
           Última sincronización: {formatSyncTime(lastSyncAt)}
         </Text>
       )}
 
       {!lastSyncAt && (
-        <Text style={styles.syncDetail}>Sin sincronizar aún</Text>
+        <Text style={[styles.syncDetail, { color: themeColors.textTertiary }]}>Sin sincronizar aún</Text>
       )}
 
       {pendingCount > 0 && (
-        <Text style={styles.syncPending}>
+        <Text style={[styles.syncPending, { color: themeColors.redExpenses }]}>
           {pendingCount} {pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'}
         </Text>
       )}
@@ -174,6 +208,41 @@ function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }:
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// ─── Theme Option ────────────────────────────────────────────────────────────
+
+interface ThemeOptionProps {
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+  themeColors: any;
+}
+
+function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.themeOption,
+        { borderColor: isActive ? themeColors.primary : themeColors.border },
+        isActive && { backgroundColor: themeColors.primary + '12' },
+      ]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`Tema ${label}`}
+    >
+      <Text style={[
+        styles.themeOptionText,
+        { color: isActive ? themeColors.primary : themeColors.textSecondary },
+        isActive && { fontWeight: '700' },
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Helpers (Sync) ──────────────────────────────────────────────────────────
 
 function formatSyncTime(date: Date): string {
   const now = new Date();
@@ -297,6 +366,24 @@ const styles = StyleSheet.create({
   },
   aiButton: {
     backgroundColor: colors.tertiary,
+  },
+
+  // Theme Section
+  themeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  themeOption: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 
   // Logout Button

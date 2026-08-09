@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Appearance, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 
 /**
  * Error boundary to catch rendering errors.
@@ -38,6 +39,24 @@ class ErrorBoundary extends React.Component<
 }
 
 export default function App() {
+  const { mode, resolvedTheme, setSystemTheme, loadPersistedTheme } = useThemeStore();
+
+  useEffect(() => {
+    // Load persisted theme preference
+    loadPersistedTheme();
+
+    // Set initial system theme
+    const colorScheme = Appearance.getColorScheme();
+    setSystemTheme(colorScheme === 'dark');
+
+    // Listen for system appearance changes
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemTheme(colorScheme === 'dark');
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   useEffect(() => {
     // Listen for auth state changes from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -74,7 +93,7 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <AppNavigator />
-        <StatusBar style="auto" />
+        <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
       </SafeAreaProvider>
     </ErrorBoundary>
   );

@@ -1,5 +1,6 @@
 import React from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   Dimensions,
   Modal,
@@ -25,6 +26,7 @@ interface BottomModalProps {
  * - Desktop web (>= 1024px): centered dialog with max-width
  */
 export function BottomModal({ visible, title, subtitle, onClose, children }: BottomModalProps) {
+  const colors = useThemeColors();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
@@ -36,19 +38,19 @@ export function BottomModal({ visible, title, subtitle, onClose, children }: Bot
       onRequestClose={onClose}
     >
       <Pressable
-        style={[styles.backdrop, isDesktopWeb && styles.backdropDesktop]}
+        style={[styles.backdrop, { backgroundColor: colors.overlay }, isDesktopWeb && styles.backdropDesktop]}
         onPress={onClose}
       >
         <Pressable
-          style={[styles.card, isDesktopWeb && styles.cardDesktop]}
+          style={[styles.card, { backgroundColor: colors.cardBackground }, isDesktopWeb && styles.cardDesktop]}
           onPress={() => {}}
         >
-          {!isDesktopWeb && <View style={styles.handle} />}
-          <Text style={[styles.title, isDesktopWeb && styles.titleDesktop]}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {!isDesktopWeb && <View style={[styles.handle, { backgroundColor: colors.border }]} />}
+          <Text style={[styles.title, { color: colors.textPrimary }, isDesktopWeb && styles.titleDesktop]}>{title}</Text>
+          {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
           <View style={styles.content}>{children}</View>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancelar</Text>
+          <TouchableOpacity style={[styles.cancelButton, { borderTopColor: colors.border }]} onPress={onClose}>
+            <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
@@ -59,7 +61,6 @@ export function BottomModal({ visible, title, subtitle, onClose, children }: Bot
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   backdropDesktop: {
@@ -67,7 +68,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 24,
@@ -92,14 +92,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#DDD',
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.secondary,
     marginBottom: 4,
   },
   titleDesktop: {
@@ -107,7 +105,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 16,
   },
   content: {
@@ -117,12 +114,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
     marginTop: 8,
   },
   cancelText: {
     fontSize: 15,
-    color: '#666',
     fontWeight: '500',
   },
 });

@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   Alert,
   StyleSheet,
@@ -56,6 +57,7 @@ interface RemindersListProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
+  const colors = useThemeColors();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const reminderService = useMemo(() => new ReminderService(), []);
   const accountService = useMemo(() => new AccountService(), []);
@@ -128,8 +130,8 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
 
   if (overdueReminders.length === 0 && currentMonthReminders.length === 0 && upcomingReminders.length === 0) {
     return (
-      <View style={styles.emptyCard}>
-        <Text style={styles.emptyText}>No hay recordatorios pendientes.</Text>
+      <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No hay recordatorios pendientes.</Text>
       </View>
     );
   }
@@ -139,7 +141,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {/* Overdue reminders */}
       {overdueReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <Text style={styles.groupTitle}>⚠️ Vencidos</Text>
+          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>⚠️ Vencidos</Text>
           {overdueReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -155,7 +157,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {/* Current month reminders */}
       {currentMonthReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <Text style={styles.groupTitle}>📅 Este mes</Text>
+          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>📅 Este mes</Text>
           {currentMonthReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -171,8 +173,8 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {/* Upcoming reminders (next months) */}
       {upcomingReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <View style={styles.separatorLine} />
-          <Text style={styles.groupTitle}>📋 Próximos meses</Text>
+          <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>📋 Próximos meses</Text>
           {upcomingReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -196,12 +198,12 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
           {availableAccounts.map((account) => (
             <TouchableOpacity
               key={account.id}
-              style={styles.pickerOption}
+              style={[styles.pickerOption, { backgroundColor: colors.backgroundPrimary }]}
               onPress={() => handleSelectAccount(account.id)}
               disabled={paying}
             >
-              <Text style={styles.pickerOptionName}>{account.name}</Text>
-              <Text style={styles.pickerOptionBalance}>{formatAmount(account.balance)}</Text>
+              <Text style={[styles.pickerOptionName, { color: colors.textPrimary }]}>{account.name}</Text>
+              <Text style={[styles.pickerOptionBalance, { color: colors.textSecondary }]}>{formatAmount(account.balance)}</Text>
             </TouchableOpacity>
           ))}
         </BottomModal>
@@ -220,21 +222,23 @@ interface ReminderItemProps {
 }
 
 function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit }: ReminderItemProps) {
+  const colors = useThemeColors();
+
   return (
-    <View style={[styles.reminderCard, isOverdue && styles.overdueCard]}>
+    <View style={[styles.reminderCard, { backgroundColor: colors.cardBackground }, isOverdue && styles.overdueCard]}>
       <TouchableOpacity style={styles.reminderInfo} onPress={onEdit} accessibilityLabel={`Editar ${reminder.description}`}>
-        <Text style={styles.reminderDescription}>{reminder.description}</Text>
+        <Text style={[styles.reminderDescription, { color: colors.textPrimary }]}>{reminder.description}</Text>
         <View style={styles.reminderDetails}>
-          <Text style={styles.reminderAmount}>{formatAmount(reminder.amount)}</Text>
-          <Text style={styles.reminderDot}>•</Text>
-          <Text style={styles.reminderDate}>{formatDate(reminder.dueDate)}</Text>
-          <Text style={styles.reminderDot}>•</Text>
-          <Text style={styles.reminderFrequency}>{getFrequencyLabel(reminder.frequency)}</Text>
+          <Text style={[styles.reminderAmount, { color: colors.primary }]}>{formatAmount(reminder.amount)}</Text>
+          <Text style={[styles.reminderDot, { color: colors.textTertiary }]}>•</Text>
+          <Text style={[styles.reminderDate, { color: colors.textSecondary }]}>{formatDate(reminder.dueDate)}</Text>
+          <Text style={[styles.reminderDot, { color: colors.textTertiary }]}>•</Text>
+          <Text style={[styles.reminderFrequency, { color: colors.textTertiary }]}>{getFrequencyLabel(reminder.frequency)}</Text>
         </View>
       </TouchableOpacity>
       <View style={styles.reminderActions}>
         <TouchableOpacity
-          style={styles.editButton}
+          style={[styles.editButton, { backgroundColor: colors.backgroundPrimary }]}
           onPress={onEdit}
           accessibilityRole="button"
           accessibilityLabel={`Editar ${reminder.description}`}
@@ -258,14 +262,12 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit }: ReminderIte
 
 const styles = StyleSheet.create({
   emptyCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
   },
   groupContainer: {
     marginBottom: 16,
@@ -273,17 +275,14 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
   },
   separatorLine: {
     height: 1,
-    backgroundColor: '#E0E0E0',
     marginBottom: 12,
     marginTop: 4,
   },
   reminderCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -307,7 +306,6 @@ const styles = StyleSheet.create({
   reminderDescription: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#333',
     marginBottom: 4,
   },
   reminderDetails: {
@@ -318,20 +316,16 @@ const styles = StyleSheet.create({
   reminderAmount: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.primary,
   },
   reminderDot: {
     fontSize: 13,
-    color: '#CCC',
     marginHorizontal: 6,
   },
   reminderDate: {
     fontSize: 13,
-    color: '#666',
   },
   reminderFrequency: {
     fontSize: 13,
-    color: '#999',
   },
   paidButton: {
     backgroundColor: colors.greenEarns,
@@ -356,7 +350,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.backgroundPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -370,16 +363,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: colors.backgroundPrimary,
     marginBottom: 8,
   },
   pickerOptionName: {
     fontSize: 15,
     fontWeight: '500',
-    color: colors.secondary,
   },
   pickerOptionBalance: {
     fontSize: 14,
-    color: '#666',
   },
 });

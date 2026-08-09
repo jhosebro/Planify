@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   ActivityIndicator,
   Alert,
@@ -31,6 +32,7 @@ function formatAmount(centavos: number): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BudgetsScreen() {
+  const colors = useThemeColors();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -116,9 +118,9 @@ export function BudgetsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Cargando presupuestos...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando presupuestos...</Text>
       </View>
     );
   }
@@ -126,7 +128,7 @@ export function BudgetsScreen() {
   return (
   <View style={{flex: 1}}>
     <FlatList
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
       contentContainerStyle={[
         styles.contentContainer,
         isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
@@ -139,7 +141,7 @@ export function BudgetsScreen() {
           <GeneralBudgetCard consumptions={consumptions} reminders={reminders} />
 
           <View style={styles.headerRow}>
-            <Text style={styles.sectionTitle}>Presupuestos</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos</Text>
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAddBudget}
@@ -159,16 +161,16 @@ export function BudgetsScreen() {
         />
       )}
       ListEmptyComponent={
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No hay presupuestos activos.</Text>
-          <Text style={styles.emptySubtext}>Crea uno para controlar tus gastos.</Text>
+        <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No hay presupuestos activos.</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea uno para controlar tus gastos.</Text>
         </View>
       }
       ListFooterComponent={
         <View>
           {/* Reminders Section */}
           <View style={styles.remindersHeader}>
-            <Text style={styles.sectionTitle}>Recordatorios</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Recordatorios</Text>
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAddReminder}
@@ -191,7 +193,7 @@ export function BudgetsScreen() {
       onClose={() => setSpendingBudgetId(null)}
     >
       <TextInput
-        style={styles.spendInput}
+        style={[styles.spendInput, { borderColor: colors.border, color: colors.textPrimary }]}
         value={spendAmount}
         onChangeText={handleSpendAmountChange}
         placeholder="0"
@@ -200,7 +202,7 @@ export function BudgetsScreen() {
         autoFocus
         accessibilityLabel="Monto del gasto manual"
       />
-      <Text style={styles.spendHint}>Este gasto no crea un movimiento en tus cuentas.</Text>
+      <Text style={[styles.spendHint, { color: colors.textTertiary }]}>Este gasto no crea un movimiento en tus cuentas.</Text>
       <TouchableOpacity
         style={styles.spendConfirmBtn}
         onPress={handleConfirmSpent}
@@ -220,6 +222,7 @@ interface GeneralBudgetCardProps {
 }
 
 function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) {
+  const colors = useThemeColors();
   // Total limit = sum of all budget limits + sum of pending reminder amounts
   const pendingReminders = reminders.filter((r) => !r.isPaid);
   const totalBudgetLimits = consumptions.reduce((sum, c) => sum + c.limit, 0);
@@ -284,6 +287,7 @@ interface BudgetProgressItemProps {
 }
 
 function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgressItemProps) {
+  const colors = useThemeColors();
   const percentage = Math.min(consumption.percentage, 100);
   const barColor = consumption.isOverBudget
     ? colors.redExpenses
@@ -292,19 +296,19 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
       : colors.greenEarns;
 
   return (
-    <View style={styles.budgetCard}>
+    <View style={[styles.budgetCard, { backgroundColor: colors.cardBackground }]}>
       <TouchableOpacity
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`Ver detalle presupuesto ${consumption.categoryName ?? 'Sin categoría'}`}
       >
         <View style={styles.budgetHeader}>
-          <Text style={styles.budgetCategory}>{consumption.categoryName ?? 'Sin categoría'}</Text>
+          <Text style={[styles.budgetCategory, { color: colors.textPrimary }]}>{consumption.categoryName ?? 'Sin categoría'}</Text>
           <Text style={[styles.budgetPercentageText, { color: barColor }]}>
             {consumption.percentage.toFixed(1)}%
           </Text>
         </View>
-        <View style={styles.progressBarBackground}>
+        <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
           <View
             style={[
               styles.progressBarFill,
@@ -314,7 +318,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
         </View>
       </TouchableOpacity>
       <View style={styles.budgetFooter}>
-        <Text style={styles.budgetAmountText}>
+        <Text style={[styles.budgetAmountText, { color: colors.textSecondary }]}>
           {formatAmount(consumption.spent)} / {formatAmount(consumption.limit)}
         </Text>
         <TouchableOpacity

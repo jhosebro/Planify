@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -47,6 +48,7 @@ const SCREEN_TITLES: Record<keyof TabParamList, string> = {
  * Replaces bottom tabs with a persistent sidebar on wide screens.
  */
 function DesktopTabLayout() {
+  const colors = useThemeColors();
   const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
     // Restore last active tab from sessionStorage on web
     if (Platform.OS === 'web') {
@@ -70,10 +72,10 @@ function DesktopTabLayout() {
   return (
     <View style={desktopStyles.container}>
       <DesktopSidebar currentRoute={currentRoute} onNavigate={handleNavigate} />
-      <View style={desktopStyles.mainContent}>
+      <View style={[desktopStyles.mainContent, { backgroundColor: colors.backgroundPrimary }]}>
         {/* Desktop Header Bar */}
-        <View style={desktopStyles.header}>
-          <Text style={desktopStyles.headerTitle}>{SCREEN_TITLES[currentRoute]}</Text>
+        <View style={[desktopStyles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+          <Text style={[desktopStyles.headerTitle, { color: colors.textPrimary }]}>{SCREEN_TITLES[currentRoute]}</Text>
         </View>
         {/* Screen Content */}
         <View style={desktopStyles.screenContainer}>
@@ -88,11 +90,16 @@ function DesktopTabLayout() {
  * Mobile/Tablet layout: standard bottom tab navigator.
  */
 function MobileTabLayout() {
+  const colors = useThemeColors();
+
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
       screenOptions={({ route }) => ({
         headerShown: true,
+        headerStyle: { backgroundColor: colors.cardBackground },
+        headerTintColor: colors.textPrimary,
+        tabBarStyle: { backgroundColor: colors.cardBackground, borderTopColor: colors.border },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = focused ? icons.focused : icons.unfocused;

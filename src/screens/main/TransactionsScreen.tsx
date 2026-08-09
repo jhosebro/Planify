@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   ActivityIndicator,
   Alert,
@@ -67,6 +68,7 @@ const DATE_FILTER_OPTIONS: { key: DateFilter; label: string }[] = [
 ];
 
 export function TransactionsScreen() {
+  const colors = useThemeColors();
   const navigation = useNavigation<TransactionsNavProp>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -118,15 +120,16 @@ export function TransactionsScreen() {
   }, [transactionService, loadData]);
 
   return (
-    <View style={[styles.container, isDesktop && { alignItems: 'center' }]}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundPrimary }, isDesktop && { alignItems: 'center' }]}>
       {/* Date Filter */}
-      <View style={[styles.filterSection, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
+      <View style={[styles.filterSection, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
         <View style={styles.dateFilterRow}>
           {DATE_FILTER_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.key}
               style={[
                 styles.filterChip,
+                { backgroundColor: colors.border },
                 dateFilter === option.key && styles.filterChipActive,
               ]}
               onPress={() => setDateFilter(option.key)}
@@ -137,6 +140,7 @@ export function TransactionsScreen() {
               <Text
                 style={[
                   styles.filterChipText,
+                  { color: colors.textSecondary },
                   dateFilter === option.key && styles.filterChipTextActive,
                 ]}
               >
@@ -150,22 +154,23 @@ export function TransactionsScreen() {
         {accounts.length > 0 && (
           <View style={styles.accountFilterRow}>
             <TouchableOpacity
-              style={[styles.accountChip, !accountFilter && styles.accountChipActive]}
+              style={[styles.accountChip, { borderColor: colors.border, backgroundColor: colors.cardBackground }, !accountFilter && styles.accountChipActive]}
               onPress={() => setAccountFilter(undefined)}
             >
-              <Text style={[styles.accountChipText, !accountFilter && styles.accountChipTextActive]}>
+              <Text style={[styles.accountChipText, { color: colors.textSecondary }, !accountFilter && styles.accountChipTextActive]}>
                 Todas
               </Text>
             </TouchableOpacity>
             {accounts.map((acc) => (
               <TouchableOpacity
                 key={acc.id}
-                style={[styles.accountChip, accountFilter === acc.id && styles.accountChipActive]}
+                style={[styles.accountChip, { borderColor: colors.border, backgroundColor: colors.cardBackground }, accountFilter === acc.id && styles.accountChipActive]}
                 onPress={() => setAccountFilter(acc.id === accountFilter ? undefined : acc.id)}
               >
                 <Text
                   style={[
                     styles.accountChipText,
+                    { color: colors.textSecondary },
                     accountFilter === acc.id && styles.accountChipTextActive,
                   ]}
                 >
@@ -193,8 +198,8 @@ export function TransactionsScreen() {
           renderItem={({ item }) => <TransactionItem transaction={item} accounts={accounts} onDelete={handleDeleteTransaction} onEdit={(id) => navigation.navigate('AddTransaction', { transactionId: id })} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No hay movimientos registrados.</Text>
-              <Text style={styles.emptySubtext}>Crea un movimiento para comenzar.</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No hay movimientos registrados.</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea un movimiento para comenzar.</Text>
             </View>
           }
         />
@@ -223,6 +228,7 @@ interface TransactionItemProps {
 }
 
 function TransactionItem({ transaction, accounts, onDelete, onEdit }: TransactionItemProps) {
+  const colors = useThemeColors();
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
   const color = isExpense ? colors.redExpenses : colors.greenEarns;
@@ -242,7 +248,7 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
 
   return (
     <TouchableOpacity
-      style={styles.transactionRow}
+      style={[styles.transactionRow, { backgroundColor: colors.cardBackground }]}
       onPress={() => onEdit(transaction.id)}
       onLongPress={handleLongPress}
       accessibilityRole="button"
@@ -252,10 +258,10 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
         <Text style={styles.transactionIconText}>{isExpense ? '↓' : '↑'}</Text>
       </View>
       <View style={styles.transactionInfo}>
-        <Text style={styles.transactionDescription}>
+        <Text style={[styles.transactionDescription, { color: colors.textPrimary }]}>
           {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
         </Text>
-        <Text style={styles.transactionMeta}>
+        <Text style={[styles.transactionMeta, { color: colors.textTertiary }]}>
           {accountName}{accountName ? ' · ' : ''}{formatDate(transaction.date)}
         </Text>
       </View>

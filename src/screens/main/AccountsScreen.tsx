@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   ActivityIndicator,
   Alert,
@@ -27,12 +28,19 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   credit_card: 'Tarjeta de Crédito',
 };
 
+const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
+  cash: '💵',
+  bank: '🏦',
+  credit_card: '💳',
+};
+
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
   return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function AccountsScreen() {
+  const colors = useThemeColors();
   const navigation = useNavigation<AccountsNavProp>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -70,20 +78,26 @@ export function AccountsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Cargando cuentas...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando cuentas...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, isDesktop && { alignItems: 'center' }]}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}>
       {/* Total Balance Header */}
-      <View style={[styles.balanceCard, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
+      <View style={[
+        styles.balanceCard,
+        isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+      ]}>
         <Text style={styles.balanceLabel}>Saldo Total</Text>
         <Text style={[styles.balanceAmount, totalBalance < 0 && styles.negativeAmount]}>
           {formatAmount(totalBalance)}
+        </Text>
+        <Text style={styles.balanceSubtext}>
+          {accounts.length} cuenta{accounts.length !== 1 ? 's' : ''} activa{accounts.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
@@ -91,30 +105,42 @@ export function AccountsScreen() {
       <FlatList
         data={accounts}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' }]}
+        contentContainerStyle={[
+          styles.listContent,
+          isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
+        ]}
         numColumns={isDesktop ? 2 : 1}
         key={isDesktop ? 'desktop-2col' : 'mobile-1col'}
         columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.accountCard, isDesktop && { flex: 1 }]}
+            style={[styles.accountCard, { backgroundColor: colors.cardBackground }, isDesktop && { flex: 1 }]}
             onPress={() => handleAccountPress(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Cuenta ${item.name}, saldo ${formatAmount(item.balance)}`}
           >
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountName}>{item.name}</Text>
-              <Text style={styles.accountType}>{ACCOUNT_TYPE_LABELS[item.type]}</Text>
+            <View style={styles.accountRow}>
+              <View style={[styles.accountIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Text style={styles.accountIconText}>{ACCOUNT_TYPE_ICONS[item.type]}</Text>
+              </View>
+              <View style={styles.accountInfo}>
+                <Text style={[styles.accountName, { color: colors.textPrimary }]}>{item.name}</Text>
+                <Text style={[styles.accountType, { color: colors.textTertiary }]}>{ACCOUNT_TYPE_LABELS[item.type]}</Text>
+              </View>
             </View>
-            <Text style={[styles.accountBalance, item.balance < 0 && styles.negativeBalance]}>
+            <Text style={[styles.accountBalance, { color: colors.textPrimary }, item.balance < 0 && { color: colors.redExpenses }]}>
               {formatAmount(item.balance)}
             </Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No tienes cuentas registradas.</Text>
-            <Text style={styles.emptySubtext}>Crea tu primera cuenta para comenzar.</Text>
+            <Text style={styles.emptyIcon}>🏦</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes cuentas registradas.</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea tu primera cuenta para comenzar a registrar tus movimientos.</Text>
+            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => setShowCreateForm(true)}>
+              <Text style={styles.emptyButtonText}>Crear Cuenta</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -132,9 +158,9 @@ export function AccountsScreen() {
       )}
 
       {/* FAB to create account */}
-      {!showCreateForm && (
+      {!showCreateForm && accounts.length > 0 && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => setShowCreateForm(true)}
           accessibilityRole="button"
           accessibilityLabel="Crear nueva cuenta"
@@ -155,6 +181,7 @@ interface CreateAccountFormProps {
 }
 
 function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccountFormProps) {
+  const colors = useThemeColors();
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('bank');
   const [initialBalance, setInitialBalance] = useState('');
@@ -162,21 +189,14 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
   const [submitting, setSubmitting] = useState(false);
 
   const formatWithThousands = (value: string): string => {
-    // Remove all non-numeric characters except decimal point
-    const clean = value.replace(/[^0-9.]/g, '');
-    const parts = clean.split('.');
-    const integerPart = parts[0] ?? '';
-    const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
-    // Add thousand separators
-    const formatted = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return formatted + decimalPart;
+    const clean = value.replace(/[^0-9]/g, '');
+    return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
   const handleBalanceChange = (text: string) => {
-    // Strip formatting to get raw number
-    const raw = text.replace(/\./g, '').replace(',', '.');
+    const raw = text.replace(/\./g, '');
     setInitialBalance(raw);
-    setDisplayBalance(formatWithThousands(text.replace(/\./g, '')));
+    setDisplayBalance(formatWithThousands(raw));
   };
 
   const handleSubmit = async () => {
@@ -185,8 +205,8 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
       return;
     }
 
-    const numericValue = parseFloat(initialBalance || '0');
-    const balanceCentavos = Math.round(numericValue * 100);
+    const numericValue = parseInt(initialBalance || '0', 10);
+    const balanceCentavos = numericValue * 100;
     if (isNaN(balanceCentavos)) {
       Alert.alert('Error', 'El saldo inicial debe ser un número válido.');
       return;
@@ -208,59 +228,64 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
   };
 
   return (
-    <View style={styles.formOverlay}>
-      <View style={styles.formCard}>
-        <Text style={styles.formTitle}>Nueva Cuenta</Text>
+    <View style={[styles.formOverlay, { backgroundColor: colors.overlay }]}>
+      <View style={[styles.formCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.formTitle, { color: colors.textPrimary }]}>Nueva Cuenta</Text>
 
-        <Text style={styles.inputLabel}>Nombre</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nombre</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
           value={name}
           onChangeText={setName}
           placeholder="Ej: Cuenta de ahorros"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textTertiary}
           accessibilityLabel="Nombre de la cuenta"
         />
 
-        <Text style={styles.inputLabel}>Tipo</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Tipo</Text>
         <View style={styles.typeSelector}>
           {(['bank', 'cash', 'credit_card'] as AccountType[]).map((t) => (
             <TouchableOpacity
               key={t}
-              style={[styles.typeButton, type === t && styles.typeButtonActive]}
+              style={[
+                styles.typeButton,
+                { borderColor: colors.border, backgroundColor: colors.inputBackground },
+                type === t && { backgroundColor: colors.primary, borderColor: colors.primary },
+              ]}
               onPress={() => setType(t)}
               accessibilityRole="button"
               accessibilityState={{ selected: type === t }}
             >
-              <Text style={[styles.typeButtonText, type === t && styles.typeButtonTextActive]}>
+              <Text style={styles.typeIcon}>{ACCOUNT_TYPE_ICONS[t]}</Text>
+              <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === t && { color: '#fff' }]}>
                 {ACCOUNT_TYPE_LABELS[t]}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.inputLabel}>Saldo Inicial</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Saldo Inicial ($)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
           value={displayBalance}
           onChangeText={handleBalanceChange}
           placeholder="0"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textTertiary}
           keyboardType="numeric"
           accessibilityLabel="Saldo inicial"
         />
 
         <View style={styles.formButtons}>
-          <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.border }]} onPress={onCancel}>
+            <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: colors.primary }, submitting && { opacity: 0.6 }]}
             onPress={handleSubmit}
             disabled={submitting}
           >
             <Text style={styles.submitButtonText}>
-              {submitting ? 'Creando...' : 'Crear'}
+              {submitting ? 'Creando...' : 'Crear Cuenta'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -274,19 +299,18 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundPrimary,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
   },
+
+  // Balance Card
   balanceCard: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -313,12 +337,19 @@ const styles = StyleSheet.create({
   negativeAmount: {
     color: '#FFCDD2',
   },
+  balanceSubtext: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 6,
+  },
+
+  // Account List
   listContent: {
     padding: 16,
     paddingTop: 8,
+    paddingBottom: 80,
   },
   accountCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -331,41 +362,72 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  accountIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accountIconText: {
+    fontSize: 18,
+  },
   accountInfo: {
     flex: 1,
   },
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   accountType: {
     fontSize: 13,
-    color: '#888',
     marginTop: 2,
   },
   accountBalance: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    marginLeft: 12,
   },
-  negativeBalance: {
-    color: colors.redExpenses,
-  },
+
+  // Empty State
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
+    marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
-    marginTop: 4,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
   },
+  emptyButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // FAB
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -373,7 +435,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -389,43 +450,45 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
 
-  // Form styles
+  // Form Overlay
   formOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 24,
   },
   formCard: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
+    width: '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
   },
   formTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#555',
     marginBottom: 6,
-    marginTop: 12,
+    marginTop: 14,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#FAFAFA',
   },
   typeSelector: {
     flexDirection: 'row',
@@ -433,26 +496,21 @@ const styles = StyleSheet.create({
   },
   typeButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 4,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#DDD',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
   },
-  typeButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  typeIcon: {
+    fontSize: 18,
   },
   typeButtonText: {
     fontSize: 11,
-    color: '#666',
     fontWeight: '500',
     textAlign: 'center',
-  },
-  typeButtonTextActive: {
-    color: '#fff',
   },
   formButtons: {
     flexDirection: 'row',
@@ -463,25 +521,21 @@ const styles = StyleSheet.create({
   cancelButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   cancelButtonText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
     fontWeight: '500',
   },
   submitButton: {
-    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
+    borderRadius: 10,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
 });

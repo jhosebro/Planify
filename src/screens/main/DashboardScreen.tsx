@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import {
   ActivityIndicator,
   Dimensions,
@@ -53,6 +54,7 @@ class ChartErrorBoundary extends React.Component<
  * crashes that happen during the initial synchronous render.
  */
 function DeferredChart({ children, fallbackText }: { children: React.ReactNode; fallbackText?: string }) {
+  const colors = useThemeColors();
   const [ready, setReady] = useState(false);
 
   React.useEffect(() => {
@@ -148,6 +150,7 @@ function formatDate(date: Date): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function DashboardScreen() {
+  const colors = useThemeColors();
   const dashboardService = useMemo(() => new DashboardService(), []);
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -177,26 +180,26 @@ export function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Cargando datos...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando datos...</Text>
       </View>
     );
   }
 
   if (!data) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No se pudieron cargar los datos del dashboard.</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadDashboardData}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundPrimary }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No se pudieron cargar los datos del dashboard.</Text>
+        <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={loadDashboardData}>
+          <Text style={[styles.retryButtonText, { color: colors.textInverse }]}>Reintentar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[
+    <ScrollView style={[styles.container, { backgroundColor: colors.backgroundPrimary }]} contentContainerStyle={[
       styles.contentContainer,
       isDesktop && { paddingHorizontal: layout.contentPadding, maxWidth: layout.contentMaxWidth, alignSelf: 'center', width: '100%' },
     ]}>
@@ -257,6 +260,8 @@ const DATE_RANGE_OPTIONS: { key: DateRangeOption; label: string }[] = [
 ];
 
 function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
+  const colors = useThemeColors();
+
   return (
     <View style={styles.dateRangeContainer}>
       {DATE_RANGE_OPTIONS.map((option) => (
@@ -264,7 +269,8 @@ function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
           key={option.key}
           style={[
             styles.dateRangeButton,
-            selected === option.key && styles.dateRangeButtonActive,
+            { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            selected === option.key && [styles.dateRangeButtonActive, { backgroundColor: colors.primary, borderColor: colors.primary }],
           ]}
           onPress={() => onSelect(option.key)}
           accessibilityRole="button"
@@ -274,7 +280,8 @@ function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
           <Text
             style={[
               styles.dateRangeButtonText,
-              selected === option.key && styles.dateRangeButtonTextActive,
+              { color: colors.textSecondary },
+              selected === option.key && [styles.dateRangeButtonTextActive, { color: colors.textInverse }],
             ]}
           >
             {option.label}
@@ -292,10 +299,12 @@ interface TotalBalanceCardProps {
 }
 
 function TotalBalanceCard({ balance }: TotalBalanceCardProps) {
+  const colors = useThemeColors();
+
   return (
-    <View style={styles.balanceCard}>
+    <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
       <Text style={styles.balanceLabel}>Saldo Total</Text>
-      <Text style={[styles.balanceAmount, balance < 0 && styles.negativeAmount]}>
+      <Text style={[styles.balanceAmount, { color: '#FFFFFF' }, balance < 0 && styles.negativeAmount]}>
         {formatAmount(balance)}
       </Text>
     </View>
@@ -310,11 +319,13 @@ interface CategoryDistributionChartProps {
 }
 
 function CategoryDistributionChart({ distribution, layout }: CategoryDistributionChartProps) {
+  const colors = useThemeColors();
+
   if (distribution.length === 0) {
     return (
-      <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Distribución por Categoría</Text>
-        <Text style={styles.emptyChartText}>No hay gastos registrados en este período.</Text>
+      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Distribución por Categoría</Text>
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay gastos registrados en este período.</Text>
       </View>
     );
   }
@@ -323,7 +334,7 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
     name: item.categoryName,
     population: item.amount / 100,
     color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-    legendFontColor: '#333',
+    legendFontColor: colors.textPrimary,
     legendFontSize: 12,
   }));
 
@@ -333,8 +344,8 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
     : CHART_WIDTH;
 
   return (
-    <View style={[styles.chartCard, { overflow: 'hidden' }]}>
-      <Text style={styles.chartTitle}>Distribución por Categoría</Text>
+    <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+      <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Distribución por Categoría</Text>
       {chartWidth > 0 && (
         <DeferredChart fallbackText="No se pudo mostrar el gráfico de categorías.">
           <PieChart
@@ -363,11 +374,13 @@ interface MonthlyTrendsChartProps {
 }
 
 function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
+  const colors = useThemeColors();
+
   if (trends.length === 0) {
     return (
-      <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
-        <Text style={styles.emptyChartText}>No hay datos de tendencia disponibles.</Text>
+      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay datos de tendencia disponibles.</Text>
       </View>
     );
   }
@@ -380,9 +393,9 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
 
   if (!hasData) {
     return (
-      <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
-        <Text style={styles.emptyChartText}>Aún no hay movimientos para mostrar tendencias.</Text>
+      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>Aún no hay movimientos para mostrar tendencias.</Text>
       </View>
     );
   }
@@ -421,8 +434,8 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   // LineChart from react-native-chart-kit crashes on web — use SimpleLineChart instead
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.chartCard, { overflow: 'hidden' }]}>
-        <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
+      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+        <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
         <SimpleLineChart
           labels={labels}
           datasets={[
@@ -437,20 +450,20 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   }
 
   return (
-    <View style={[styles.chartCard, { overflow: 'hidden' }]}>
-      <Text style={styles.chartTitle}>Tendencia de Ingresos y Gastos</Text>
+    <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+      <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
       {chartWidth > 0 && (
         <LineChart
           data={lineData}
           width={chartWidth}
           height={220}
           chartConfig={{
-            backgroundColor: '#fff',
-            backgroundGradientFrom: '#fff',
-            backgroundGradientTo: '#fff',
+            backgroundColor: colors.cardBackground,
+            backgroundGradientFrom: colors.cardBackground,
+            backgroundGradientTo: colors.cardBackground,
             decimalPlaces: 0,
             color: (opacity = 1) => `rgba(74, 144, 217, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
+            labelColor: () => colors.textPrimary,
             style: { borderRadius: 8 },
             propsForDots: {
               r: '4',
@@ -473,18 +486,20 @@ interface BudgetProgressSectionProps {
 }
 
 function BudgetProgressSection({ budgets }: BudgetProgressSectionProps) {
+  const colors = useThemeColors();
+
   if (budgets.length === 0) {
     return (
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Presupuestos Activos</Text>
-        <Text style={styles.emptyChartText}>No hay presupuestos activos.</Text>
+      <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos Activos</Text>
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay presupuestos activos.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>Presupuestos Activos</Text>
+    <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos Activos</Text>
       {budgets.map((budget) => (
         <BudgetProgressBar key={budget.budgetId} budget={budget} />
       ))}
@@ -497,6 +512,7 @@ interface BudgetProgressBarProps {
 }
 
 function BudgetProgressBar({ budget }: BudgetProgressBarProps) {
+  const colors = useThemeColors();
   const percentage = Math.min(budget.percentage, 100);
   const barColor = budget.isOverBudget
     ? colors.redExpenses
@@ -507,12 +523,12 @@ function BudgetProgressBar({ budget }: BudgetProgressBarProps) {
   return (
     <View style={styles.budgetItem}>
       <View style={styles.budgetHeader}>
-        <Text style={styles.budgetCategory}>{(budget as any).categoryName ?? budget.categoryId}</Text>
-        <Text style={styles.budgetAmount}>
+        <Text style={[styles.budgetCategory, { color: colors.textPrimary }]}>{(budget as any).categoryName ?? budget.categoryId}</Text>
+        <Text style={[styles.budgetAmount, { color: colors.textSecondary }]}>
           {formatAmount(budget.spent)} / {formatAmount(budget.limit)}
         </Text>
       </View>
-      <View style={styles.progressBarBackground}>
+      <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
         <View
           style={[
             styles.progressBarFill,
@@ -535,18 +551,20 @@ interface RecentTransactionsSectionProps {
 }
 
 function RecentTransactionsSection({ transactions }: RecentTransactionsSectionProps) {
+  const colors = useThemeColors();
+
   if (transactions.length === 0) {
     return (
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Últimos Movimientos</Text>
-        <Text style={styles.emptyChartText}>No hay movimientos recientes.</Text>
+      <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Últimos Movimientos</Text>
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay movimientos recientes.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>Últimos Movimientos</Text>
+    <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Últimos Movimientos</Text>
       <FlatList
         data={transactions}
         keyExtractor={(item) => item.id}
@@ -562,17 +580,18 @@ interface TransactionRowProps {
 }
 
 function TransactionRow({ transaction }: TransactionRowProps) {
+  const colors = useThemeColors();
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
   const color = isExpense ? colors.redExpenses : colors.greenEarns;
 
   return (
-    <View style={styles.transactionRow}>
+    <View style={[styles.transactionRow, { borderBottomColor: colors.border }]}>
       <View style={styles.transactionInfo}>
-        <Text style={styles.transactionDescription}>
+        <Text style={[styles.transactionDescription, { color: colors.textPrimary }]}>
           {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
         </Text>
-        <Text style={styles.transactionDate}>{formatDate(transaction.date)}</Text>
+        <Text style={[styles.transactionDate, { color: colors.textTertiary }]}>{formatDate(transaction.date)}</Text>
       </View>
       <Text style={[styles.transactionAmount, { color }]}>
         {sign}{formatAmount(transaction.amount)}
@@ -586,7 +605,6 @@ function TransactionRow({ transaction }: TransactionRowProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
   },
   contentContainer: {
     padding: 16,
@@ -596,34 +614,28 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundPrimary,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: colors.backgroundPrimary,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -639,26 +651,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#DDD',
   },
   dateRangeButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderWidth: 1,
   },
   dateRangeButtonText: {
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
   },
   dateRangeButtonTextActive: {
-    color: '#fff',
+    fontWeight: '600',
   },
 
   // Balance Card
   balanceCard: {
-    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -677,7 +684,6 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#fff',
   },
   negativeAmount: {
     color: '#FFCDD2',
@@ -685,7 +691,6 @@ const styles = StyleSheet.create({
 
   // Chart Cards
   chartCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -698,12 +703,10 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
   emptyChartText: {
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
     paddingVertical: 24,
   },
@@ -714,7 +717,6 @@ const styles = StyleSheet.create({
 
   // Section Card
   sectionCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -727,7 +729,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
 
@@ -743,15 +744,12 @@ const styles = StyleSheet.create({
   budgetCategory: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
   },
   budgetAmount: {
     fontSize: 12,
-    color: '#666',
   },
   progressBarBackground: {
     height: 8,
-    backgroundColor: '#EEEEEE',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -772,7 +770,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   transactionInfo: {
     flex: 1,
@@ -780,11 +777,9 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
   },
   transactionDate: {
     fontSize: 12,
-    color: '#999',
     marginTop: 2,
   },
   transactionAmount: {
