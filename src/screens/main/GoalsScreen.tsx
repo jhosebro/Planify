@@ -54,8 +54,12 @@ export function GoalsScreen() {
 
   useFocusEffect(useCallback(() => { loadGoals(); }, [loadGoals]));
 
-  const activeGoals = goals.filter((g) => g.status === 'active');
-  const pausedGoals = goals.filter((g) => g.status === 'paused');
+  const activeGoals = goals
+    .filter((g) => g.status === 'active')
+    .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+  const pausedGoals = goals
+    .filter((g) => g.status === 'paused')
+    .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
   const completedGoals = goals.filter((g) => g.status === 'completed');
 
   if (loading) {
