@@ -105,6 +105,22 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Export for AI Section */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Asesoría con IA</Text>
+        <Text style={styles.sectionDescription}>
+          Exporta tus datos financieros con un prompt listo para pegar en ChatGPT y recibir asesoría personalizada.
+        </Text>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.aiButton]}
+          onPress={() => navigation.navigate('ExportForAI')}
+          accessibilityRole="button"
+          accessibilityLabel="Exportar para ChatGPT"
+        >
+          <Text style={styles.actionButtonText}>Exportar para ChatGPT</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Logout Section */}
       <View style={styles.sectionCard}>
         <TouchableOpacity
@@ -278,6 +294,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  aiButton: {
+    backgroundColor: colors.tertiary,
   },
 
   // Logout Button

@@ -7,6 +7,7 @@ import { AddBudgetModal } from '@/screens/modals/AddBudgetModal';
 import { AddReminderModal } from '@/screens/modals/AddReminderModal';
 import { AddGoalModal } from '@/screens/modals/AddGoalModal';
 import { GenerateReportModal } from '@/screens/modals/GenerateReportModal';
+import { ExportForAIModal } from '@/screens/modals/ExportForAIModal';
 import { AccountDetailScreen } from '@/screens/main/AccountDetailScreen';
 import { TransactionDetailScreen } from '@/screens/main/TransactionDetailScreen';
 import { BudgetDetailScreen } from '@/screens/main/BudgetDetailScreen';
@@ -55,6 +56,11 @@ export function MainStack() {
           name="GenerateReport"
           component={GenerateReportModal}
           options={{ title: 'Generar Reporte' }}
+        />
+        <Stack.Screen
+          name="ExportForAI"
+          component={ExportForAIModal}
+          options={{ title: 'Exportar para ChatGPT' }}
         />
       </Stack.Group>
 

@@ -70,10 +70,27 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
     [reminders]
   );
 
-  const pendingReminders = useMemo(
-    () => reminders.filter((r) => !r.isOverdue && !r.isPaid),
-    [reminders]
-  );
+  // Separate pending reminders: current month vs next months
+  const { currentMonthReminders, upcomingReminders } = useMemo(() => {
+    const pending = reminders.filter((r) => !r.isOverdue && !r.isPaid);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const current: Reminder[] = [];
+    const upcoming: Reminder[] = [];
+
+    for (const r of pending) {
+      const due = r.dueDate instanceof Date ? r.dueDate : new Date(r.dueDate);
+      if (due.getFullYear() === currentYear && due.getMonth() === currentMonth) {
+        current.push(r);
+      } else {
+        upcoming.push(r);
+      }
+    }
+
+    return { currentMonthReminders: current, upcomingReminders: upcoming };
+  }, [reminders]);
 
   const handleMarkAsPaid = useCallback(
     async (reminder: Reminder) => {
@@ -109,7 +126,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
     [payingReminder, reminderService, onRefresh]
   );
 
-  if (overdueReminders.length === 0 && pendingReminders.length === 0) {
+  if (overdueReminders.length === 0 && currentMonthReminders.length === 0 && upcomingReminders.length === 0) {
     return (
       <View style={styles.emptyCard}>
         <Text style={styles.emptyText}>No hay recordatorios pendientes.</Text>
@@ -135,11 +152,28 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
         </View>
       )}
 
-      {/* Pending reminders */}
-      {pendingReminders.length > 0 && (
+      {/* Current month reminders */}
+      {currentMonthReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <Text style={styles.groupTitle}>📋 Pendientes</Text>
-          {pendingReminders.map((reminder) => (
+          <Text style={styles.groupTitle}>📅 Este mes</Text>
+          {currentMonthReminders.map((reminder) => (
+            <ReminderItem
+              key={reminder.id}
+              reminder={reminder}
+              isOverdue={false}
+              onMarkAsPaid={() => handleMarkAsPaid(reminder)}
+              onEdit={() => navigation.navigate('AddReminder', { reminderId: reminder.id })}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Upcoming reminders (next months) */}
+      {upcomingReminders.length > 0 && (
+        <View style={styles.groupContainer}>
+          <View style={styles.separatorLine} />
+          <Text style={styles.groupTitle}>📋 Próximos meses</Text>
+          {upcomingReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
               reminder={reminder}
@@ -241,6 +275,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
     marginBottom: 8,
+  },
+  separatorLine: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 12,
+    marginTop: 4,
   },
   reminderCard: {
     backgroundColor: '#fff',

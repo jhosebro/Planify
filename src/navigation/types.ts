@@ -27,6 +27,7 @@ export type MainStackParamList = {
   AddReminder: { reminderId?: string } | undefined;
   AddGoal: { goalId?: string } | undefined;
   GenerateReport: undefined;
+  ExportForAI: undefined;
   // Details
   AccountDetail: { accountId: string };
   TransactionDetail: { transactionId: string };
