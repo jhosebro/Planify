@@ -17,6 +17,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { GoalService } from '@/services/goals';
 import type { GoalPriority, GoalType, InstallmentFrequency } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
+import { CyclicDatePicker } from '@/components/CyclicDatePicker';
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -160,11 +161,14 @@ export function AddGoalModal() {
         </TouchableOpacity>
 
         {showDate && (
-          <View style={styles.datePicker}>
-            <DateRow label="Año" value={year.toString()} onPrev={() => setYear(year-1)} onNext={() => setYear(year+1)} />
-            <DateRow label="Mes" value={MONTHS[month]} onPrev={() => { if(month===0){setMonth(11);setYear(year-1)}else setMonth(month-1)}} onNext={() => {if(month===11){setMonth(0);setYear(year+1)}else setMonth(month+1)}} />
-            <DateRow label="Día" value={day.toString()} onPrev={() => setDay(Math.max(1,day-1))} onNext={() => setDay(Math.min(daysInMonth,day+1))} />
-          </View>
+          <CyclicDatePicker
+            year={year}
+            month={month}
+            day={day}
+            onChangeYear={setYear}
+            onChangeMonth={setMonth}
+            onChangeDay={setDay}
+          />
         )}
 
         <TouchableOpacity style={[styles.submitBtn, saving && {opacity:0.6}]} onPress={handleSubmit} disabled={saving}>
@@ -176,19 +180,6 @@ export function AddGoalModal() {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function DateRow({ label, value, onPrev, onNext }: { label: string; value: string; onPrev: () => void; onNext: () => void }) {
-  return (
-    <View style={styles.dateRow}>
-      <Text style={styles.dateLabel}>{label}</Text>
-      <View style={styles.dateControls}>
-        <TouchableOpacity style={styles.dateArrow} onPress={onPrev}><Text style={styles.dateArrowText}>◀</Text></TouchableOpacity>
-        <Text style={styles.dateValue}>{value}</Text>
-        <TouchableOpacity style={styles.dateArrow} onPress={onNext}><Text style={styles.dateArrowText}>▶</Text></TouchableOpacity>
-      </View>
-    </View>
   );
 }
 
@@ -206,13 +197,6 @@ const styles = StyleSheet.create({
   dateBtn: { backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1, borderColor: '#DDD', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dateBtnText: { fontSize: 16, color: colors.secondary },
   dateBtnIcon: { fontSize: 12, color: '#999' },
-  datePicker: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 8, borderWidth: 1, borderColor: '#EEE' },
-  dateRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  dateLabel: { fontSize: 14, color: '#666', fontWeight: '500' },
-  dateControls: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  dateArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.backgroundPrimary, alignItems: 'center', justifyContent: 'center' },
-  dateArrowText: { fontSize: 14, color: colors.primary },
-  dateValue: { fontSize: 16, fontWeight: '600', color: colors.secondary, minWidth: 80, textAlign: 'center' },
   submitBtn: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 32 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   cancelBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },

@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ReminderService } from '@/services/reminders';
 import { CategorySelector } from '@/components/CategorySelector';
+import { CyclicDatePicker } from '@/components/CyclicDatePicker';
 import type { ReminderFrequency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -197,88 +198,14 @@ export function AddReminderModal() {
         </TouchableOpacity>
 
         {showDatePicker && (
-          <View style={styles.datePickerContainer}>
-            {/* Year selector */}
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>Año</Text>
-              <View style={styles.dateControls}>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => setSelectedYear(selectedYear - 1)}
-                >
-                  <Text style={styles.dateArrowText}>◀</Text>
-                </TouchableOpacity>
-                <Text style={styles.dateValue}>{selectedYear}</Text>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => setSelectedYear(selectedYear + 1)}
-                >
-                  <Text style={styles.dateArrowText}>▶</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Month selector */}
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>Mes</Text>
-              <View style={styles.dateControls}>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => {
-                    if (selectedMonth === 0) {
-                      setSelectedMonth(11);
-                      setSelectedYear(selectedYear - 1);
-                    } else {
-                      setSelectedMonth(selectedMonth - 1);
-                    }
-                  }}
-                >
-                  <Text style={styles.dateArrowText}>◀</Text>
-                </TouchableOpacity>
-                <Text style={styles.dateValue}>{MONTHS[selectedMonth]}</Text>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => {
-                    if (selectedMonth === 11) {
-                      setSelectedMonth(0);
-                      setSelectedYear(selectedYear + 1);
-                    } else {
-                      setSelectedMonth(selectedMonth + 1);
-                    }
-                  }}
-                >
-                  <Text style={styles.dateArrowText}>▶</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Day selector */}
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>Día</Text>
-              <View style={styles.dateControls}>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => setSelectedDay(Math.max(1, selectedDay - 1))}
-                >
-                  <Text style={styles.dateArrowText}>◀</Text>
-                </TouchableOpacity>
-                <Text style={styles.dateValue}>{selectedDay}</Text>
-                <TouchableOpacity
-                  style={styles.dateArrow}
-                  onPress={() => setSelectedDay(Math.min(daysInMonth, selectedDay + 1))}
-                >
-                  <Text style={styles.dateArrowText}>▶</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.dateConfirmButton}
-              onPress={() => setShowDatePicker(false)}
-            >
-              <Text style={styles.dateConfirmText}>Confirmar</Text>
-            </TouchableOpacity>
-          </View>
+          <CyclicDatePicker
+            year={selectedYear}
+            month={selectedMonth}
+            day={selectedDay}
+            onChangeYear={setSelectedYear}
+            onChangeMonth={setSelectedMonth}
+            onChangeDay={setSelectedDay}
+          />
         )}
 
         {/* Category */}
