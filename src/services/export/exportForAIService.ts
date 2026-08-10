@@ -49,6 +49,21 @@ interface ReminderSummary {
   pagado: boolean;
 }
 
+interface DebtSummary {
+  nombre: string;
+  categoría: 'Tarjeta de crédito' | 'Deuda en cuotas' | 'Cuenta personal';
+  dirección: 'Yo debo' | 'Me deben';
+  monto_total: string;
+  monto_pagado: string;
+  monto_pendiente: string;
+  progreso: string;
+  cuotas_totales?: number;
+  cuotas_pagadas?: number;
+  monto_por_cuota?: string;
+  contraparte?: string;
+  estado: string;
+}
+
 export interface AIExportData {
   prompt_sistema: string;
   fecha_exportación: string;
@@ -59,10 +74,13 @@ export interface AIExportData {
     gastos_mes_actual: string;
     ahorro_mes_actual: string;
     tasa_ahorro: string;
+    total_deudas: string;
+    total_por_cobrar: string;
   };
   cuentas: AccountSummary[];
   transacciones_últimos_3_meses: TransactionSummary[];
   presupuestos: BudgetSummary[];
+  deudas: DebtSummary[];
   metas_financieras: GoalSummary[];
   recordatorios_pendientes: ReminderSummary[];
 }
@@ -118,6 +136,22 @@ const GOAL_STATUS_MAP: Record<string, string> = {
   paused: 'Pausada',
 };
 
+const DEBT_CATEGORY_MAP: Record<string, DebtSummary['categoría']> = {
+  credit_card: 'Tarjeta de crédito',
+  installment: 'Deuda en cuotas',
+  personal: 'Cuenta personal',
+};
+
+const DEBT_DIRECTION_MAP: Record<string, DebtSummary['dirección']> = {
+  i_owe: 'Yo debo',
+  they_owe_me: 'Me deben',
+};
+
+const DEBT_STATUS_MAP: Record<string, string> = {
+  active: 'Activa',
+  paid_off: 'Pagada',
+};
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export class ExportForAIService {
@@ -130,7 +164,7 @@ export class ExportForAIService {
     const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
 
     // Parallel queries
-    const [accountsRes, transactionsRes, currentMonthRes, budgetsRes, goalsRes, remindersRes] =
+    const [accountsRes, transactionsRes, currentMonthRes, budgetsRes, goalsRes, remindersRes, debtsRes] =
       await Promise.all([
         supabase
           .from('accounts')
@@ -165,6 +199,11 @@ export class ExportForAIService {
           .eq('user_id', userId)
           .eq('is_paid', false)
           .order('due_date'),
+        supabase
+          .from('debts')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
       ]);
 
     // Process accounts
@@ -243,6 +282,34 @@ export class ExportForAIService {
       pagado: !!r.is_paid,
     }));
 
+    // Process debts
+    const debtsData = debtsRes.data ?? [];
+    const debts = debtsData.map((d: any): DebtSummary => {
+      const remaining = d.total_amount - d.paid_amount;
+      const progress = d.total_amount > 0 ? ((d.paid_amount / d.total_amount) * 100).toFixed(1) : '0';
+      return {
+        nombre: d.name,
+        categoría: DEBT_CATEGORY_MAP[d.category] ?? d.category,
+        dirección: DEBT_DIRECTION_MAP[d.direction] ?? d.direction,
+        monto_total: formatCentavos(d.total_amount),
+        monto_pagado: formatCentavos(d.paid_amount),
+        monto_pendiente: formatCentavos(remaining),
+        progreso: `${progress}%`,
+        cuotas_totales: d.total_installments ?? undefined,
+        cuotas_pagadas: d.paid_installments ?? undefined,
+        monto_por_cuota: d.installment_amount ? formatCentavos(d.installment_amount) : undefined,
+        contraparte: d.counterparty ?? undefined,
+        estado: DEBT_STATUS_MAP[d.status] ?? d.status,
+      };
+    });
+
+    const totalDebt = debtsData
+      .filter((d: any) => d.status === 'active' && d.direction === 'i_owe')
+      .reduce((sum: number, d: any) => sum + (d.total_amount - d.paid_amount), 0);
+    const totalReceivable = debtsData
+      .filter((d: any) => d.status === 'active' && d.direction === 'they_owe_me')
+      .reduce((sum: number, d: any) => sum + (d.total_amount - d.paid_amount), 0);
+
     return {
       prompt_sistema: this.buildSystemPrompt(),
       fecha_exportación: now.toISOString(),
@@ -253,10 +320,13 @@ export class ExportForAIService {
         gastos_mes_actual: formatCentavos(monthExpense),
         ahorro_mes_actual: formatCentavos(monthSaving),
         tasa_ahorro: `${savingsRate}%`,
+        total_deudas: formatCentavos(totalDebt),
+        total_por_cobrar: formatCentavos(totalReceivable),
       },
       cuentas: accounts,
       transacciones_últimos_3_meses: transactions,
       presupuestos: budgets,
+      deudas: debts,
       metas_financieras: goals,
       recordatorios_pendientes: reminders,
     };
@@ -268,18 +338,21 @@ export class ExportForAIService {
 Tu objetivo es:
 1. Analizar su situación financiera actual (ingresos, gastos, ahorro, deudas).
 2. Evaluar sus presupuestos y si los está cumpliendo.
-3. Revisar el progreso de sus metas de ahorro y dar recomendaciones para alcanzarlas.
-4. Identificar patrones de gasto problemáticos o áreas de mejora.
-5. Dar recomendaciones concretas, priorizadas y accionables.
-6. Si tiene recordatorios de pagos pendientes, advertir sobre vencimientos próximos.
+3. Revisar sus deudas: tarjetas de crédito, cuotas pendientes, y cuentas por cobrar/pagar.
+4. Revisar el progreso de sus metas de ahorro y dar recomendaciones para alcanzarlas.
+5. Identificar patrones de gasto problemáticos o áreas de mejora.
+6. Dar recomendaciones concretas, priorizadas y accionables.
+7. Si tiene recordatorios de pagos pendientes, advertir sobre vencimientos próximos.
 
 Reglas:
 - Sé directo y práctico, no des consejos genéricos.
 - Basa todo en los datos reales proporcionados.
 - Si la tasa de ahorro es baja, sugiere recortes específicos basados en las categorías de gasto.
 - Si hay presupuestos excedidos, señálalos con urgencia.
+- Si tiene deudas con cuotas, indica cuántas faltan y cuánto queda por pagar.
+- Si le deben dinero, recomienda hacer seguimiento.
 - Habla en español de forma cercana pero profesional.
-- Estructura tu respuesta con secciones claras: Diagnóstico, Presupuestos, Metas, Recomendaciones.
+- Estructura tu respuesta con secciones claras: Diagnóstico, Deudas, Presupuestos, Metas, Recomendaciones.
 
 Aquí están los datos financieros del usuario:`;
   }

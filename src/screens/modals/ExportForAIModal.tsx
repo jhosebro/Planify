@@ -104,6 +104,7 @@ export function ExportForAIModal() {
         cuentas: exportData.cuentas.length,
         transacciones: exportData.transacciones_últimos_3_meses.length,
         presupuestos: exportData.presupuestos.length,
+        deudas: exportData.deudas.length,
         metas: exportData.metas_financieras.length,
         recordatorios: exportData.recordatorios_pendientes.length,
       }
@@ -128,6 +129,7 @@ export function ExportForAIModal() {
           <FeatureItem icon="wallet-outline" text="Cuentas y saldos" />
           <FeatureItem icon="swap-vertical-outline" text="Transacciones (últimos 3 meses)" />
           <FeatureItem icon="pie-chart-outline" text="Presupuestos y consumo" />
+          <FeatureItem icon="card-outline" text="Deudas, cuotas y cuentas por cobrar" />
           <FeatureItem icon="trophy-outline" text="Metas de ahorro y progreso" />
           <FeatureItem icon="alarm-outline" text="Pagos pendientes" />
           <FeatureItem icon="chatbubble-ellipses-outline" text="Prompt de asesoría incluido" />
@@ -171,6 +173,7 @@ export function ExportForAIModal() {
               <StatBadge label="Cuentas" value={summary.cuentas} />
               <StatBadge label="Transacciones" value={summary.transacciones} />
               <StatBadge label="Presupuestos" value={summary.presupuestos} />
+              <StatBadge label="Deudas" value={summary.deudas} />
               <StatBadge label="Metas" value={summary.metas} />
               <StatBadge label="Recordatorios" value={summary.recordatorios} />
             </View>
