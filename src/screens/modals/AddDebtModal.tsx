@@ -55,11 +55,13 @@ export function AddDebtModal() {
   const [paidInstallments, setPaidInstallments] = useState('');
   const [linkedAccountId, setLinkedAccountId] = useState<string | null>(null);
   const [creditCardAccounts, setCreditCardAccounts] = useState<Account[]>([]);
+  const [isProvisioned, setIsProvisioned] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const showInstallments = category === 'installment' || category === 'credit_card';
   const showCounterparty = category === 'personal' || category === 'installment';
   const showLinkedAccount = category === 'credit_card';
+  const showProvisionedToggle = category === 'credit_card' && (!totalInstallments || totalInstallments === '1');
 
   const formatWithThousands = (value: string): string => {
     const clean = value.replace(/[^0-9]/g, '');
@@ -126,6 +128,7 @@ export function AddDebtModal() {
         installmentAmount: instAmount,
         counterparty: counterparty.trim() || undefined,
         linkedAccountId: linkedAccountId ?? undefined,
+        isProvisioned: showProvisionedToggle ? isProvisioned : false,
       });
 
       // If there are paid installments, update the debt directly
@@ -324,6 +327,36 @@ export function AddDebtModal() {
           </>
         )}
 
+        {/* Provisioned toggle - for single-installment card purchases */}
+        {showProvisionedToggle && (
+          <>
+            <TouchableOpacity
+              style={[
+                styles.provisionedToggle,
+                { borderColor: colors.border },
+                isProvisioned && { borderColor: '#2EAD5D', backgroundColor: '#2EAD5D10' },
+              ]}
+              onPress={() => setIsProvisioned(!isProvisioned)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: isProvisioned }}
+              accessibilityLabel="Dinero ya separado"
+            >
+              <Text style={styles.provisionedToggleIcon}>{isProvisioned ? '✅' : '💰'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.provisionedToggleLabel, { color: colors.textPrimary }]}>
+                  Dinero ya separado
+                </Text>
+                <Text style={[styles.provisionedToggleHint, { color: colors.textTertiary }]}>
+                  Marca esto si ya apartaste el dinero para esta compra
+                </Text>
+              </View>
+              <View style={[styles.provisionedCheckbox, isProvisioned && styles.provisionedCheckboxActive]}>
+                {isProvisioned && <Text style={styles.provisionedCheckmark}>✓</Text>}
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
+
         {/* Save button */}
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -379,4 +412,33 @@ const styles = StyleSheet.create({
 
   noAccountsText: { fontSize: 13, fontStyle: 'italic' },
   helpText: { fontSize: 12, marginTop: 8, lineHeight: 16 },
+
+  // Provisioned toggle
+  provisionedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 16,
+  },
+  provisionedToggleIcon: { fontSize: 20 },
+  provisionedToggleLabel: { fontSize: 14, fontWeight: '600' },
+  provisionedToggleHint: { fontSize: 11, marginTop: 2 },
+  provisionedCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  provisionedCheckboxActive: {
+    borderColor: '#2EAD5D',
+    backgroundColor: '#2EAD5D',
+  },
+  provisionedCheckmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

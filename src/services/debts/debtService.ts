@@ -28,6 +28,8 @@ export interface Debt {
   counterparty?: string;
   /** ID de cuenta credit_card vinculada (solo para category = credit_card) */
   linkedAccountId?: string;
+  /** Indica que el dinero ya fue separado/provisionado para esta compra */
+  isProvisioned: boolean;
   status: DebtStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +54,7 @@ export interface CreateDebtInput {
   installmentAmount?: number;
   counterparty?: string;
   linkedAccountId?: string;
+  isProvisioned?: boolean;
 }
 
 export interface DebtSummary {
@@ -91,6 +94,7 @@ export class DebtService {
         installment_amount: input.installmentAmount ?? null,
         counterparty: input.counterparty ?? null,
         linked_account_id: input.linkedAccountId ?? null,
+        is_provisioned: input.isProvisioned ?? false,
         status: 'active',
       })
       .select()
@@ -223,7 +227,10 @@ export class DebtService {
     for (const debt of active) {
       const remaining = debt.totalAmount - debt.paidAmount;
       if (debt.direction === 'i_owe') {
-        totalIOwe += remaining;
+        // Provisioned debts don't count toward what we actually owe
+        if (!debt.isProvisioned) {
+          totalIOwe += remaining;
+        }
         if (debt.category === 'credit_card') creditCardDebt += remaining;
         else if (debt.category === 'installment') installmentDebt += remaining;
         else personalDebt += remaining;
@@ -244,6 +251,7 @@ export class DebtService {
     if (input.installmentAmount !== undefined) updates.installment_amount = input.installmentAmount;
     if (input.counterparty !== undefined) updates.counterparty = input.counterparty || null;
     if (input.direction !== undefined) updates.direction = input.direction;
+    if (input.isProvisioned !== undefined) updates.is_provisioned = input.isProvisioned;
 
     const { data, error } = await supabase
       .from('debts')
@@ -284,6 +292,7 @@ export class DebtService {
       installmentAmount: row.installment_amount ?? undefined,
       counterparty: row.counterparty ?? undefined,
       linkedAccountId: row.linked_account_id ?? undefined,
+      isProvisioned: row.is_provisioned ?? false,
       status: row.status,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),

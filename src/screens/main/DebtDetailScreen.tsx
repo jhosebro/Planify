@@ -271,6 +271,13 @@ export function DebtDetailScreen() {
             </Text>
           )}
         </View>
+
+        {/* Provisioned badge */}
+        {debt.isProvisioned && (
+          <View style={[styles.provisionedBanner, { backgroundColor: '#2EAD5D15' }]}>
+            <Text style={styles.provisionedBannerText}>✅ Dinero ya separado</Text>
+          </View>
+        )}
       </View>
 
       {/* Edit form */}
@@ -416,6 +423,40 @@ export function DebtDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* Provisioned toggle */}
+      {!isPaidOff && debt.category === 'credit_card' && (!debt.totalInstallments || debt.totalInstallments === 1) && (
+        <TouchableOpacity
+          style={[
+            styles.provisionedToggle,
+            { borderColor: colors.border, backgroundColor: colors.cardBackground },
+            debt.isProvisioned && { borderColor: '#2EAD5D', backgroundColor: '#2EAD5D10' },
+          ]}
+          onPress={async () => {
+            try {
+              await debtService.update(route.params.debtId, { isProvisioned: !debt.isProvisioned });
+              await loadData();
+            } catch (error) {
+              console.error('Error toggling provisioned:', error);
+            }
+          }}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: debt.isProvisioned }}
+          accessibilityLabel="Marcar dinero como separado"
+        >
+          <Text style={styles.provisionedToggleIcon}>{debt.isProvisioned ? '✅' : '💰'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.provisionedToggleLabel, { color: colors.textPrimary }]}>
+              {debt.isProvisioned ? 'Dinero ya separado' : 'Marcar dinero como separado'}
+            </Text>
+            <Text style={[styles.provisionedToggleHint, { color: colors.textTertiary }]}>
+              {debt.isProvisioned
+                ? 'Esta compra no suma al total que debes'
+                : 'Indica que ya apartaste el dinero para esta compra'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Actions */}
       {!isPaidOff && (
@@ -580,4 +621,21 @@ const styles = StyleSheet.create({
   // Delete
   deleteButton: { alignItems: 'center', paddingVertical: 14, marginBottom: 20 },
   deleteButtonText: { color: colors.redExpenses, fontSize: 14, fontWeight: '500' },
+
+  // Provisioned
+  provisionedBanner: { marginTop: 12, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  provisionedBannerText: { fontSize: 13, fontWeight: '600', color: '#2EAD5D' },
+  provisionedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  provisionedToggleIcon: { fontSize: 20 },
+  provisionedToggleLabel: { fontSize: 14, fontWeight: '600' },
+  provisionedToggleHint: { fontSize: 11, marginTop: 2 },
 });

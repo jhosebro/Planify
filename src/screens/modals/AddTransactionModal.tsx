@@ -213,27 +213,17 @@ export function AddTransactionModal() {
                   .eq('id', newDebt.id);
               }
             } else {
-              // Regular CC expense: find or create the main debt for this card
-              let linkedDebt = allDebts.find(
-                (d) => d.linkedAccountId === selectedAccountId && d.status === 'active' && !d.totalInstallments
-              );
-
-              if (linkedDebt) {
-                // Update existing main debt
-                await debtService.update(linkedDebt.id, {
-                  totalAmount: linkedDebt.totalAmount + amountCentavos,
-                });
-              } else {
-                // Auto-create the main debt for this credit card
-                await debtService.create({
-                  category: 'credit_card',
-                  direction: 'i_owe',
-                  name: selectedAccount.name,
-                  description: `Gastos corrientes de ${selectedAccount.name}`,
-                  totalAmount: amountCentavos,
-                  linkedAccountId: selectedAccountId,
-                });
-              }
+              // Regular CC expense: create individual debt so each purchase is trackable
+              await debtService.create({
+                category: 'credit_card',
+                direction: 'i_owe',
+                name: description.trim() || 'Gasto en ' + selectedAccount.name,
+                description: `Gasto en ${selectedAccount.name}`,
+                totalAmount: amountCentavos,
+                totalInstallments: 1,
+                installmentAmount: amountCentavos,
+                linkedAccountId: selectedAccountId,
+              });
             }
           } catch (debtError) {
             // Don't fail the transaction if debt update fails

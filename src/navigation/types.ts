@@ -36,6 +36,7 @@ export type MainStackParamList = {
   BudgetDetail: { budgetId: string };
   GoalDetail: { goalId: string };
   DebtDetail: { debtId: string };
+  SingleInstallmentDebts: { linkedAccountId: string; cardName: string };
 };
 
 export type RootStackParamList = {

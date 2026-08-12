@@ -14,6 +14,7 @@ import { TransactionDetailScreen } from '@/screens/main/TransactionDetailScreen'
 import { BudgetDetailScreen } from '@/screens/main/BudgetDetailScreen';
 import { GoalDetailScreen } from '@/screens/main/GoalDetailScreen';
 import { DebtDetailScreen } from '@/screens/main/DebtDetailScreen';
+import { SingleInstallmentDebtsScreen } from '@/screens/main/SingleInstallmentDebtsScreen';
 import type { MainStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -97,6 +98,11 @@ export function MainStack() {
           name="DebtDetail"
           component={DebtDetailScreen}
           options={{ title: 'Detalle de Deuda' }}
+        />
+        <Stack.Screen
+          name="SingleInstallmentDebts"
+          component={SingleInstallmentDebtsScreen}
+          options={{ title: 'Compras a 1 Cuota' }}
         />
       </Stack.Group>
     </Stack.Navigator>

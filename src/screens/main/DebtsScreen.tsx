@@ -174,13 +174,17 @@ export function DebtsScreen() {
                 ) : category === 'credit_card' && groupedCCDebts ? (
                   // Render credit card debts grouped by card
                   Object.entries(groupedCCDebts).map(([accountId, debtsGroup]) => {
+                    // mainDebt = the general card balance (no installments at all)
                     const mainDebt = debtsGroup.find((d) => !d.totalInstallments);
-                    const installmentDebts = debtsGroup.filter((d) => !!d.totalInstallments);
-                    const cardName = mainDebt?.name || installmentDebts[0]?.name?.split(' (')[0] || 'Tarjeta';
+                    // singleInstallmentDebts = purchases marked as 1 cuota (dinero separado flow)
+                    const singleInstallmentDebts = debtsGroup.filter((d) => d.totalInstallments === 1);
+                    // multiInstallmentDebts = real installment purchases (2+ cuotas)
+                    const multiInstallmentDebts = debtsGroup.filter((d) => !!d.totalInstallments && d.totalInstallments > 1);
+                    const cardName = mainDebt?.name || multiInstallmentDebts[0]?.name?.split(' (')[0] || singleInstallmentDebts[0]?.name?.split(' (')[0] || 'Tarjeta';
 
                     return (
                       <View key={accountId} style={[styles.ccGroup, { borderLeftColor: config.color }]}>
-                        {/* Card header / main debt */}
+                        {/* Card header / main debt (the overall card balance) */}
                         {mainDebt ? (
                           <DebtCard
                             key={mainDebt.id}
@@ -192,8 +196,36 @@ export function DebtsScreen() {
                             {cardName}
                           </Text>
                         )}
-                        {/* Installment debts under this card */}
-                        {installmentDebts.map((debt) => (
+                        {/* Single-installment purchases - show as compact summary card */}
+                        {singleInstallmentDebts.length > 0 && (
+                          <TouchableOpacity
+                            style={[styles.singleInstCard, { backgroundColor: colors.cardBackground }]}
+                            onPress={() => navigation.navigate('SingleInstallmentDebts', { linkedAccountId: accountId, cardName })}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Ver ${singleInstallmentDebts.length} gastos individuales`}
+                          >
+                            <View style={styles.singleInstCardHeader}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={[styles.singleInstCardTitle, { color: colors.textPrimary }]}>
+                                  🧾 Gastos individuales
+                                </Text>
+                                <Text style={[styles.singleInstCardCount, { color: colors.textTertiary }]}>
+                                  {singleInstallmentDebts.length} {singleInstallmentDebts.length === 1 ? 'gasto' : 'gastos'}
+                                  {singleInstallmentDebts.filter((d) => d.isProvisioned).length > 0 &&
+                                    ` • ${singleInstallmentDebts.filter((d) => d.isProvisioned).length} aprovisionados`}
+                                </Text>
+                              </View>
+                              <View style={styles.singleInstCardRight}>
+                                <Text style={[styles.singleInstCardAmount, { color: colors.redExpenses }]}>
+                                  {formatAmount(singleInstallmentDebts.reduce((sum, d) => sum + (d.totalAmount - d.paidAmount), 0))}
+                                </Text>
+                                <Text style={[styles.singleInstCardChevron, { color: colors.textTertiary }]}>▸</Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        {/* Multi-installment debts under this card */}
+                        {multiInstallmentDebts.map((debt) => (
                           <DebtCard
                             key={debt.id}
                             debt={debt}
@@ -238,7 +270,7 @@ export function DebtsScreen() {
 
 // ─── Debt Card ───────────────────────────────────────────────────────────────
 
-function DebtCard({ debt, onPress }: { debt: Debt; onPress: () => void }) {
+function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () => void; showProvisioned?: boolean }) {
   const colors = useThemeColors();
   const remaining = debt.totalAmount - debt.paidAmount;
   const progress = debt.totalAmount > 0 ? (debt.paidAmount / debt.totalAmount) * 100 : 0;
@@ -246,16 +278,23 @@ function DebtCard({ debt, onPress }: { debt: Debt; onPress: () => void }) {
 
   return (
     <TouchableOpacity
-      style={[styles.debtCard, { backgroundColor: colors.cardBackground }]}
+      style={[styles.debtCard, { backgroundColor: colors.cardBackground }, debt.isProvisioned && styles.debtCardProvisioned]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Deuda ${debt.name}, pendiente ${formatAmount(remaining)}`}
     >
       <View style={styles.debtCardHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.debtName, { color: colors.textPrimary }]} numberOfLines={1}>
-            {debt.name}
-          </Text>
+          <View style={styles.debtNameRow}>
+            <Text style={[styles.debtName, { color: colors.textPrimary }]} numberOfLines={1}>
+              {debt.name}
+            </Text>
+            {showProvisioned && debt.isProvisioned && (
+              <View style={[styles.provisionedBadge, { backgroundColor: '#2EAD5D20' }]}>
+                <Text style={styles.provisionedBadgeText}>✅ Separado</Text>
+              </View>
+            )}
+          </View>
           {debt.counterparty && (
             <Text style={[styles.debtCounterparty, { color: colors.textTertiary }]}>
               {isReceivable ? 'Debe:' : 'A:'} {debt.counterparty}
@@ -346,6 +385,19 @@ const styles = StyleSheet.create({
   // Credit card grouping
   ccGroup: { borderLeftWidth: 3, paddingLeft: 8, marginBottom: 8 },
   ccGroupTitle: { fontSize: 15, fontWeight: '600', marginBottom: 8, paddingTop: 4 },
+  singleInstCard: {
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  singleInstCardHeader: { flexDirection: 'row', alignItems: 'center' },
+  singleInstCardTitle: { fontSize: 14, fontWeight: '600' },
+  singleInstCardCount: { fontSize: 12, marginTop: 2 },
+  singleInstCardRight: { alignItems: 'flex-end', flexDirection: 'row', gap: 8 },
+  singleInstCardAmount: { fontSize: 15, fontWeight: '700' },
+  singleInstCardChevron: { fontSize: 14 },
 
   // Debt Card
   debtCard: {
@@ -358,8 +410,15 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  debtCardProvisioned: {
+    borderWidth: 1,
+    borderColor: '#2EAD5D40',
+  },
   debtCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  debtNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   debtName: { fontSize: 15, fontWeight: '600' },
+  provisionedBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  provisionedBadgeText: { fontSize: 10, fontWeight: '600', color: '#2EAD5D' },
   debtCounterparty: { fontSize: 12, marginTop: 2 },
   debtAmountCol: { alignItems: 'flex-end' },
   debtRemaining: { fontSize: 16, fontWeight: '700' },
