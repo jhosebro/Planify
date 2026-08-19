@@ -13,9 +13,12 @@ export type TabParamList = {
   Dashboard: undefined;
   Transactions: undefined;
   Accounts: undefined;
-  Debts: undefined;
   Budgets: undefined;
+  More: undefined;
+  // Hidden from tab bar but accessible via More screen
+  Debts: undefined;
   Goals: undefined;
+  Tracking: undefined;
   Settings: undefined;
 };
 
@@ -30,12 +33,16 @@ export type MainStackParamList = {
   AddDebt: { category?: 'credit_card' | 'installment' | 'personal'; direction?: 'i_owe' | 'they_owe_me' } | undefined;
   GenerateReport: undefined;
   ExportForAI: undefined;
+  EditProfile: undefined;
+  AddTrackingList: { listId?: string } | undefined;
+  AddTrackingItem: { listId: string; itemId?: string };
   // Details
   AccountDetail: { accountId: string };
   TransactionDetail: { transactionId: string };
   BudgetDetail: { budgetId: string };
   GoalDetail: { goalId: string };
   DebtDetail: { debtId: string };
+  TrackingListDetail: { listId: string };
   SingleInstallmentDebts: { linkedAccountId: string; cardName: string };
 };
 

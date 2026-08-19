@@ -16,9 +16,10 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: 'Dashboard', label: 'Inicio', iconFocused: 'home', iconUnfocused: 'home-outline' },
   { key: 'Transactions', label: 'Movimientos', iconFocused: 'swap-vertical', iconUnfocused: 'swap-vertical-outline' },
   { key: 'Accounts', label: 'Cuentas', iconFocused: 'wallet', iconUnfocused: 'wallet-outline' },
-  { key: 'Debts', label: 'Deudas', iconFocused: 'card', iconUnfocused: 'card-outline' },
   { key: 'Budgets', label: 'Presupuestos', iconFocused: 'pie-chart', iconUnfocused: 'pie-chart-outline' },
+  { key: 'Debts', label: 'Deudas', iconFocused: 'card', iconUnfocused: 'card-outline' },
   { key: 'Goals', label: 'Metas', iconFocused: 'trophy', iconUnfocused: 'trophy-outline' },
+  { key: 'Tracking', label: 'Seguimiento', iconFocused: 'cube', iconUnfocused: 'cube-outline' },
   { key: 'Settings', label: 'Ajustes', iconFocused: 'settings', iconUnfocused: 'settings-outline' },
 ];
 

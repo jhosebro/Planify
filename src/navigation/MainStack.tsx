@@ -7,13 +7,17 @@ import { AddBudgetModal } from '@/screens/modals/AddBudgetModal';
 import { AddReminderModal } from '@/screens/modals/AddReminderModal';
 import { AddGoalModal } from '@/screens/modals/AddGoalModal';
 import { AddDebtModal } from '@/screens/modals/AddDebtModal';
+import { AddTrackingListModal } from '@/screens/modals/AddTrackingListModal';
+import { AddTrackingItemModal } from '@/screens/modals/AddTrackingItemModal';
 import { GenerateReportModal } from '@/screens/modals/GenerateReportModal';
 import { ExportForAIModal } from '@/screens/modals/ExportForAIModal';
+import { EditProfileModal } from '@/screens/modals/EditProfileModal';
 import { AccountDetailScreen } from '@/screens/main/AccountDetailScreen';
 import { TransactionDetailScreen } from '@/screens/main/TransactionDetailScreen';
 import { BudgetDetailScreen } from '@/screens/main/BudgetDetailScreen';
 import { GoalDetailScreen } from '@/screens/main/GoalDetailScreen';
 import { DebtDetailScreen } from '@/screens/main/DebtDetailScreen';
+import { TrackingListDetailScreen } from '@/screens/main/TrackingListDetailScreen';
 import { SingleInstallmentDebtsScreen } from '@/screens/main/SingleInstallmentDebtsScreen';
 import type { MainStackParamList } from './types';
 
@@ -70,6 +74,23 @@ export function MainStack() {
           component={ExportForAIModal}
           options={{ title: 'Exportar para ChatGPT' }}
         />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileModal}
+          options={{ title: 'Editar Perfil' }}
+        />
+        <Stack.Screen
+          name="AddTrackingList"
+          component={AddTrackingListModal}
+          options={({ route }) => ({
+            title: (route.params as any)?.listId ? 'Editar Lista' : 'Nueva Lista de Seguimiento',
+          })}
+        />
+        <Stack.Screen
+          name="AddTrackingItem"
+          component={AddTrackingItemModal}
+          options={{ title: 'Agregar Producto' }}
+        />
       </Stack.Group>
 
       {/* Detail Stack */}
@@ -98,6 +119,11 @@ export function MainStack() {
           name="DebtDetail"
           component={DebtDetailScreen}
           options={{ title: 'Detalle de Deuda' }}
+        />
+        <Stack.Screen
+          name="TrackingListDetail"
+          component={TrackingListDetailScreen}
+          options={{ title: 'Lista de Seguimiento' }}
         />
         <Stack.Screen
           name="SingleInstallmentDebts"

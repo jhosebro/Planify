@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '@/theme';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DesktopSidebar } from './DesktopSidebar';
@@ -12,18 +13,41 @@ import { AccountsScreen } from '@/screens/main/AccountsScreen';
 import { DebtsScreen } from '@/screens/main/DebtsScreen';
 import { BudgetsScreen } from '@/screens/main/BudgetsScreen';
 import { GoalsScreen } from '@/screens/main/GoalsScreen';
+import { TrackingScreen } from '@/screens/main/TrackingScreen';
 import { SettingsScreen } from '@/screens/main/SettingsScreen';
+import { MoreScreen } from '@/screens/main/MoreScreen';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+/**
+ * Back button that returns to the "More" tab.
+ * Shown in the header of hidden tabs (Debts, Goals, Tracking, Settings) on mobile.
+ */
+function BackToMore() {
+  const themeColors = useThemeColors();
+  const navigation = useNavigation<any>();
+
+  return (
+    <TouchableOpacity
+      style={{ marginLeft: 12, padding: 4 }}
+      onPress={() => navigation.navigate('More')}
+      accessibilityLabel="Volver a Más"
+    >
+      <Ionicons name="chevron-back" size={22} color={themeColors.primary} />
+    </TouchableOpacity>
+  );
+}
 
 const TAB_ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.glyphMap; unfocused: keyof typeof Ionicons.glyphMap }> = {
   Dashboard: { focused: 'home', unfocused: 'home-outline' },
   Transactions: { focused: 'swap-vertical', unfocused: 'swap-vertical-outline' },
   Accounts: { focused: 'wallet', unfocused: 'wallet-outline' },
-  Debts: { focused: 'card', unfocused: 'card-outline' },
   Budgets: { focused: 'pie-chart', unfocused: 'pie-chart-outline' },
+  More: { focused: 'ellipsis-horizontal', unfocused: 'ellipsis-horizontal-outline' },
+  Debts: { focused: 'card', unfocused: 'card-outline' },
   Goals: { focused: 'trophy', unfocused: 'trophy-outline' },
+  Tracking: { focused: 'cube', unfocused: 'cube-outline' },
   Settings: { focused: 'settings', unfocused: 'settings-outline' },
 };
 
@@ -31,9 +55,11 @@ const SCREENS: Record<keyof TabParamList, React.ComponentType> = {
   Dashboard: DashboardScreen,
   Transactions: TransactionsScreen,
   Accounts: AccountsScreen,
-  Debts: DebtsScreen,
   Budgets: BudgetsScreen,
+  More: MoreScreen,
+  Debts: DebtsScreen,
   Goals: GoalsScreen,
+  Tracking: TrackingScreen,
   Settings: SettingsScreen,
 };
 
@@ -41,20 +67,21 @@ const SCREEN_TITLES: Record<keyof TabParamList, string> = {
   Dashboard: 'Inicio',
   Transactions: 'Movimientos',
   Accounts: 'Cuentas',
-  Debts: 'Deudas',
   Budgets: 'Presupuestos',
+  More: 'Más',
+  Debts: 'Deudas',
   Goals: 'Metas',
+  Tracking: 'Seguimiento',
   Settings: 'Ajustes',
 };
 
 /**
  * Desktop layout: sidebar + content area.
- * Replaces bottom tabs with a persistent sidebar on wide screens.
+ * Shows all sections in the sidebar — no need for "More" tab.
  */
 function DesktopTabLayout() {
   const colors = useThemeColors();
   const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
-    // Restore last active tab from sessionStorage on web
     if (Platform.OS === 'web') {
       try {
         const saved = window.sessionStorage.getItem('planify_active_tab');
@@ -77,11 +104,9 @@ function DesktopTabLayout() {
     <View style={desktopStyles.container}>
       <DesktopSidebar currentRoute={currentRoute} onNavigate={handleNavigate} />
       <View style={[desktopStyles.mainContent, { backgroundColor: colors.backgroundPrimary }]}>
-        {/* Desktop Header Bar */}
         <View style={[desktopStyles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
           <Text style={[desktopStyles.headerTitle, { color: colors.textPrimary }]}>{SCREEN_TITLES[currentRoute]}</Text>
         </View>
-        {/* Screen Content */}
         <View style={desktopStyles.screenContainer}>
           <ActiveScreen />
         </View>
@@ -91,7 +116,8 @@ function DesktopTabLayout() {
 }
 
 /**
- * Mobile/Tablet layout: standard bottom tab navigator.
+ * Mobile/Tablet layout: 5 visible bottom tabs.
+ * Debts, Goals, Tracking, and Settings are hidden tabs accessible from "More".
  */
 function MobileTabLayout() {
   const colors = useThemeColors();
@@ -103,16 +129,21 @@ function MobileTabLayout() {
         headerShown: true,
         headerStyle: { backgroundColor: colors.cardBackground },
         headerTintColor: colors.textPrimary,
-        tabBarStyle: { backgroundColor: colors.cardBackground, borderTopColor: colors.border },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarStyle: {
+          backgroundColor: colors.cardBackground,
+          borderTopColor: colors.border,
+        },
+        tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = focused ? icons.focused : icons.unfocused;
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName} size={24} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.quaternary,
+        tabBarShowLabel: false,
       })}
     >
+      {/* ─── Visible tabs (5) ─── */}
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
@@ -129,24 +160,52 @@ function MobileTabLayout() {
         options={{ title: 'Cuentas' }}
       />
       <Tab.Screen
-        name="Debts"
-        component={DebtsScreen}
-        options={{ title: 'Deudas' }}
-      />
-      <Tab.Screen
         name="Budgets"
         component={BudgetsScreen}
         options={{ title: 'Presupuestos' }}
       />
       <Tab.Screen
+        name="More"
+        component={MoreScreen}
+        options={{ title: 'Más' }}
+      />
+
+      {/* ─── Hidden tabs (accessible from More screen) ─── */}
+      <Tab.Screen
+        name="Debts"
+        component={DebtsScreen}
+        options={{
+          title: 'Deudas',
+          tabBarItemStyle: { display: 'none' },
+          headerLeft: () => <BackToMore />,
+        }}
+      />
+      <Tab.Screen
         name="Goals"
         component={GoalsScreen}
-        options={{ title: 'Metas' }}
+        options={{
+          title: 'Metas',
+          tabBarItemStyle: { display: 'none' },
+          headerLeft: () => <BackToMore />,
+        }}
+      />
+      <Tab.Screen
+        name="Tracking"
+        component={TrackingScreen}
+        options={{
+          title: 'Seguimiento',
+          tabBarItemStyle: { display: 'none' },
+          headerLeft: () => <BackToMore />,
+        }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: 'Ajustes' }}
+        options={{
+          title: 'Ajustes',
+          tabBarItemStyle: { display: 'none' },
+          headerLeft: () => <BackToMore />,
+        }}
       />
     </Tab.Navigator>
   );
@@ -157,9 +216,10 @@ function MobileTabLayout() {
  * and bottom tabs (mobile/tablet).
  */
 export function TabNavigator() {
-  const { isDesktop } = useResponsiveLayout();
+  const { isDesktop, width } = useResponsiveLayout();
 
-  if (Platform.OS === 'web' && isDesktop) {
+  // Only use sidebar layout on web with enough width (≥1200px)
+  if (Platform.OS === 'web' && isDesktop && width >= 1200) {
     return <DesktopTabLayout />;
   }
 

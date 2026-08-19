@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { colors } from '@/theme';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +7,9 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
+import { useProfileStore } from '@/store/profileStore';
 import { useThemeStore, type ThemeMode } from '@/store/themeStore';
+import { ProfileService } from '@/services/profile';
 import type { MainStackParamList } from '@/navigation/types';
 import type { SyncStatus } from '@/types';
 
@@ -31,7 +33,7 @@ const SYNC_STATUS_MAP: Record<SyncStatus, SyncStatusConfig> = {
 
 /**
  * Pantalla de configuración.
- * Muestra estado de sincronización, datos de cuenta, opciones de exportación y logout.
+ * Muestra perfil del usuario, estado de sincronización, opciones de exportación y logout.
  *
  * Requisitos: 7.5, 9.1, 9.4
  */
@@ -42,12 +44,30 @@ export function SettingsScreen() {
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const { status, lastSyncAt, pendingCount } = useSyncStore();
   const { userId, clearAuth } = useAuthStore();
+  const { profile, setProfile, setLoading } = useProfileStore();
   const { mode, setMode } = useThemeStore();
 
+  const profileService = useMemo(() => new ProfileService(), []);
   const syncConfig = SYNC_STATUS_MAP[status] ?? SYNC_STATUS_MAP.pending;
+
+  // Load profile on mount
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    profileService
+      .get()
+      .then((p) => { if (!cancelled) setProfile(p); })
+      .catch((err) => { console.error('[Settings] profile load error:', err); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleExportData = () => {
     navigation.navigate('GenerateReport');
+  };
+
+  const handleEditProfile = () => {
+    navigation.navigate('EditProfile');
   };
 
   const handleLogout = () => {
@@ -67,11 +87,68 @@ export function SettingsScreen() {
     );
   };
 
+  const memberSince = profile?.createdAt
+    ? profile.createdAt.toLocaleDateString('es', { month: 'long', year: 'numeric' })
+    : null;
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.backgroundPrimary }]} contentContainerStyle={[
       styles.contentContainer,
       isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
     ]}>
+      {/* Profile Card */}
+      <View style={[styles.profileCard, { backgroundColor: themeColors.cardBackground }]}>
+        <View style={styles.profileHeader}>
+          <ProfileAvatar
+            displayName={profile?.displayName}
+            themeColors={themeColors}
+          />
+          <View style={styles.profileInfo}>
+            <Text style={[styles.profileName, { color: themeColors.textPrimary }]}>
+              {profile?.displayName ?? 'Sin nombre'}
+            </Text>
+            <Text style={[styles.profileEmail, { color: themeColors.textSecondary }]}>
+              {userId ?? 'No disponible'}
+            </Text>
+            {profile?.phone ? (
+              <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>
+                📱 {profile.phone}
+              </Text>
+            ) : null}
+            {memberSince ? (
+              <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>
+                📅 Miembro desde {memberSince}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Quick info chips */}
+        <View style={styles.chipRow}>
+          {profile?.currency ? (
+            <View style={[styles.infoChip, { backgroundColor: themeColors.primary + '12' }]}>
+              <Text style={[styles.infoChipText, { color: themeColors.primary }]}>
+                💰 {profile.currency}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.infoChip, { backgroundColor: themeColors.primary + '12' }]}>
+            <Text style={[styles.infoChipText, { color: themeColors.primary }]}>
+              🌐 Español
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.editProfileBtn, { borderColor: themeColors.primary }]}
+          onPress={handleEditProfile}
+          accessibilityRole="button"
+          accessibilityLabel="Editar perfil"
+        >
+          <Text style={[styles.editProfileBtnText, { color: themeColors.primary }]}>Editar Perfil</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Sync Status Section */}
       <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Estado de Sincronización</Text>
@@ -82,15 +159,6 @@ export function SettingsScreen() {
           lastSyncAt={lastSyncAt}
           pendingCount={pendingCount}
         />
-      </View>
-
-      {/* Account Info Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Cuenta</Text>
-        <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Email</Text>
-          <Text style={[styles.infoValue, { color: themeColors.textPrimary }]}>{userId ?? 'No disponible'}</Text>
-        </View>
       </View>
 
       {/* Theme Section */}
@@ -168,6 +236,32 @@ export function SettingsScreen() {
   );
 }
 
+// ─── Profile Avatar ──────────────────────────────────────────────────────────
+
+interface ProfileAvatarProps {
+  displayName: string | null | undefined;
+  themeColors: any;
+}
+
+function ProfileAvatar({ displayName, themeColors }: ProfileAvatarProps) {
+  const initials = getInitials(displayName ?? '');
+
+  return (
+    <View style={[styles.avatar, { backgroundColor: themeColors.primary + '20' }]}>
+      <Text style={[styles.avatarText, { color: themeColors.primary }]}>
+        {initials || '👤'}
+      </Text>
+    </View>
+  );
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return '';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
 // ─── Sync Status Indicator ───────────────────────────────────────────────────
 
 interface SyncStatusIndicatorProps {
@@ -207,8 +301,6 @@ function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }:
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 // ─── Theme Option ────────────────────────────────────────────────────────────
 
 interface ThemeOptionProps {
@@ -242,7 +334,7 @@ function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps
   );
 }
 
-// ─── Helpers (Sync) ──────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatSyncTime(date: Date): string {
   const now = new Date();
@@ -269,16 +361,83 @@ function formatSyncTime(date: Date): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
   },
   contentContainer: {
     padding: 16,
     paddingBottom: 32,
   },
 
+  // Profile Card
+  profileCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  profileInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  profileEmail: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  profileDetail: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  infoChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  infoChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  editProfileBtn: {
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1.5,
+  },
+  editProfileBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
   // Section Card
   sectionCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -291,35 +450,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 12,
     lineHeight: 20,
-  },
-
-  // Info Row
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '400',
-    flexShrink: 1,
-    textAlign: 'right',
-    marginLeft: 12,
   },
 
   // Sync Indicator
@@ -342,12 +478,10 @@ const styles = StyleSheet.create({
   },
   syncDetail: {
     fontSize: 13,
-    color: '#999',
     marginLeft: 20,
   },
   syncPending: {
     fontSize: 13,
-    color: colors.redExpenses,
     marginLeft: 20,
     fontWeight: '500',
   },
@@ -392,10 +526,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.redExpenses,
   },
   logoutButtonText: {
-    color: colors.redExpenses,
     fontSize: 15,
     fontWeight: '600',
   },

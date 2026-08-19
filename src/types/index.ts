@@ -103,6 +103,22 @@ export interface Reminder {
   updatedAt: Date;
 }
 
+// === Perfil de Usuario ===
+
+export type Currency = 'COP' | 'USD' | 'EUR' | 'MXN' | 'ARS' | 'PEN' | 'CLP' | 'BRL';
+
+export interface Profile {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  phone: string | null;
+  currency: Currency;
+  language: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // === Sincronización ===
 
 export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'conflict';
