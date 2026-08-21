@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Appearance, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Appearance, Platform, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from '@/navigation/AppNavigator';
@@ -73,6 +73,20 @@ export default function App() {
         }
       }
     );
+
+    // On web, handle OAuth redirect code exchange
+    if (Platform.OS === 'web') {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      if (code) {
+        supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+          if (!error && data.session) {
+            window.history.replaceState({}, '', url.pathname);
+          }
+        });
+      }
+    }
 
     // Check for existing session on app load
     supabase.auth.getSession().then(({ data: { session } }) => {
