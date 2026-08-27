@@ -11,14 +11,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { TransferService } from '@/services/transfers/transferService';
 import { AccountService } from '@/services/accounts/accountService';
+import { useAccountStore } from '@/store/accountStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account } from '@/types';
 
 type AddTransferNavProp = NativeStackNavigationProp<MainStackParamList, 'AddTransfer'>;
+type AddTransferRouteProp = RouteProp<MainStackParamList, 'AddTransfer'>;
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
@@ -27,25 +30,36 @@ function formatAmount(centavos: number): string {
 
 export function AddTransferModal() {
   const navigation = useNavigation<AddTransferNavProp>();
+  const route = useRoute<AddTransferRouteProp>();
+  const preselectedSourceId = route.params?.sourceAccountId ?? null;
+
   const transferService = useMemo(() => new TransferService(), []);
   const accountService = useMemo(() => new AccountService(), []);
+  const updateAccount = useAccountStore((s) => s.updateAccount);
 
-  const [sourceAccountId, setSourceAccountId] = useState<string | null>(null);
+  const [sourceAccountId, setSourceAccountId] = useState<string | null>(preselectedSourceId);
   const [destinationAccountId, setDestinationAccountId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showInsufficientWarning, setShowInsufficientWarning] = useState(false);
 
   useEffect(() => {
     loadAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAccounts = async () => {
     try {
       const accountList = await accountService.getActiveAccounts();
       setAccounts(accountList);
-      if (accountList.length >= 2) {
+
+      if (preselectedSourceId) {
+        // If a source account was pre-selected, pick the first *other* account as destination
+        const otherAccount = accountList.find((a) => a.id !== preselectedSourceId);
+        if (otherAccount) setDestinationAccountId(otherAccount.id);
+      } else if (accountList.length >= 2) {
         setSourceAccountId(accountList[0].id);
         setDestinationAccountId(accountList[1].id);
       } else if (accountList.length === 1) {
@@ -56,25 +70,19 @@ export function AddTransferModal() {
     }
   };
 
-  // Check insufficient balance when amount or source account changes
+  // Real-time insufficient balance check
   useEffect(() => {
     if (!sourceAccountId || !amount.trim()) {
       setShowInsufficientWarning(false);
       return;
     }
-
     const amountCentavos = Math.round(parseFloat(amount) * 100);
     if (isNaN(amountCentavos) || amountCentavos <= 0) {
       setShowInsufficientWarning(false);
       return;
     }
-
     const sourceAccount = accounts.find((a) => a.id === sourceAccountId);
-    if (sourceAccount && sourceAccount.balance < amountCentavos) {
-      setShowInsufficientWarning(true);
-    } else {
-      setShowInsufficientWarning(false);
-    }
+    setShowInsufficientWarning(!!sourceAccount && sourceAccount.balance < amountCentavos);
   }, [sourceAccountId, amount, accounts]);
 
   const handleSubmit = async () => {
@@ -82,33 +90,28 @@ export function AddTransferModal() {
       Alert.alert('Error', 'El monto debe ser mayor a cero.');
       return;
     }
-
     if (!sourceAccountId) {
       Alert.alert('Error', 'Debes seleccionar una cuenta origen.');
       return;
     }
-
     if (!destinationAccountId) {
       Alert.alert('Error', 'Debes seleccionar una cuenta destino.');
       return;
     }
-
     if (sourceAccountId === destinationAccountId) {
       Alert.alert('Error', 'La cuenta origen y destino deben ser diferentes.');
       return;
     }
-
     const amountCentavos = Math.round(parseFloat(amount) * 100);
     if (isNaN(amountCentavos) || amountCentavos <= 0) {
       Alert.alert('Error', 'El monto ingresado no es válido.');
       return;
     }
 
-    // If insufficient balance, ask confirmation
     if (showInsufficientWarning) {
       Alert.alert(
         'Saldo Insuficiente',
-        'La cuenta origen no tiene saldo suficiente para completar esta transferencia. ¿Deseas continuar?',
+        'La cuenta origen no tiene saldo suficiente. ¿Deseas continuar de todas formas?',
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Continuar', style: 'destructive', onPress: () => executeTransfer(amountCentavos) },
@@ -129,13 +132,27 @@ export function AddTransferModal() {
           destinationAccountId: destinationAccountId!,
           amount: amountCentavos,
           date: new Date(),
+          description: description.trim() || undefined,
         },
-        showInsufficientWarning // skip balance check if user already confirmed
+        showInsufficientWarning
       );
+
+      // Refresh both affected accounts in the local store
+      const refreshed = await accountService.getActiveAccounts();
+      const srcUpdated = refreshed.find((a) => a.id === sourceAccountId);
+      const destUpdated = refreshed.find((a) => a.id === destinationAccountId);
+      if (srcUpdated) updateAccount(srcUpdated.id, { balance: srcUpdated.balance });
+      if (destUpdated) updateAccount(destUpdated.id, { balance: destUpdated.balance });
+
       navigation.goBack();
     } catch (error) {
+      console.error('[AddTransferModal] executeTransfer error:', error);
       const message = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert('Error', `No se pudo completar la transferencia: ${message}`);
+      if (Platform.OS === 'web') {
+        window.alert(`Error: No se pudo completar la transferencia\n\n${message}`);
+      } else {
+        Alert.alert('Error', `No se pudo completar la transferencia: ${message}`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -143,13 +160,14 @@ export function AddTransferModal() {
 
   const sourceAccount = accounts.find((a) => a.id === sourceAccountId);
   const destinationAccount = accounts.find((a) => a.id === destinationAccountId);
+  const amountCentavosPreview = Math.round(parseFloat(amount || '0') * 100);
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Nueva Transferencia</Text>
 
         {/* Source Account */}
@@ -164,9 +182,7 @@ export function AddTransferModal() {
                 destinationAccountId === acc.id && styles.accountOptionDisabled,
               ]}
               onPress={() => {
-                if (acc.id !== destinationAccountId) {
-                  setSourceAccountId(acc.id);
-                }
+                if (acc.id !== destinationAccountId) setSourceAccountId(acc.id);
               }}
               disabled={acc.id === destinationAccountId}
               accessibilityRole="button"
@@ -206,9 +222,7 @@ export function AddTransferModal() {
                 sourceAccountId === acc.id && styles.accountOptionDisabled,
               ]}
               onPress={() => {
-                if (acc.id !== sourceAccountId) {
-                  setDestinationAccountId(acc.id);
-                }
+                if (acc.id !== sourceAccountId) setDestinationAccountId(acc.id);
               }}
               disabled={acc.id === sourceAccountId}
               accessibilityRole="button"
@@ -248,6 +262,18 @@ export function AddTransferModal() {
           accessibilityLabel="Monto de la transferencia"
         />
 
+        {/* Description */}
+        <Text style={styles.label}>Descripción (opcional)</Text>
+        <TextInput
+          style={styles.input}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Ej: Pago de renta, ahorro mensual..."
+          placeholderTextColor="#999"
+          maxLength={120}
+          accessibilityLabel="Descripción de la transferencia"
+        />
+
         {/* Insufficient Balance Warning */}
         {showInsufficientWarning && (
           <View style={styles.warningContainer}>
@@ -255,8 +281,7 @@ export function AddTransferModal() {
             <View style={styles.warningTextContainer}>
               <Text style={styles.warningTitle}>Saldo Insuficiente</Text>
               <Text style={styles.warningMessage}>
-                La cuenta origen ({sourceAccount?.name}) tiene un saldo de{' '}
-                {formatAmount(sourceAccount?.balance ?? 0)}, que es menor al monto de la transferencia.
+                {sourceAccount?.name} tiene {formatAmount(sourceAccount?.balance ?? 0)}, menor al monto de la transferencia.
               </Text>
             </View>
           </View>
@@ -266,15 +291,18 @@ export function AddTransferModal() {
         {sourceAccountId && destinationAccountId && amount.trim() && (
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Resumen</Text>
-            <Text style={styles.summaryText}>
-              De: {sourceAccount?.name ?? '—'}
-            </Text>
-            <Text style={styles.summaryText}>
-              A: {destinationAccount?.name ?? '—'}
-            </Text>
-            <Text style={styles.summaryAmount}>
-              Monto: {formatAmount(Math.round(parseFloat(amount || '0') * 100))}
-            </Text>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>De:</Text>
+              <Text style={styles.summaryValue}>{sourceAccount?.name ?? '—'}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>A:</Text>
+              <Text style={styles.summaryValue}>{destinationAccount?.name ?? '—'}</Text>
+            </View>
+            <View style={[styles.summaryRow, styles.summaryAmountRow]}>
+              <Text style={styles.summaryLabel}>Monto:</Text>
+              <Text style={styles.summaryAmount}>{formatAmount(amountCentavosPreview)}</Text>
+            </View>
           </View>
         )}
 
@@ -409,18 +437,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  summaryText: {
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  summaryAmountRow: {
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  summaryLabel: {
     fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
+    color: '#888',
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
   },
   summaryAmount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.primary,
-    marginTop: 4,
   },
   buttonRow: {
     flexDirection: 'row',

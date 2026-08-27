@@ -11,8 +11,10 @@ import {
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AccountService } from '@/services/accounts/accountService';
 import { TransactionService } from '@/services/transactions/transactionService';
+import { useAccountStore } from '@/store/accountStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, AccountType, Transaction } from '@/types';
 
@@ -44,10 +46,14 @@ export function AccountDetailScreen() {
 
   const accountService = useMemo(() => new AccountService(), []);
   const transactionService = useMemo(() => new TransactionService(), []);
+  const storeAccounts = useAccountStore((s) => s.accounts);
 
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Count of other active accounts (to decide if transfer button is useful)
+  const hasOtherAccounts = storeAccounts.filter((a) => !a.isArchived && a.id !== accountId).length > 0;
 
   const loadData = useCallback(async () => {
     try {
@@ -99,6 +105,17 @@ export function AccountDetailScreen() {
         <Text style={[styles.accountBalance, account.balance < 0 && styles.negativeBalance]}>
           {formatAmount(account.balance)}
         </Text>
+        {hasOtherAccounts && (
+          <TouchableOpacity
+            style={styles.transferButton}
+            onPress={() => navigation.navigate('AddTransfer', { sourceAccountId: accountId })}
+            accessibilityRole="button"
+            accessibilityLabel="Nueva transferencia desde esta cuenta"
+          >
+            <MaterialCommunityIcons name="bank-transfer" size={20} color="#fff" />
+            <Text style={styles.transferButtonText}>Transferir</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Transaction History */}
@@ -126,22 +143,30 @@ interface TransactionItemProps {
 }
 
 function TransactionItem({ transaction }: TransactionItemProps) {
+  const isTransfer = !!transaction.linkedTransferId;
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
-  const color = isExpense ? colors.redExpenses : colors.greenEarns;
+  const amountColor = isTransfer ? '#607D8B' : isExpense ? colors.redExpenses : colors.greenEarns;
 
   return (
     <View style={styles.transactionRow}>
-      <View style={styles.transactionIcon}>
-        <Text style={styles.transactionIconText}>{isExpense ? '↓' : '↑'}</Text>
+      <View style={[styles.transactionIcon, isTransfer && styles.transactionIconTransfer]}>
+        <Text style={styles.transactionIconText}>{isTransfer ? '↔' : isExpense ? '↓' : '↑'}</Text>
       </View>
       <View style={styles.transactionInfo}>
-        <Text style={styles.transactionDescription}>
-          {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
-        </Text>
+        <View style={styles.transactionTitleRow}>
+          <Text style={styles.transactionDescription}>
+            {transaction.description || (isTransfer ? 'Transferencia' : isExpense ? 'Gasto' : 'Ingreso')}
+          </Text>
+          {isTransfer && (
+            <View style={styles.transferBadge}>
+              <Text style={styles.transferBadgeText}>Transferencia</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.transactionDate}>{formatDate(transaction.date)}</Text>
       </View>
-      <Text style={[styles.transactionAmount, { color }]}>
+      <Text style={[styles.transactionAmount, { color: amountColor }]}>
         {sign}{formatAmount(transaction.amount)}
       </Text>
     </View>
@@ -221,6 +246,24 @@ const styles = StyleSheet.create({
   negativeBalance: {
     color: '#FFCDD2',
   },
+  transferButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  transferButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -255,16 +298,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
+  transactionIconTransfer: {
+    backgroundColor: '#ECEFF1',
+  },
   transactionIconText: {
     fontSize: 16,
   },
   transactionInfo: {
     flex: 1,
   },
+  transactionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   transactionDescription: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
+  },
+  transferBadge: {
+    backgroundColor: '#ECEFF1',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  transferBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#607D8B',
+    letterSpacing: 0.3,
   },
   transactionDate: {
     fontSize: 12,

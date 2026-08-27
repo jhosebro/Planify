@@ -26,7 +26,7 @@ export type MainStackParamList = {
   Tabs: undefined;
   // Modals
   AddTransaction: { transactionId?: string } | undefined;
-  AddTransfer: undefined;
+  AddTransfer: { sourceAccountId?: string } | undefined;
   AddBudget: undefined;
   AddReminder: { reminderId?: string } | undefined;
   AddGoal: { goalId?: string } | undefined;

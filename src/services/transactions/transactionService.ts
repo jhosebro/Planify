@@ -123,6 +123,13 @@ export class TransactionService {
     const existing = await this.getById(id);
     if (!existing) throw new Error(`Transaction ${id} not found`);
 
+    // If this transaction is part of a transfer, delete the whole transfer
+    // (both legs + the transfers record) to avoid FK constraint violations
+    if (existing.linkedTransferId) {
+      await this.deleteTransfer(existing.linkedTransferId);
+      return;
+    }
+
     const { error } = await supabase
       .from('transactions')
       .delete()
@@ -143,6 +150,59 @@ export class TransactionService {
         .from('accounts')
         .update({ balance: acc.balance - delta, updated_at: new Date().toISOString() })
         .eq('id', existing.accountId);
+    }
+  }
+
+  /** Deletes a full transfer: both transactions and the transfers record, reverting both balances. */
+  private async deleteTransfer(transferId: string): Promise<void> {
+    // Fetch the transfer record to get both transaction IDs and account IDs
+    const { data: transfer, error: fetchErr } = await supabase
+      .from('transfers')
+      .select()
+      .eq('id', transferId)
+      .single();
+
+    if (fetchErr || !transfer) throw new Error('No se encontró el registro de transferencia.');
+
+    // Fetch both transactions to know the amounts and accounts
+    const { data: txns } = await supabase
+      .from('transactions')
+      .select()
+      .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
+
+    // Unlink transactions from the transfer (so FK is clear before deleting transfers row)
+    await supabase
+      .from('transactions')
+      .update({ linked_transfer_id: null })
+      .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
+
+    // Delete the transfers record first (it references the transactions)
+    await supabase.from('transfers').delete().eq('id', transferId);
+
+    // Delete both transactions
+    await supabase
+      .from('transactions')
+      .delete()
+      .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
+
+    // Revert balances for both accounts
+    if (txns) {
+      for (const txn of txns) {
+        const { data: acc } = await supabase
+          .from('accounts')
+          .select('balance')
+          .eq('id', txn.account_id)
+          .single();
+
+        if (acc) {
+          // source was expense (deducted), destination was income (added) — revert both
+          const delta = txn.type === 'income' ? -txn.amount : txn.amount;
+          await supabase
+            .from('accounts')
+            .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
+            .eq('id', txn.account_id);
+        }
+      }
     }
   }
 

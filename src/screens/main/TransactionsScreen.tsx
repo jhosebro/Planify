@@ -229,24 +229,26 @@ interface TransactionItemProps {
 
 function TransactionItem({ transaction, accounts, onDelete, onEdit }: TransactionItemProps) {
   const colors = useThemeColors();
+  const isTransfer = !!transaction.linkedTransferId;
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
-  const color = isExpense ? colors.redExpenses : colors.greenEarns;
+  const amountColor = isTransfer ? '#607D8B' : isExpense ? colors.redExpenses : colors.greenEarns;
   const accountName = accounts.find((a) => a.id === transaction.accountId)?.name ?? '';
 
   const handleLongPress = () => {
+    const typeLabel = isTransfer ? 'transferencia' : isExpense ? 'gasto' : 'ingreso';
     if (Platform.OS === 'web') {
-      if (window.confirm(`¿Eliminar este ${isExpense ? 'gasto' : 'ingreso'} de ${formatAmount(transaction.amount)}?`)) {
+      if (window.confirm(`¿Eliminar este ${typeLabel} de ${formatAmount(transaction.amount)}?`)) {
         onDelete(transaction.id);
       }
     } else {
       Alert.alert(
         'Opciones',
-        `${isExpense ? 'Gasto' : 'Ingreso'} de ${formatAmount(transaction.amount)}`,
+        `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} de ${formatAmount(transaction.amount)}`,
         [
-          { text: 'Editar', onPress: () => onEdit(transaction.id) },
-          { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
-          { text: 'Cancelar', style: 'cancel' },
+          ...(!isTransfer ? [{ text: 'Editar', onPress: () => onEdit(transaction.id) }] : []),
+          { text: 'Eliminar', style: 'destructive' as const, onPress: () => onDelete(transaction.id) },
+          { text: 'Cancelar', style: 'cancel' as const },
         ]
       );
     }
@@ -255,23 +257,30 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
   return (
     <TouchableOpacity
       style={[styles.transactionRow, { backgroundColor: colors.cardBackground }]}
-      onPress={() => onEdit(transaction.id)}
+      onPress={() => !isTransfer && onEdit(transaction.id)}
       onLongPress={handleLongPress}
       accessibilityRole="button"
-      accessibilityHint="Toca para editar, mantén presionado para más opciones"
+      accessibilityHint={isTransfer ? 'Mantén presionado para eliminar' : 'Toca para editar, mantén presionado para más opciones'}
     >
-      <View style={styles.transactionIcon}>
-        <Text style={styles.transactionIconText}>{isExpense ? '↓' : '↑'}</Text>
+      <View style={[styles.transactionIcon, isTransfer && styles.transactionIconTransfer]}>
+        <Text style={styles.transactionIconText}>{isTransfer ? '↔' : isExpense ? '↓' : '↑'}</Text>
       </View>
       <View style={styles.transactionInfo}>
-        <Text style={[styles.transactionDescription, { color: colors.textPrimary }]}>
-          {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
-        </Text>
+        <View style={styles.transactionTitleRow}>
+          <Text style={[styles.transactionDescription, { color: colors.textPrimary }]}>
+            {transaction.description || (isTransfer ? 'Transferencia' : isExpense ? 'Gasto' : 'Ingreso')}
+          </Text>
+          {isTransfer && (
+            <View style={styles.transferBadge}>
+              <Text style={styles.transferBadgeText}>Transferencia</Text>
+            </View>
+          )}
+        </View>
         <Text style={[styles.transactionMeta, { color: colors.textTertiary }]}>
           {accountName}{accountName ? ' · ' : ''}{formatDate(transaction.date)}
         </Text>
       </View>
-      <Text style={[styles.transactionAmount, { color }]}>
+      <Text style={[styles.transactionAmount, { color: amountColor }]}>
         {sign}{formatAmount(transaction.amount)}
       </Text>
       {Platform.OS === 'web' && (
@@ -384,16 +393,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
+  transactionIconTransfer: {
+    backgroundColor: '#ECEFF1',
+  },
   transactionIconText: {
     fontSize: 16,
   },
   transactionInfo: {
     flex: 1,
   },
+  transactionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   transactionDescription: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
+  },
+  transferBadge: {
+    backgroundColor: '#ECEFF1',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  transferBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#607D8B',
+    letterSpacing: 0.3,
   },
   transactionMeta: {
     fontSize: 12,

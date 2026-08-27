@@ -9,6 +9,7 @@ export interface CreateTransferInput {
   destinationAccountId: string;
   amount: number;
   date: Date;
+  description?: string;
 }
 
 export interface CreateTransferResult {
@@ -23,6 +24,29 @@ function getUserId(): string {
 }
 
 export class TransferService {
+  /** Obtiene o crea la categoría "Transferencia" para el usuario. */
+  private async ensureTransferCategory(userId: string): Promise<string> {
+    // Try to find it first (race condition guard)
+    const { data: existing } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('name', 'Transferencia')
+      .maybeSingle();
+
+    if (existing?.id) return existing.id;
+
+    // Create it if it doesn't exist
+    const { data: created, error } = await supabase
+      .from('categories')
+      .insert({ user_id: userId, name: 'Transferencia', icon: '↔️', color: '#607D8B', is_default: true })
+      .select('id')
+      .single();
+
+    if (error) throw new Error(`No se pudo crear la categoría de transferencia: ${error.message}`);
+    return created.id;
+  }
+
   async checkBalance(sourceAccountId: string, amount: number): Promise<boolean> {
     const { data } = await supabase
       .from('accounts')
@@ -49,15 +73,20 @@ export class TransferService {
       hasInsufficientBalance = !(await this.checkBalance(input.sourceAccountId, input.amount));
     }
 
-    // Get transfer category
-    const { data: catData } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('name', 'Transferencia')
-      .single();
+    // Get transfer category and both account names in parallel
+    const [catResult, srcAccResult, destAccResult] = await Promise.all([
+      supabase.from('categories').select('id').eq('user_id', userId).eq('name', 'Transferencia').single(),
+      supabase.from('accounts').select('id, name, balance').eq('id', input.sourceAccountId).single(),
+      supabase.from('accounts').select('id, name, balance').eq('id', input.destinationAccountId).single(),
+    ]);
 
-    const categoryId = catData?.id ?? userId; // fallback
+    const categoryId = catResult.data?.id ?? await this.ensureTransferCategory(userId);
+    const srcAccName = srcAccResult.data?.name ?? 'Cuenta origen';
+    const destAccName = destAccResult.data?.name ?? 'Cuenta destino';
+
+    const baseDesc = input.description?.trim() ?? '';
+    const sourceDesc = baseDesc ? `${baseDesc} → ${destAccName}` : `Transferencia → ${destAccName}`;
+    const destDesc = baseDesc ? `${baseDesc} ← ${srcAccName}` : `Transferencia ← ${srcAccName}`;
 
     // Create expense transaction (source)
     const { data: sourceTxn, error: srcErr } = await supabase
@@ -68,13 +97,16 @@ export class TransferService {
         type: 'expense',
         amount: input.amount,
         category_id: categoryId,
-        description: 'Transfer out',
+        description: sourceDesc,
         date: input.date.toISOString(),
       })
       .select()
       .single();
 
-    if (srcErr) throw new Error(srcErr.message);
+    if (srcErr) {
+      console.error('[TransferService] source transaction error:', srcErr);
+      throw new Error(srcErr.message);
+    }
 
     // Create income transaction (destination)
     const { data: destTxn, error: destErr } = await supabase
@@ -85,41 +117,30 @@ export class TransferService {
         type: 'income',
         amount: input.amount,
         category_id: categoryId,
-        description: 'Transfer in',
+        description: destDesc,
         date: input.date.toISOString(),
       })
       .select()
       .single();
 
-    if (destErr) throw new Error(destErr.message);
+    if (destErr) {
+      console.error('[TransferService] dest transaction error:', destErr);
+      throw new Error(destErr.message);
+    }
 
     // Update source account balance
-    const { data: srcAcc } = await supabase
+    const srcBalance = srcAccResult.data?.balance ?? 0;
+    await supabase
       .from('accounts')
-      .select('balance')
-      .eq('id', input.sourceAccountId)
-      .single();
-
-    if (srcAcc) {
-      await supabase
-        .from('accounts')
-        .update({ balance: srcAcc.balance - input.amount, updated_at: new Date().toISOString() })
-        .eq('id', input.sourceAccountId);
-    }
+      .update({ balance: srcBalance - input.amount, updated_at: new Date().toISOString() })
+      .eq('id', input.sourceAccountId);
 
     // Update destination account balance
-    const { data: destAcc } = await supabase
+    const destBalance = destAccResult.data?.balance ?? 0;
+    await supabase
       .from('accounts')
-      .select('balance')
-      .eq('id', input.destinationAccountId)
-      .single();
-
-    if (destAcc) {
-      await supabase
-        .from('accounts')
-        .update({ balance: destAcc.balance + input.amount, updated_at: new Date().toISOString() })
-        .eq('id', input.destinationAccountId);
-    }
+      .update({ balance: destBalance + input.amount, updated_at: new Date().toISOString() })
+      .eq('id', input.destinationAccountId);
 
     // Create transfer record
     const { data: transferData, error: tErr } = await supabase
@@ -136,7 +157,10 @@ export class TransferService {
       .select()
       .single();
 
-    if (tErr) throw new Error(tErr.message);
+    if (tErr) {
+      console.error('[TransferService] transfer record error:', tErr);
+      throw new Error(tErr.message);
+    }
 
     // Link transactions to transfer
     await supabase

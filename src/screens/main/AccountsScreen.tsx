@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { AccountService } from '@/services/accounts/accountService';
 import type { MainStackParamList } from '@/navigation/types';
@@ -158,16 +159,28 @@ export function AccountsScreen() {
         />
       )}
 
-      {/* FAB to create account */}
+      {/* FABs: Transfer + Create account */}
       {!showCreateForm && accounts.length > 0 && (
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.primary }]}
-          onPress={() => setShowCreateForm(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Crear nueva cuenta"
-        >
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.fabGroup}>
+          {accounts.length >= 2 && (
+            <TouchableOpacity
+              style={[styles.fab, styles.fabSecondary, { backgroundColor: colors.cardBackground, borderColor: colors.primary }]}
+              onPress={() => navigation.navigate('AddTransfer')}
+              accessibilityRole="button"
+              accessibilityLabel="Nueva transferencia"
+            >
+              <MaterialCommunityIcons name="bank-transfer" size={26} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.fab, { backgroundColor: colors.primary }]}
+            onPress={() => setShowCreateForm(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nueva cuenta"
+          >
+            <Text style={styles.fabText}>+</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -439,11 +452,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // FAB
-  fab: {
+  fabGroup: {
     position: 'absolute',
     bottom: 24,
     right: 24,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -455,11 +472,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  fabSecondary: {
+    borderWidth: 2,
+    shadowOpacity: 0.1,
+    elevation: 3,
+  },
   fabText: {
     fontSize: 28,
     color: '#fff',
     fontWeight: '400',
     marginTop: -2,
+  },
+  fabSecondaryText: {
+    fontSize: 22,
+    fontWeight: '600',
   },
 
   // Form Overlay
