@@ -12,70 +12,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PieChart, LineChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import { useResponsiveLayout, type ResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { SimpleLineChart } from '@/components/SimpleLineChart';
+import { ModernDonutChart } from '@/components/ModernDonutChart';
 import { DashboardService } from '@/services/dashboard';
 import type { DashboardData, CategoryDistribution, MonthlyTrend } from '@/types/dashboard';
 import type { BudgetConsumption, Transaction } from '@/types';
-
-// ─── Chart Error Boundary ────────────────────────────────────────────────────
-
-class ChartErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallbackText?: string },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; fallbackText?: string }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={{ padding: 24, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, color: '#999', textAlign: 'center' }}>
-            {this.props.fallbackText ?? 'No se pudo mostrar el gráfico.'}
-          </Text>
-        </View>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-/**
- * Defers chart rendering to the next frame so the ErrorBoundary can catch
- * crashes that happen during the initial synchronous render.
- */
-function DeferredChart({ children, fallbackText }: { children: React.ReactNode; fallbackText?: string }) {
-  const colors = useThemeColors();
-  const [ready, setReady] = useState(false);
-
-  React.useEffect(() => {
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  if (!ready) {
-    return (
-      <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="small" color={colors.primary} />
-      </View>
-    );
-  }
-
-  return (
-    <ChartErrorBoundary fallbackText={fallbackText}>
-      {children}
-    </ChartErrorBoundary>
-  );
-}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -320,6 +264,7 @@ interface CategoryDistributionChartProps {
 
 function CategoryDistributionChart({ distribution, layout }: CategoryDistributionChartProps) {
   const colors = useThemeColors();
+  const [activeCat, setActiveCat] = useState<string | null>(null);
 
   if (distribution.length === 0) {
     return (
@@ -330,37 +275,49 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
     );
   }
 
-  const pieData = distribution.map((item, index) => ({
-    name: item.categoryName,
-    population: item.amount / 100,
+  const slices = distribution.map((item, index) => ({
+    label: item.categoryName,
+    value: item.amount / 100,
     color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-    legendFontColor: colors.textPrimary,
-    legendFontSize: 12,
   }));
 
-  // Use a responsive chart width based on layout
-  const chartWidth = Platform.OS === 'web' && layout.isDesktop
-    ? Math.max(Math.min(layout.contentMaxWidth / 2 - 80, 440), 280)
-    : CHART_WIDTH;
+  const highlighted = activeCat ? (distribution.find((d) => d.categoryName === activeCat) ?? null) : null;
 
   return (
     <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
       <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Distribución por Categoría</Text>
-      {chartWidth > 0 && (
-        <DeferredChart fallbackText="No se pudo mostrar el gráfico de categorías.">
-          <PieChart
-            data={pieData}
-            width={chartWidth}
-            height={200}
-            chartConfig={{
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            }}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="0"
-            absolute={false}
-          />
-        </DeferredChart>
+      {slices.length > 0 ? (
+        <View style={styles.donutWrap}>
+          <ModernDonutChart slices={slices} size={190} thickness={26} />
+        </View>
+      ) : (
+        <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>Sin datos para mostrar.</Text>
+      )}
+
+      {/* Interactive legend */}
+      <View style={styles.donutLegend}>
+        {distribution.map((item, index) => (
+          <TouchableOpacity
+            key={item.categoryId}
+            style={styles.donutLegendRow}
+            onPress={() => setActiveCat(activeCat === item.categoryName ? null : item.categoryName)}
+            accessibilityRole="button"
+          >
+            <View style={[styles.donutLegendDot, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]} />
+            <Text style={[styles.donutLegendLabel, { color: colors.textSecondary }]}>{item.categoryName}</Text>
+            <Text style={[styles.donutLegendValue, { color: colors.textPrimary }]}>
+              {formatAmount(item.amount)} · {item.percentage.toFixed(1)}%
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {highlighted && (
+        <View style={[styles.donutHighlight, { backgroundColor: colors.primary + '12' }]}>
+          <Text style={[styles.donutHighlightText, { color: colors.primary }]}>
+            {highlighted.categoryName}: {formatAmount(highlighted.amount)}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -713,6 +670,47 @@ const styles = StyleSheet.create({
   lineChart: {
     borderRadius: 8,
     marginLeft: -8,
+  },
+
+  // Donut chart
+  donutWrap: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  donutLegend: {
+    marginTop: 4,
+  },
+  donutLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  donutLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  donutLegendLabel: {
+    fontSize: 13,
+    flex: 1,
+  },
+  donutLegendValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  donutHighlight: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 8,
+  },
+  donutHighlightText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // Section Card
