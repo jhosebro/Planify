@@ -6,6 +6,8 @@ export interface CreateBudgetInput {
   categoryId: string;
   monthlyLimit: number;
   alertThreshold: number;
+  /** Si el presupuesto cuenta dentro del Presupuesto General (default true) */
+  includeInGeneral?: boolean;
 }
 
 function getUserId(): string {
@@ -32,6 +34,7 @@ export class BudgetService {
         category_id: input.categoryId,
         monthly_limit: input.monthlyLimit,
         alert_threshold: input.alertThreshold,
+        include_in_general: input.includeInGeneral ?? true,
       })
       .select()
       .single();
@@ -45,6 +48,7 @@ export class BudgetService {
     if (input.categoryId) updates.category_id = input.categoryId;
     if (input.monthlyLimit) updates.monthly_limit = input.monthlyLimit;
     if (input.alertThreshold) updates.alert_threshold = input.alertThreshold;
+    if (input.includeInGeneral !== undefined) updates.include_in_general = input.includeInGeneral;
 
     const { data, error } = await supabase
       .from('budgets')
@@ -103,6 +107,7 @@ export class BudgetService {
       percentage,
       isOverBudget: percentage > 100,
       isAtThreshold: percentage >= data.alert_threshold,
+      includeInGeneral: data.include_in_general !== false && data.include_in_general !== 0,
     };
   }
 
@@ -132,6 +137,7 @@ export class BudgetService {
         percentage,
         isOverBudget: percentage > 100,
         isAtThreshold: percentage >= row.alert_threshold,
+        includeInGeneral: row.include_in_general !== false && row.include_in_general !== 0,
       });
     }
     return consumptions;
@@ -268,6 +274,7 @@ export class BudgetService {
       alertThreshold: row.alert_threshold,
       currentSpent,
       isActive: row.is_active,
+      includeInGeneral: row.include_in_general !== false && row.include_in_general !== 0,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

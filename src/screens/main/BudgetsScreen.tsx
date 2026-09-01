@@ -227,13 +227,14 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
   // Only include monthly/biweekly/weekly reminders (exclude once and yearly)
   const recurringFrequencies = ['monthly', 'biweekly', 'weekly'];
   const pendingReminders = reminders.filter((r) => !r.isPaid && recurringFrequencies.includes(r.frequency));
-  const totalBudgetLimits = consumptions.reduce((sum, c) => sum + c.limit, 0);
+  const includedConsumptions = consumptions.filter((c) => c.includeInGeneral);
+  const totalBudgetLimits = includedConsumptions.reduce((sum, c) => sum + c.limit, 0);
   const totalReminderAmounts = pendingReminders.reduce((sum, r) => sum + r.amount, 0);
   const totalLimit = totalBudgetLimits + totalReminderAmounts;
 
   // Total spent = sum of all budget spent + sum of paid recurring reminder amounts
   const paidReminders = reminders.filter((r) => r.isPaid && recurringFrequencies.includes(r.frequency));
-  const totalBudgetSpent = consumptions.reduce((sum, c) => sum + c.spent, 0);
+  const totalBudgetSpent = includedConsumptions.reduce((sum, c) => sum + c.spent, 0);
   const totalReminderSpent = paidReminders.reduce((sum, r) => sum + r.amount, 0);
   const totalSpent = totalBudgetSpent + totalReminderSpent;
 

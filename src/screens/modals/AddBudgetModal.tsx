@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -26,6 +27,7 @@ export function AddBudgetModal() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState('');
   const [alertThreshold, setAlertThreshold] = useState('80');
+  const [includeInGeneral, setIncludeInGeneral] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const handleLimitChange = (text: string) => {
@@ -57,6 +59,7 @@ export function AddBudgetModal() {
         categoryId,
         monthlyLimit: limitNum * 100,
         alertThreshold: thresholdNum,
+        includeInGeneral,
       });
       navigation.goBack();
     } catch (error) {
@@ -64,7 +67,7 @@ export function AddBudgetModal() {
     } finally {
       setSaving(false);
     }
-  }, [budgetService, categoryId, displayLimit, alertThreshold, navigation]);
+  }, [budgetService, categoryId, displayLimit, alertThreshold, includeInGeneral, navigation]);
 
   return (
     <KeyboardAvoidingView
@@ -108,6 +111,30 @@ export function AddBudgetModal() {
         <Text style={styles.inputHint}>
           Recibirás una notificación cuando alcances este porcentaje de tu presupuesto.
         </Text>
+
+        {/* Include in General Budget */}
+        <Text style={styles.inputLabel}>Presupuesto General</Text>
+        <TouchableOpacity
+          style={styles.switchRow}
+          onPress={() => setIncludeInGeneral((v) => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: includeInGeneral }}
+          accessibilityLabel="Contar este presupuesto dentro del presupuesto general"
+        >
+          <View style={styles.switchTextBlock}>
+            <Text style={styles.switchTitle}>Incluir en presupuesto general</Text>
+            <Text style={styles.inputHint}>
+              Si lo desactivas, su límite y gasto no contarán en el total general.
+            </Text>
+          </View>
+          <Switch
+            value={includeInGeneral}
+            onValueChange={setIncludeInGeneral}
+            trackColor={{ false: '#CCC', true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </TouchableOpacity>
 
         {/* Submit */}
         <TouchableOpacity
@@ -179,6 +206,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 4,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#DDD',
+  },
+  switchTextBlock: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.secondary,
   },
   submitButton: {
     backgroundColor: colors.primary,

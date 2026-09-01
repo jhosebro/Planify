@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -38,6 +39,7 @@ export function BudgetDetailScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editLimit, setEditLimit] = useState('');
   const [editThreshold, setEditThreshold] = useState('');
+  const [editIncludeInGeneral, setEditIncludeInGeneral] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -70,6 +72,7 @@ export function BudgetDetailScreen() {
         setAlertThreshold(budget.alertThreshold);
         setEditLimit((budget.monthlyLimit / 100).toString());
         setEditThreshold(budget.alertThreshold.toString());
+        setEditIncludeInGeneral(budget.includeInGeneral);
       }
       const data = await budgetService.getConsumption(budgetId);
       setConsumption(data);
@@ -124,6 +127,7 @@ export function BudgetDetailScreen() {
       await budgetService.update(budgetId, {
         monthlyLimit: Math.round(limitNum * 100),
         alertThreshold: thresholdNum,
+        includeInGeneral: editIncludeInGeneral,
       });
       setIsEditing(false);
       await loadFullBudget();
@@ -132,7 +136,7 @@ export function BudgetDetailScreen() {
     } finally {
       setSaving(false);
     }
-  }, [budgetService, budgetId, editLimit, editThreshold, loadFullBudget]);
+  }, [budgetService, budgetId, editLimit, editThreshold, editIncludeInGeneral, loadFullBudget]);
 
   if (loading) {
     return (
@@ -234,6 +238,29 @@ export function BudgetDetailScreen() {
               accessibilityLabel="Umbral de alerta"
             />
 
+            <Text style={styles.inputLabel}>Presupuesto General</Text>
+            <TouchableOpacity
+              style={styles.switchRow}
+              onPress={() => setEditIncludeInGeneral((v) => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: editIncludeInGeneral }}
+              accessibilityLabel="Contar este presupuesto dentro del presupuesto general"
+            >
+              <View style={styles.switchTextBlock}>
+                <Text style={styles.switchTitle}>Incluir en presupuesto general</Text>
+                <Text style={styles.switchHint}>
+                  Si lo desactivas, su límite y gasto no contarán en el total general.
+                </Text>
+              </View>
+              <Switch
+                value={editIncludeInGeneral}
+                onValueChange={setEditIncludeInGeneral}
+                trackColor={{ false: '#CCC', true: colors.primary }}
+                thumbColor="#fff"
+              />
+            </TouchableOpacity>
+
             <View style={styles.editActions}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -270,6 +297,12 @@ export function BudgetDetailScreen() {
               <Text style={styles.detailLabel}>Gasto actual</Text>
               <Text style={[styles.detailValue, { color: barColor }]}>
                 {formatAmount(consumption.spent)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>En presupuesto general</Text>
+              <Text style={[styles.detailValue, { color: editIncludeInGeneral ? colors.greenEarns : '#999' }]}>
+                {editIncludeInGeneral ? 'Sí' : 'No'}
               </Text>
             </View>
           </View>
@@ -441,6 +474,31 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 6,
     marginTop: 12,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.backgroundPrimary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#DDD',
+  },
+  switchTextBlock: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  switchHint: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
   input: {
     backgroundColor: colors.backgroundPrimary,

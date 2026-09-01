@@ -8,7 +8,7 @@ const DATABASE_NAME = 'planify.db';
  * Current database schema version.
  * Increment this when adding new migrations.
  */
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 /**
  * Migration functions indexed by target version.
@@ -40,6 +40,10 @@ const migrations: Record<number, (db: SQLiteDatabase) => Promise<void>> = {
   4: async (db) => {
     // Add linked_reminder_id to transactions
     await db.execAsync(`ALTER TABLE transactions ADD COLUMN linked_reminder_id TEXT REFERENCES reminders(id);`);
+  },
+  5: async (db) => {
+    // Add include_in_general to budgets (whether budget counts in General Budget)
+    await db.execAsync(`ALTER TABLE budgets ADD COLUMN include_in_general INTEGER NOT NULL DEFAULT 1;`);
   },
   // Future migrations go here:
 };

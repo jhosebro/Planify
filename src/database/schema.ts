@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS budgets (
   monthly_limit INTEGER NOT NULL CHECK (monthly_limit > 0),
   alert_threshold INTEGER NOT NULL CHECK (alert_threshold BETWEEN 1 AND 100),
   is_active INTEGER NOT NULL DEFAULT 1,
+  include_in_general INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );`;

@@ -153,6 +153,7 @@ export class DashboardService {
         percentage,
         isOverBudget: percentage > 100,
         isAtThreshold: percentage >= budget.alert_threshold,
+        includeInGeneral: budget.include_in_general !== false && budget.include_in_general !== 0,
       });
     }
     return consumptions;

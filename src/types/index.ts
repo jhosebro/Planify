@@ -68,6 +68,8 @@ export interface Budget {
   /** Gasto acumulado del mes actual en centavos */
   currentSpent: number;
   isActive: boolean;
+  /** Si este presupuesto cuenta dentro del Presupuesto General */
+  includeInGeneral: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +85,8 @@ export interface BudgetConsumption {
   percentage: number;
   isOverBudget: boolean;
   isAtThreshold: boolean;
+  /** Si este presupuesto debe sumar al Presupuesto General */
+  includeInGeneral: boolean;
 }
 
 // === Recordatorios ===
