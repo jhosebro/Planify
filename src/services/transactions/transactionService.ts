@@ -93,27 +93,22 @@ export class TransactionService {
 
     if (error) throw new Error(error.message);
 
-    // Recalculate balance
-    const oldDelta = existing.type === 'income' ? existing.amount : -existing.amount;
+    // Ajustar saldos de las cuentas correctamente:
+    //  - Si cambia la cuenta: devolver el efecto original en la cuenta vieja
+    //    y aplicar el efecto nuevo en la cuenta nueva.
+    //  - Si la cuenta es la misma: aplicar el delta neto.
     const newType = input.type ?? existing.type;
     const newAmount = input.amount ?? existing.amount;
+    const newAccountId = input.accountId ?? existing.accountId;
+
+    const oldDelta = existing.type === 'income' ? existing.amount : -existing.amount;
     const newDelta = newType === 'income' ? newAmount : -newAmount;
-    const netDelta = newDelta - oldDelta;
 
-    if (netDelta !== 0) {
-      const accountId = input.accountId ?? existing.accountId;
-      const { data: acc } = await supabase
-        .from('accounts')
-        .select('balance')
-        .eq('id', accountId)
-        .single();
-
-      if (acc) {
-        await supabase
-          .from('accounts')
-          .update({ balance: acc.balance + netDelta, updated_at: new Date().toISOString() })
-          .eq('id', accountId);
-      }
+    if (newAccountId !== existing.accountId) {
+      await this.adjustBalance(existing.accountId, -oldDelta);
+      await this.adjustBalance(newAccountId, newDelta);
+    } else {
+      await this.adjustBalance(existing.accountId, newDelta - oldDelta);
     }
 
     return this.mapRow(data);
@@ -137,20 +132,9 @@ export class TransactionService {
 
     if (error) throw new Error(error.message);
 
-    // Revert balance
+    // Revert balance: devolver el valor a la cuenta correspondiente
     const delta = existing.type === 'income' ? existing.amount : -existing.amount;
-    const { data: acc } = await supabase
-      .from('accounts')
-      .select('balance')
-      .eq('id', existing.accountId)
-      .single();
-
-    if (acc) {
-      await supabase
-        .from('accounts')
-        .update({ balance: acc.balance - delta, updated_at: new Date().toISOString() })
-        .eq('id', existing.accountId);
-    }
+    await this.adjustBalance(existing.accountId, -delta);
   }
 
   /** Deletes a full transfer: both transactions and the transfers record, reverting both balances. */
@@ -188,20 +172,9 @@ export class TransactionService {
     // Revert balances for both accounts
     if (txns) {
       for (const txn of txns) {
-        const { data: acc } = await supabase
-          .from('accounts')
-          .select('balance')
-          .eq('id', txn.account_id)
-          .single();
-
-        if (acc) {
-          // source was expense (deducted), destination was income (added) — revert both
-          const delta = txn.type === 'income' ? -txn.amount : txn.amount;
-          await supabase
-            .from('accounts')
-            .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
-            .eq('id', txn.account_id);
-        }
+        // source was expense (deducted), destination was income (added) — revert both
+        const delta = txn.type === 'income' ? -txn.amount : txn.amount;
+        await this.adjustBalance(txn.account_id, delta);
       }
     }
   }
@@ -254,5 +227,26 @@ export class TransactionService {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
+  }
+
+  /**
+   * Ajusta el saldo de una cuenta sumando el delta (en centavos).
+   * Sigue siendo consistente aunque el delta sea 0 (no hace nada).
+   */
+  private async adjustBalance(accountId: string, delta: number): Promise<void> {
+    if (delta === 0) return;
+
+    const { data: acc } = await supabase
+      .from('accounts')
+      .select('balance')
+      .eq('id', accountId)
+      .single();
+
+    if (acc) {
+      await supabase
+        .from('accounts')
+        .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
+        .eq('id', accountId);
+    }
   }
 }
