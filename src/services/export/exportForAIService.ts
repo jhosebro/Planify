@@ -175,12 +175,14 @@ export class ExportForAIService {
           .from('transactions')
           .select('*, accounts(name), categories(name)')
           .eq('user_id', userId)
+          .is('linked_transfer_id', null)
           .gte('date', threeMonthsAgo)
           .order('date', { ascending: false }),
         supabase
           .from('transactions')
           .select('type, amount')
           .eq('user_id', userId)
+          .is('linked_transfer_id', null)
           .gte('date', monthStart),
         supabase
           .from('budgets')

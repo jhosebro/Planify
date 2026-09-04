@@ -6,6 +6,7 @@ import { AppNavigator } from '@/navigation/AppNavigator';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
+import { BudgetService } from '@/services/budgets';
 
 /**
  * Error boundary to catch rendering errors.
@@ -41,6 +42,16 @@ class ErrorBoundary extends React.Component<
 export default function App() {
   const { mode, resolvedTheme, setSystemTheme, loadPersistedTheme } = useThemeStore();
 
+  const maybeResetMonthlyBudgets = async () => {
+    const userId = useAuthStore.getState().userId;
+    if (!userId) return;
+    try {
+      await new BudgetService().ensureMonthlyReset();
+    } catch {
+      // La falta de red no debe bloquear el arranque; se reintenta el próximo inicio
+    }
+  };
+
   useEffect(() => {
     // Load persisted theme preference
     loadPersistedTheme();
@@ -68,6 +79,7 @@ export default function App() {
             session.refresh_token,
             session.user.id
           );
+          maybeResetMonthlyBudgets();
         } else {
           store.clearAuth();
         }
@@ -97,6 +109,7 @@ export default function App() {
           session.refresh_token,
           session.user.id
         );
+        maybeResetMonthlyBudgets();
       }
     });
 

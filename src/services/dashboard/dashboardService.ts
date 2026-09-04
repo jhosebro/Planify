@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { BudgetConsumption, Transaction } from '@/types';
 import type { CategoryDistribution, DashboardData, MonthlyTrend } from '@/types/dashboard';
 import { useAuthStore } from '@/store/authStore';
+import { isWithinCurrentMonth } from '@/services/budgets/monthlyPeriod';
 
 function getUserId(): string {
   const userId = useAuthStore.getState().userId;
@@ -41,6 +42,7 @@ export class DashboardService {
       .select('amount, category_id, categories(name)')
       .eq('user_id', userId)
       .eq('type', 'expense')
+      .is('linked_transfer_id', null)
       .gte('date', from.toISOString())
       .lte('date', to.toISOString());
 
@@ -75,6 +77,7 @@ export class DashboardService {
       .from('transactions')
       .select('type, amount, date')
       .eq('user_id', userId)
+      .is('linked_transfer_id', null)
       .gte('date', startDate.toISOString());
 
     if (error) return [];
@@ -136,11 +139,12 @@ export class DashboardService {
         .eq('user_id', userId)
         .eq('category_id', budget.category_id)
         .eq('type', 'expense')
+        .is('linked_transfer_id', null)
         .gte('date', from.toISOString())
         .lte('date', to.toISOString());
 
       const transactionSpent = (txns ?? []).reduce((s, r) => s + r.amount, 0);
-      const manualSpent = (budget as any).manual_spent ?? 0;
+      const manualSpent = isWithinCurrentMonth(budget.updated_at) ? ((budget as any).manual_spent ?? 0) : 0;
       const totalSpent = transactionSpent + manualSpent;
       const percentage = (totalSpent / budget.monthly_limit) * 100;
 

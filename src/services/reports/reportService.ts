@@ -175,6 +175,7 @@ export class ReportService {
       .from('transactions')
       .select('*, accounts(name), categories(name)')
       .eq('user_id', userId)
+      .is('linked_transfer_id', null)
       .gte('date', config.dateFrom.toISOString())
       .lte('date', config.dateTo.toISOString())
       .order('date', { ascending: false });

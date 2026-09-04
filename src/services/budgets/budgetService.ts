@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import type { Budget, BudgetConsumption } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { BUDGET_RESET_STORAGE_KEY, getCurrentMonthPeriodKey, isWithinCurrentMonth } from './monthlyPeriod';
 
 export interface CreateBudgetInput {
   categoryId: string;
@@ -123,9 +125,20 @@ export class BudgetService {
     if (error) throw new Error(error.message);
 
     const consumptions: (BudgetConsumption & { categoryName: string })[] = [];
+    if ((data ?? []).length === 0) return consumptions;
+
+    const staleBudgetIds: string[] = [];
+
     for (const row of data ?? []) {
       const transactionSpent = await this.getCategorySpent(row.category_id);
-      const manualSpent = row.manual_spent ?? 0;
+      let manualSpent = 0;
+      if (row.manual_spent) {
+        if (isWithinCurrentMonth(row.updated_at)) {
+          manualSpent = row.manual_spent;
+        } else {
+          staleBudgetIds.push(row.id);
+        }
+      }
       const totalSpent = transactionSpent + manualSpent;
       const percentage = (totalSpent / row.monthly_limit) * 100;
       consumptions.push({
@@ -140,6 +153,20 @@ export class BudgetService {
         includeInGeneral: row.include_in_general !== false && row.include_in_general !== 0,
       });
     }
+
+    // Limpia contadores manuales rezagados del mes anterior para que no
+    // contaminen el mes en curso (corte mensual).
+    if (staleBudgetIds.length > 0) {
+      try {
+        await supabase
+          .from('budgets')
+          .update({ manual_spent: 0, updated_at: new Date().toISOString() })
+          .in('id', staleBudgetIds);
+      } catch {
+        // La limpieza no debe impedir cargar los presupuestos
+      }
+    }
+
     return consumptions;
   }
 
@@ -151,6 +178,31 @@ export class BudgetService {
       .update({ manual_spent: 0, updated_at: new Date().toISOString() })
       .eq('user_id', userId)
       .eq('is_active', true);
+  }
+
+  /**
+   * Reinicia los contadores manuales del mes una sola vez por período.
+   * Almacena el año-mes del último reset; cuando el mes cambia (aunque la app
+   * no se haya abierto justo el día 1) pone manual_spent en 0 una sola vez.
+   */
+  async ensureMonthlyReset(): Promise<void> {
+    const userId = getUserId();
+    const currentPeriod = getCurrentMonthPeriodKey();
+
+    try {
+      const lastPeriod = await AsyncStorage.getItem(BUDGET_RESET_STORAGE_KEY);
+      await AsyncStorage.setItem(BUDGET_RESET_STORAGE_KEY, currentPeriod);
+
+      if (lastPeriod && lastPeriod !== currentPeriod) {
+        await supabase
+          .from('budgets')
+          .update({ manual_spent: 0, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .eq('is_active', true);
+      }
+    } catch {
+      // Ignora errores de storage/red; el reset se reintenta en el próximo inicio
+    }
   }
 
   /**
@@ -204,6 +256,7 @@ export class BudgetService {
       .eq('user_id', userId)
       .eq('category_id', categoryId)
       .eq('type', 'expense')
+      .is('linked_transfer_id', null)
       .gte('date', start)
       .lte('date', end);
 

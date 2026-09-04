@@ -12,6 +12,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { FONT_FAMILY } from '@/theme';
 
 interface Dataset {
   data: number[];
@@ -177,7 +178,7 @@ export function SimpleLineChart({
                   strokeWidth={1}
                   strokeDasharray={isBaseline ? undefined : '4 5'}
                 />
-                <SvgText x={padding.left - 10} y={y + 4} fill={colors.textTertiary} fontSize={11} textAnchor="end">
+                <SvgText x={padding.left - 10} y={y + 4} fill={colors.textTertiary} fontSize={11} fontFamily={FONT_FAMILY} textAnchor="end">
                   {formatYLabel(tick)}
                 </SvgText>
               </G>
@@ -221,7 +222,7 @@ export function SimpleLineChart({
 
           {/* X-axis labels */}
           {labels.map((label, i) => (
-            <SvgText key={`label-${i}`} x={getX(i)} y={height - 12} fill={colors.textTertiary} fontSize={11} textAnchor="middle">
+            <SvgText key={`label-${i}`} x={getX(i)} y={height - 12} fill={colors.textTertiary} fontSize={11} fontFamily={FONT_FAMILY} textAnchor="middle">
               {label}
             </SvgText>
           ))}
@@ -307,10 +308,10 @@ function TooltipCard({
         return (
           <G key={i}>
             <Circle cx={bx + 12} cy={ry} r={3} fill={p.color} />
-            <SvgText x={bx + 24} y={ry + 4} fill={colors.textTertiary} fontSize={10} fontWeight="500">
+            <SvgText x={bx + 24} y={ry + 4} fill={colors.textTertiary} fontSize={10} fontWeight="500" fontFamily={FONT_FAMILY}>
               {p.label}
             </SvgText>
-            <SvgText x={bx + cardWidth - 10} y={ry + 4} fill={p.color} fontSize={10} fontWeight="700" textAnchor="end">
+            <SvgText x={bx + cardWidth - 10} y={ry + 4} fill={p.color} fontSize={10} fontWeight="700" fontFamily={FONT_FAMILY} textAnchor="end">
               {p.value}
             </SvgText>
           </G>

@@ -18,7 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { BudgetService } from '@/services/budgets';
 import { ReminderService } from '@/services/reminders';
-import type { BudgetConsumption, Reminder } from '@/types';
+import type { BudgetConsumption, Reminder, ReminderFrequency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 import { RemindersList } from '@/components/RemindersList';
 import { BottomModal } from '@/components/BottomModal';
@@ -44,9 +44,11 @@ export function BudgetsScreen() {
   const [consumptions, setConsumptions] = useState<(BudgetConsumption & { categoryName: string })[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [budgetData, reminderData] = await Promise.all([
         budgetService.getAllConsumptions(),
@@ -55,7 +57,9 @@ export function BudgetsScreen() {
       setConsumptions(budgetData);
       setReminders(reminderData);
     } catch (error) {
-      console.error('Error loading budgets data:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Error loading budgets data:', msg);
+      setLoadError(msg);
     } finally {
       setLoading(false);
     }
@@ -123,6 +127,19 @@ export function BudgetsScreen() {
       <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando presupuestos...</Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
+        <Text style={{ fontSize: 16, color: 'red', textAlign: 'center', margin: 24 }}>
+          Error: {loadError}
+        </Text>
+        <TouchableOpacity onPress={loadData} style={[styles.addButton, { backgroundColor: colors.primary }]}>
+          <Text style={styles.addButtonText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -218,6 +235,32 @@ export function BudgetsScreen() {
 
 // ─── General Budget Card ─────────────────────────────────────────────────────
 
+const RECURRING_FREQUENCIES: ReminderFrequency[] = ['monthly', 'biweekly', 'weekly'];
+
+function isInCurrentMonth(date: Date): boolean {
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+/** Cuántas veces recurre un recordatorio dentro del mes actual. */
+function getRecurrencesInMonth(dueDate: Date, frequency: ReminderFrequency): number {
+  if (frequency === 'monthly') return 1;
+  const periodDays = frequency === 'weekly' ? 7 : 15;
+  const DAY = 86_400_000;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+  const anchor = new Date(dueDate).getTime();
+  const firstK = Math.ceil((monthStart - anchor) / (periodDays * DAY));
+  let count = 0;
+  let cursor = anchor + firstK * periodDays * DAY;
+  while (cursor < monthEnd) {
+    count++;
+    cursor += periodDays * DAY;
+  }
+  return count;
+}
+
 interface GeneralBudgetCardProps {
   consumptions: (BudgetConsumption & { categoryName: string })[];
   reminders: Reminder[];
@@ -226,19 +269,25 @@ interface GeneralBudgetCardProps {
 function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) {
   const colors = useThemeColors();
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
-  // Total limit = sum of all budget limits + sum of pending recurring reminder amounts
-  // Only include monthly/biweekly/weekly reminders (exclude once and yearly)
-  const recurringFrequencies = ['monthly', 'biweekly', 'weekly'];
-  const pendingReminders = reminders.filter((r) => !r.isPaid && recurringFrequencies.includes(r.frequency));
-  const includedConsumptions = consumptions.filter((c) => c.includeInGeneral);
-  const totalBudgetLimits = includedConsumptions.reduce((sum, c) => sum + c.limit, 0);
-  const totalReminderAmounts = pendingReminders.reduce((sum, r) => sum + r.amount, 0);
-  const totalLimit = totalBudgetLimits + totalReminderAmounts;
 
-  // Total spent = sum of all budget spent + sum of paid recurring reminder amounts
-  const paidReminders = reminders.filter((r) => r.isPaid && recurringFrequencies.includes(r.frequency));
+  const includedConsumptions = consumptions.filter((c) => c.includeInGeneral);
+  const includedCategoryIds = new Set(includedConsumptions.map((c) => c.categoryId));
+  const recurring = reminders.filter((r) => RECURRING_FREQUENCIES.includes(r.frequency));
+  // Solo recordatorios sin presupuesto propio dentro del general, para no contarlos dos veces
+  const nonBudgeted = (r: Reminder) => !(r.categoryId && includedCategoryIds.has(r.categoryId));
+
+  // Límite = presupuestos actuales + carga mensual de recordatorios recurrentes pendientes
+  const totalBudgetLimits = includedConsumptions.reduce((sum, c) => sum + c.limit, 0);
+  const totalReminderLimits = recurring
+    .filter((r) => !r.isPaid && nonBudgeted(r))
+    .reduce((sum, r) => sum + r.amount * getRecurrencesInMonth(r.dueDate, r.frequency), 0);
+  const totalLimit = totalBudgetLimits + totalReminderLimits;
+
+  // Gasto = presupuesto gastado + pagos del MES ACTUAL de recordatorios sin presupuesto
   const totalBudgetSpent = includedConsumptions.reduce((sum, c) => sum + c.spent, 0);
-  const totalReminderSpent = paidReminders.reduce((sum, r) => sum + r.amount, 0);
+  const totalReminderSpent = recurring
+    .filter((r) => r.isPaid && isInCurrentMonth(r.dueDate) && nonBudgeted(r))
+    .reduce((sum, r) => sum + r.amount, 0);
   const totalSpent = totalBudgetSpent + totalReminderSpent;
 
   const percentage = totalLimit > 0 ? (totalSpent / totalLimit) * 100 : 0;

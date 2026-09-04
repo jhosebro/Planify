@@ -103,6 +103,8 @@ export interface Reminder {
   frequency: ReminderFrequency;
   isPaid: boolean;
   isOverdue: boolean;
+  /** Categoría asociada al pago (si aplica) */
+  categoryId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

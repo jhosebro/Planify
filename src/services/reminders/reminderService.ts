@@ -261,6 +261,7 @@ export class ReminderService {
       frequency: row.frequency as ReminderFrequency,
       isPaid: row.is_paid,
       isOverdue: !row.is_paid && dueDate < today,
+      categoryId: row.category_id ?? undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
