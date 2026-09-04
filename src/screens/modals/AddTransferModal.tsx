@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -32,6 +34,9 @@ export function AddTransferModal() {
   const navigation = useNavigation<AddTransferNavProp>();
   const route = useRoute<AddTransferRouteProp>();
   const preselectedSourceId = route.params?.sourceAccountId ?? null;
+
+  const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   const transferService = useMemo(() => new TransferService(), []);
   const accountService = useMemo(() => new AccountService(), []);
@@ -178,7 +183,9 @@ export function AddTransferModal() {
               key={`source-${acc.id}`}
               style={[
                 styles.accountOption,
-                sourceAccountId === acc.id && styles.accountOptionActive,
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 10 },
+                sourceAccountId === acc.id && { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'pressed') },
                 destinationAccountId === acc.id && styles.accountOptionDisabled,
               ]}
               onPress={() => {
@@ -192,7 +199,8 @@ export function AddTransferModal() {
               <Text
                 style={[
                   styles.accountOptionName,
-                  sourceAccountId === acc.id && styles.accountOptionNameActive,
+                  { color: themeColors.textSecondary },
+                  sourceAccountId === acc.id && { color: themeColors.textInverse },
                   destinationAccountId === acc.id && styles.accountOptionNameDisabled,
                 ]}
               >
@@ -201,7 +209,8 @@ export function AddTransferModal() {
               <Text
                 style={[
                   styles.accountOptionBalance,
-                  sourceAccountId === acc.id && styles.accountOptionBalanceActive,
+                  { color: themeColors.textTertiary },
+                  sourceAccountId === acc.id && { color: themeColors.textInverse },
                 ]}
               >
                 {formatAmount(acc.balance)}
@@ -218,7 +227,9 @@ export function AddTransferModal() {
               key={`dest-${acc.id}`}
               style={[
                 styles.accountOption,
-                destinationAccountId === acc.id && styles.accountOptionActive,
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 10 },
+                destinationAccountId === acc.id && { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'pressed') },
                 sourceAccountId === acc.id && styles.accountOptionDisabled,
               ]}
               onPress={() => {
@@ -232,7 +243,8 @@ export function AddTransferModal() {
               <Text
                 style={[
                   styles.accountOptionName,
-                  destinationAccountId === acc.id && styles.accountOptionNameActive,
+                  { color: themeColors.textSecondary },
+                  destinationAccountId === acc.id && { color: themeColors.textInverse },
                   sourceAccountId === acc.id && styles.accountOptionNameDisabled,
                 ]}
               >
@@ -241,7 +253,8 @@ export function AddTransferModal() {
               <Text
                 style={[
                   styles.accountOptionBalance,
-                  destinationAccountId === acc.id && styles.accountOptionBalanceActive,
+                  { color: themeColors.textTertiary },
+                  destinationAccountId === acc.id && { color: themeColors.textInverse },
                 ]}
               >
                 {formatAmount(acc.balance)}
@@ -253,7 +266,7 @@ export function AddTransferModal() {
         {/* Amount */}
         <Text style={styles.label}>Monto</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={amount}
           onChangeText={setAmount}
           placeholder="0.00"
@@ -265,7 +278,7 @@ export function AddTransferModal() {
         {/* Description */}
         <Text style={styles.label}>Descripción (opcional)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={description}
           onChangeText={setDescription}
           placeholder="Ej: Pago de renta, ahorro mensual..."
@@ -289,7 +302,7 @@ export function AddTransferModal() {
 
         {/* Summary */}
         {sourceAccountId && destinationAccountId && amount.trim() && (
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, neuSurface(scheme, 'raised'), { borderRadius: 10 }]}>
             <Text style={styles.summaryTitle}>Resumen</Text>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>De:</Text>
@@ -312,7 +325,7 @@ export function AddTransferModal() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            style={[styles.submitButton, neuShadow(scheme, 'raised'), submitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -351,13 +364,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     color: '#333',
-    backgroundColor: '#fff',
   },
   accountSelector: {
     gap: 8,
@@ -368,13 +378,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    backgroundColor: '#fff',
-  },
-  accountOptionActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#EBF4FF',
   },
   accountOptionDisabled: {
     opacity: 0.4,
@@ -382,20 +385,12 @@ const styles = StyleSheet.create({
   accountOptionName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#333',
-  },
-  accountOptionNameActive: {
-    color: colors.primary,
   },
   accountOptionNameDisabled: {
     color: '#AAA',
   },
   accountOptionBalance: {
     fontSize: 14,
-    color: '#666',
-  },
-  accountOptionBalanceActive: {
-    color: colors.primary,
   },
   warningContainer: {
     flexDirection: 'row',
@@ -426,12 +421,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   summaryCard: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
     marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   summaryTitle: {
     fontSize: 14,

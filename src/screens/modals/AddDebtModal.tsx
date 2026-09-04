@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -37,6 +38,7 @@ const DIRECTION_OPTIONS: { key: DebtDirection; label: string }[] = [
 
 export function AddDebtModal() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<AddDebtNavProp>();
   const route = useRoute<AddDebtRouteProp>();
   const debtService = useMemo(() => new DebtService(), []);
@@ -176,13 +178,14 @@ export function AddDebtModal() {
               key={opt.key}
               style={[
                 styles.chip,
-                { borderColor: colors.border },
-                category === opt.key && [styles.chipActive, { borderColor: colors.primary, backgroundColor: colors.primary + '15' }],
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 20 },
+                category === opt.key && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setCategory(opt.key)}
             >
               <Text style={styles.chipIcon}>{opt.icon}</Text>
-              <Text style={[styles.chipLabel, { color: colors.textSecondary }, category === opt.key && { color: colors.primary, fontWeight: '600' }]}>
+              <Text style={[styles.chipLabel, { color: category === opt.key ? colors.textInverse : colors.textSecondary }]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -197,12 +200,13 @@ export function AddDebtModal() {
               key={opt.key}
               style={[
                 styles.chip,
-                { borderColor: colors.border },
-                direction === opt.key && [styles.chipActive, { borderColor: colors.primary, backgroundColor: colors.primary + '15' }],
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 20 },
+                direction === opt.key && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setDirection(opt.key)}
             >
-              <Text style={[styles.chipLabel, { color: colors.textSecondary }, direction === opt.key && { color: colors.primary, fontWeight: '600' }]}>
+              <Text style={[styles.chipLabel, { color: direction === opt.key ? colors.textInverse : colors.textSecondary }]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -212,7 +216,7 @@ export function AddDebtModal() {
         {/* Name */}
         <Text style={[styles.label, { color: colors.textSecondary }]}>Nombre</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={name}
           onChangeText={setName}
           placeholder="Ej: Visa Oro, Préstamo Juan..."
@@ -222,7 +226,7 @@ export function AddDebtModal() {
         {/* Description */}
         <Text style={[styles.label, { color: colors.textSecondary }]}>Descripción (opcional)</Text>
         <TextInput
-          style={[styles.input, styles.inputMultiline, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+          style={[styles.input, styles.inputMultiline, neuInset(scheme), { color: colors.textPrimary }]}
           value={description}
           onChangeText={setDescription}
           placeholder="Notas adicionales..."
@@ -234,7 +238,7 @@ export function AddDebtModal() {
         {/* Total Amount */}
         <Text style={[styles.label, { color: colors.textSecondary }]}>Monto total ($)</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={displayTotalAmount}
           onChangeText={handleAmountChange}
           placeholder="0"
@@ -249,7 +253,7 @@ export function AddDebtModal() {
               {direction === 'they_owe_me' ? '¿Quién te debe?' : '¿A quién le debes?'}
             </Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+              style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
               value={counterparty}
               onChangeText={setCounterparty}
               placeholder="Nombre de la persona o entidad"
@@ -273,13 +277,14 @@ export function AddDebtModal() {
                     key={acc.id}
                     style={[
                       styles.chip,
-                      { borderColor: colors.border },
-                      linkedAccountId === acc.id && [styles.chipActive, { borderColor: colors.primary, backgroundColor: colors.primary + '15' }],
+                      neuSurface(scheme, 'flat'),
+                      { borderRadius: 20 },
+                      linkedAccountId === acc.id && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
                     ]}
                     onPress={() => setLinkedAccountId(linkedAccountId === acc.id ? null : acc.id)}
                   >
                     <Text style={styles.chipIcon}>💳</Text>
-                    <Text style={[styles.chipLabel, { color: colors.textSecondary }, linkedAccountId === acc.id && { color: colors.primary, fontWeight: '600' }]}>
+                    <Text style={[styles.chipLabel, { color: linkedAccountId === acc.id ? colors.textInverse : colors.textSecondary }]}>
                       {acc.name}
                     </Text>
                   </TouchableOpacity>
@@ -297,7 +302,7 @@ export function AddDebtModal() {
           <>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Número de cuotas</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+              style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
               value={totalInstallments}
               onChangeText={setTotalInstallments}
               placeholder="Ej: 12"
@@ -307,7 +312,7 @@ export function AddDebtModal() {
 
             <Text style={[styles.label, { color: colors.textSecondary }]}>Monto por cuota (opcional)</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+              style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
               value={displayInstallmentAmount}
               onChangeText={handleInstallmentAmountChange}
               placeholder="Se calcula automáticamente si lo dejas vacío"
@@ -317,7 +322,7 @@ export function AddDebtModal() {
 
             <Text style={[styles.label, { color: colors.textSecondary }]}>Cuotas ya pagadas</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+              style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
               value={paidInstallments}
               onChangeText={setPaidInstallments}
               placeholder="0"
@@ -333,8 +338,9 @@ export function AddDebtModal() {
             <TouchableOpacity
               style={[
                 styles.provisionedToggle,
-                { borderColor: colors.border },
-                isProvisioned && { borderColor: '#2EAD5D', backgroundColor: '#2EAD5D10' },
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 12 },
+                isProvisioned && { borderWidth: 1, borderColor: '#2EAD5D', backgroundColor: '#2EAD5D10' },
               ]}
               onPress={() => setIsProvisioned(!isProvisioned)}
               accessibilityRole="switch"
@@ -359,7 +365,7 @@ export function AddDebtModal() {
 
         {/* Save button */}
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, neuShadow(scheme, 'raised'), saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
           accessibilityRole="button"
@@ -378,8 +384,7 @@ const styles = StyleSheet.create({
 
   label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 16 },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
@@ -394,9 +399,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1,
   },
-  chipActive: {},
   chipIcon: { fontSize: 16 },
   chipLabel: { fontSize: 13 },
 
@@ -421,7 +424,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 1,
     marginTop: 16,
   },
   provisionedToggleIcon: { fontSize: 20 },

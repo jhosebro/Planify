@@ -14,7 +14,8 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { TrackingService } from '@/services/tracking';
 import type { TrackingList, TrackingItem } from '@/services/tracking';
@@ -58,6 +59,7 @@ interface CategoryOption {
 
 export function TrackingListDetailScreen() {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const route = useRoute<RouteProp<MainStackParamList, 'TrackingListDetail'>>();
   const { listId } = route.params;
@@ -278,7 +280,7 @@ export function TrackingListDetailScreen() {
         ListHeaderComponent={
           <View>
             {/* List info header */}
-            <View style={[styles.listHeader, { backgroundColor: list?.color ?? themeColors.primary }]}>
+            <View style={[styles.listHeader, { backgroundColor: list?.color ?? themeColors.primary }, neuShadow(scheme, 'raised')]}>
               <Text style={styles.listHeaderIcon}>{list?.icon ?? '📋'}</Text>
               <Text style={styles.listHeaderName}>{list?.name ?? 'Lista'}</Text>
               {list?.description ? (
@@ -314,14 +316,14 @@ export function TrackingListDetailScreen() {
             {/* Actions */}
             <View style={styles.actionsRow}>
               <TouchableOpacity
-                style={[styles.addItemButton, { backgroundColor: themeColors.primary }]}
+                style={[styles.addItemButton, { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'raised') }]}
                 onPress={() => navigation.navigate('AddTrackingItem', { listId })}
               >
                 <Ionicons name="add" size={18} color="#fff" />
                 <Text style={styles.addItemButtonText}>Agregar producto</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.editListButton, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}
+                style={[styles.editListButton, neuSurface(scheme, 'flat')]}
                 onPress={() => navigation.navigate('AddTrackingList', { listId })}
               >
                 <Ionicons name="pencil" size={16} color={themeColors.primary} />
@@ -336,15 +338,15 @@ export function TrackingListDetailScreen() {
                   key={f}
                   style={[
                     styles.filterChip,
-                    { borderColor: themeColors.border },
-                    filter === f && { backgroundColor: themeColors.primary, borderColor: themeColors.primary },
+                    neuSurface(scheme, 'flat'),
+                    filter === f && { backgroundColor: themeColors.primary, borderColor: themeColors.primary, ...neuShadow(scheme, 'pressed') },
                   ]}
                   onPress={() => setFilter(f)}
                 >
                   <Text style={[
                     styles.filterChipText,
                     { color: themeColors.textSecondary },
-                    filter === f && { color: '#fff' },
+                    filter === f && { color: themeColors.textInverse },
                   ]}>
                     {f === 'all' ? 'Todos' : f === 'pending' ? `Por comprar (${pendingCount})` : 'En stock'}
                   </Text>
@@ -423,6 +425,7 @@ function PurchaseConfirmModal({
   loading: boolean;
 }) {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   if (!item) return null;
 
@@ -499,7 +502,7 @@ function PurchaseConfirmModal({
 
       {/* Confirm button */}
       <TouchableOpacity
-        style={[styles.modalConfirmBtn, { backgroundColor: themeColors.greenEarns }, loading && { opacity: 0.6 }]}
+        style={[styles.modalConfirmBtn, { backgroundColor: themeColors.greenEarns, ...neuShadow(scheme, 'raised') }, loading && { opacity: 0.6 }]}
         onPress={onConfirm}
         disabled={loading}
       >
@@ -517,6 +520,7 @@ function PurchaseConfirmModal({
 
 function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBudgetInfo; monthlyEstimate: number }) {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const remaining = budgetInfo.monthlyLimit - budgetInfo.spent;
   const monthlyEstimateRounded = Math.round(monthlyEstimate);
 
@@ -536,7 +540,7 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
   const estimateFits = monthlyEstimateRounded <= budgetInfo.monthlyLimit;
 
   return (
-    <View style={[styles.budgetCard, { backgroundColor: themeColors.cardBackground }]}>
+    <View style={[styles.budgetCard, { backgroundColor: themeColors.cardBackground, ...neuSurface(scheme, 'raised') }]}>
       <View style={styles.budgetCardHeader}>
         <Ionicons name="pie-chart" size={18} color={themeColors.primary} />
         <Text style={[styles.budgetCardTitle, { color: themeColors.textPrimary }]}>
@@ -546,7 +550,7 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
 
       {/* Gasto actual del mes */}
       <View style={styles.budgetBarContainer}>
-        <View style={[styles.budgetBarBg, { backgroundColor: themeColors.border }]}>
+        <View style={[styles.budgetBarBg, neuProgress(scheme)]}>
           <View style={[styles.budgetBarFill, { width: `${barWidth}%`, backgroundColor: barColor }]} />
         </View>
         <Text style={[styles.budgetBarPercent, { color: barColor }]}>
@@ -630,10 +634,11 @@ function TrackingItemCard({
   onEdit: () => void;
 }) {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const nextPurchase = getDaysUntilNextPurchase(item);
 
   return (
-    <View style={[styles.itemCard, { backgroundColor: themeColors.cardBackground }, item.needsToBuy && styles.itemCardPending]}>
+    <View style={[styles.itemCard, { backgroundColor: themeColors.cardBackground, ...neuSurface(scheme, 'flat') }, item.needsToBuy && styles.itemCardPending]}>
       <View style={styles.itemCardMain}>
         <TouchableOpacity
           style={[
@@ -734,7 +739,7 @@ const styles = StyleSheet.create({
   listHeaderStatDivider: { color: 'rgba(255,255,255,0.5)' },
 
   // Budget card
-  budgetCard: { borderRadius: 14, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  budgetCard: { borderRadius: 14, padding: 16, marginBottom: 16 },
   budgetCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   budgetCardTitle: { fontSize: 15, fontWeight: '600' },
   budgetBarContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
@@ -753,16 +758,16 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', marginBottom: 12, gap: 10 },
   addItemButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   addItemButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  editListButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
+  editListButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
   editListButtonText: { fontSize: 14, fontWeight: '500' },
 
   // Filters
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18 },
   filterChipText: { fontSize: 13, fontWeight: '500' },
 
   // Item card
-  itemCard: { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1 },
+  itemCard: { borderRadius: 12, padding: 14, marginBottom: 10 },
   itemCardPending: { borderLeftWidth: 3, borderLeftColor: '#F1632A' },
   itemCardMain: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 28, height: 28, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 2 },

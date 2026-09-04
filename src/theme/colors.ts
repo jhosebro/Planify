@@ -14,8 +14,8 @@ export const lightColors = {
   tertiary: '#F1632A',
   quaternary: '#B7B7B7',
 
-  backgroundPrimary: '#F6F6F5',
-  backgroundSecondary: '#FFFFFF',
+  backgroundPrimary: '#E4E8EE',
+  backgroundSecondary: '#E4E8EE',
   primaryMenu: '#7B7B7B1F',
 
   greenEarns: '#2EAD5D',
@@ -36,10 +36,18 @@ export const lightColors = {
   textInverse: '#FFFFFF',
 
   // Borders & surfaces
-  border: '#E8E8E8',
-  cardBackground: '#FFFFFF',
-  inputBackground: '#FFFFFF',
+  border: '#CDD5E0',
+  cardBackground: '#E4E8EE',
+  inputBackground: '#D9DEE6',
   overlay: 'rgba(0,0,0,0.5)',
+
+  // Clay / neumorphic
+  surface: '#E4E8EE',
+  surfacePressed: '#D9DEE6',
+  shadowLight: '#FFFFFF',
+  shadowDark: '#A9B4C6',
+  borderSubtle: 'rgba(255,255,255,0.85)',
+  borderInset: 'rgba(0,0,0,0.06)',
 };
 
 export const darkColors = {
@@ -53,8 +61,8 @@ export const darkColors = {
   tertiary: '#F48C5C',
   quaternary: '#6B6B6B',
 
-  backgroundPrimary: '#121212',
-  backgroundSecondary: '#1E1E1E',
+  backgroundPrimary: '#1B1E24',
+  backgroundSecondary: '#1B1E24',
   primaryMenu: '#FFFFFF1F',
 
   greenEarns: '#4ACA7A',
@@ -75,10 +83,18 @@ export const darkColors = {
   textInverse: '#121212',
 
   // Borders & surfaces
-  border: '#333333',
-  cardBackground: '#1E1E1E',
-  inputBackground: '#2A2A2A',
+  border: '#2A303A',
+  cardBackground: '#1B1E24',
+  inputBackground: '#15171C',
   overlay: 'rgba(0,0,0,0.7)',
+
+  // Clay / neumorphic
+  surface: '#1B1E24',
+  surfacePressed: '#15171C',
+  shadowLight: '#272C36',
+  shadowDark: '#0E1013',
+  borderSubtle: 'rgba(255,255,255,0.06)',
+  borderInset: 'rgba(0,0,0,0.35)',
 };
 
 export type ThemeColors = {

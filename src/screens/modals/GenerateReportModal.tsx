@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -40,6 +42,7 @@ interface CategoryRow {
 export function GenerateReportModal() {
   const navigation = useNavigation<GenerateReportNavProp>();
   const reportService = useMemo(() => new ReportService(), []);
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   // Form state
   const [format, setFormat] = useState<ReportFormat>('pdf');
@@ -169,7 +172,7 @@ export function GenerateReportModal() {
           <Text style={styles.sectionTitle}>Compartir</Text>
 
           <TouchableOpacity
-            style={styles.shareOption}
+            style={[styles.shareOption, neuSurface(scheme, 'flat'), { borderRadius: 12 }]}
             onPress={() => handleShare('email')}
             disabled={sharing}
             accessibilityRole="button"
@@ -185,7 +188,7 @@ export function GenerateReportModal() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.shareOption}
+            style={[styles.shareOption, neuSurface(scheme, 'flat'), { borderRadius: 12 }]}
             onPress={() => handleShare('save')}
             disabled={sharing}
             accessibilityRole="button"
@@ -201,7 +204,7 @@ export function GenerateReportModal() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.shareOption}
+            style={[styles.shareOption, neuSurface(scheme, 'flat'), { borderRadius: 12 }]}
             onPress={() => handleShare('share')}
             disabled={sharing}
             accessibilityRole="button"
@@ -222,7 +225,7 @@ export function GenerateReportModal() {
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={styles.secondaryButton}
+              style={[styles.secondaryButton, neuSurface(scheme, 'flat'), { borderRadius: 8 }]}
               onPress={() => {
                 setGeneratedReport(null);
               }}
@@ -250,24 +253,24 @@ export function GenerateReportModal() {
         <Text style={styles.label}>Formato</Text>
         <View style={styles.formatRow}>
           <TouchableOpacity
-            style={[styles.formatButton, format === 'pdf' && styles.formatButtonActive]}
+            style={[styles.formatButton, neuSurface(scheme, 'flat'), { borderRadius: 8 }, format === 'pdf' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setFormat('pdf')}
             accessibilityRole="button"
             accessibilityState={{ selected: format === 'pdf' }}
             accessibilityLabel="Formato PDF"
           >
-            <Text style={[styles.formatButtonText, format === 'pdf' && styles.formatButtonTextActive]}>
+            <Text style={[styles.formatButtonText, { color: format === 'pdf' ? colors.textInverse : colors.textSecondary }]}>
               PDF
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.formatButton, format === 'csv' && styles.formatButtonActive]}
+            style={[styles.formatButton, neuSurface(scheme, 'flat'), { borderRadius: 8 }, format === 'csv' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setFormat('csv')}
             accessibilityRole="button"
             accessibilityState={{ selected: format === 'csv' }}
             accessibilityLabel="Formato CSV"
           >
-            <Text style={[styles.formatButtonText, format === 'csv' && styles.formatButtonTextActive]}>
+            <Text style={[styles.formatButtonText, { color: format === 'csv' ? colors.textInverse : colors.textSecondary }]}>
               CSV
             </Text>
           </TouchableOpacity>
@@ -276,7 +279,7 @@ export function GenerateReportModal() {
         {/* Date Range */}
         <Text style={styles.label}>Fecha inicial (AAAA-MM-DD)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={dateFrom}
           onChangeText={setDateFrom}
           placeholder="2024-01-01"
@@ -286,7 +289,7 @@ export function GenerateReportModal() {
 
         <Text style={styles.label}>Fecha final (AAAA-MM-DD)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={dateTo}
           onChangeText={setDateTo}
           placeholder="2024-01-31"
@@ -298,7 +301,7 @@ export function GenerateReportModal() {
         <Text style={styles.label}>Cuenta (opcional)</Text>
         <View style={styles.filterRow}>
           <TouchableOpacity
-            style={[styles.filterChip, selectedAccountId === null && styles.filterChipActive]}
+            style={[styles.filterChip, neuSurface(scheme, 'flat'), { borderRadius: 8 }, selectedAccountId === null && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setSelectedAccountId(null)}
             accessibilityRole="button"
             accessibilityState={{ selected: selectedAccountId === null }}
@@ -306,7 +309,7 @@ export function GenerateReportModal() {
             <Text
               style={[
                 styles.filterChipText,
-                selectedAccountId === null && styles.filterChipTextActive,
+                { color: selectedAccountId === null ? colors.textInverse : colors.textSecondary },
               ]}
             >
               Todas
@@ -315,7 +318,7 @@ export function GenerateReportModal() {
           {accounts.map((acc) => (
             <TouchableOpacity
               key={acc.id}
-              style={[styles.filterChip, selectedAccountId === acc.id && styles.filterChipActive]}
+              style={[styles.filterChip, neuSurface(scheme, 'flat'), { borderRadius: 8 }, selectedAccountId === acc.id && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
               onPress={() => setSelectedAccountId(acc.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: selectedAccountId === acc.id }}
@@ -323,7 +326,7 @@ export function GenerateReportModal() {
               <Text
                 style={[
                   styles.filterChipText,
-                  selectedAccountId === acc.id && styles.filterChipTextActive,
+                  { color: selectedAccountId === acc.id ? colors.textInverse : colors.textSecondary },
                 ]}
               >
                 {acc.name}
@@ -336,7 +339,7 @@ export function GenerateReportModal() {
         <Text style={styles.label}>Categoría (opcional)</Text>
         <View style={styles.filterRow}>
           <TouchableOpacity
-            style={[styles.filterChip, selectedCategoryId === null && styles.filterChipActive]}
+            style={[styles.filterChip, neuSurface(scheme, 'flat'), { borderRadius: 8 }, selectedCategoryId === null && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setSelectedCategoryId(null)}
             accessibilityRole="button"
             accessibilityState={{ selected: selectedCategoryId === null }}
@@ -344,7 +347,7 @@ export function GenerateReportModal() {
             <Text
               style={[
                 styles.filterChipText,
-                selectedCategoryId === null && styles.filterChipTextActive,
+                { color: selectedCategoryId === null ? colors.textInverse : colors.textSecondary },
               ]}
             >
               Todas
@@ -353,7 +356,7 @@ export function GenerateReportModal() {
           {categories.map((cat) => (
             <TouchableOpacity
               key={cat.id}
-              style={[styles.filterChip, selectedCategoryId === cat.id && styles.filterChipActive]}
+              style={[styles.filterChip, neuSurface(scheme, 'flat'), { borderRadius: 8 }, selectedCategoryId === cat.id && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]}
               onPress={() => setSelectedCategoryId(cat.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: selectedCategoryId === cat.id }}
@@ -361,7 +364,7 @@ export function GenerateReportModal() {
               <Text
                 style={[
                   styles.filterChipText,
-                  selectedCategoryId === cat.id && styles.filterChipTextActive,
+                  { color: selectedCategoryId === cat.id ? colors.textInverse : colors.textSecondary },
                 ]}
               >
                 {cat.name}
@@ -376,7 +379,7 @@ export function GenerateReportModal() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitButton, generating && styles.submitButtonDisabled]}
+            style={[styles.submitButton, neuShadow(scheme, 'raised'), generating && styles.submitButtonDisabled]}
             onPress={handleGenerate}
             disabled={generating}
             accessibilityRole="button"
@@ -435,13 +438,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     color: '#333',
-    backgroundColor: '#fff',
   },
 
   // Format selector
@@ -453,22 +453,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  formatButtonActive: {
-    backgroundColor: '#EBF4FF',
-    borderColor: colors.primary,
   },
   formatButtonText: {
     fontSize: 15,
     fontWeight: '600',
     color: '#666',
-  },
-  formatButtonTextActive: {
-    color: colors.primary,
   },
 
   // Filter chips
@@ -481,21 +471,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    backgroundColor: '#fff',
-  },
-  filterChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#EBF4FF',
   },
   filterChipText: {
     fontSize: 13,
     color: '#666',
     fontWeight: '500',
-  },
-  filterChipTextActive: {
-    color: colors.primary,
   },
 
   // Buttons
@@ -535,8 +515,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
   },
   secondaryButtonText: {
     fontSize: 16,
@@ -574,12 +552,9 @@ const styles = StyleSheet.create({
   shareOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#EEE',
   },
   shareOptionIcon: {
     fontSize: 24,

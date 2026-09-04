@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -56,6 +58,7 @@ function getDaysInMonth(year: number, month: number): number {
 
 export function AddReminderModal() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const route = (navigation.getState()?.routes ?? []).find(r => r.name === 'AddReminder');
   const reminderId = (route?.params as any)?.reminderId as string | undefined;
   const isEditMode = !!reminderId;
@@ -164,7 +167,7 @@ export function AddReminderModal() {
         {/* Description */}
         <Text style={styles.inputLabel}>Descripción</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={description}
           onChangeText={setDescription}
           placeholder="Ej: Renta, Internet, Seguro"
@@ -176,7 +179,7 @@ export function AddReminderModal() {
         {/* Amount with thousand separators */}
         <Text style={styles.inputLabel}>Monto ($)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={displayAmount}
           onChangeText={handleAmountChange}
           placeholder="0"
@@ -188,7 +191,7 @@ export function AddReminderModal() {
         {/* Date Picker */}
         <Text style={styles.inputLabel}>Fecha de vencimiento</Text>
         <TouchableOpacity
-          style={styles.dateButton}
+          style={[styles.dateButton, neuInset(scheme)]}
           onPress={() => setShowDatePicker(!showDatePicker)}
           accessibilityLabel="Seleccionar fecha de vencimiento"
           accessibilityRole="button"
@@ -220,7 +223,9 @@ export function AddReminderModal() {
               key={option.key}
               style={[
                 styles.frequencyButton,
-                frequency === option.key && styles.frequencyButtonActive,
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 20 },
+                frequency === option.key && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setFrequency(option.key)}
               accessibilityRole="button"
@@ -230,7 +235,7 @@ export function AddReminderModal() {
               <Text
                 style={[
                   styles.frequencyButtonText,
-                  frequency === option.key && styles.frequencyButtonTextActive,
+                  { color: frequency === option.key ? colors.textInverse : colors.textSecondary },
                 ]}
               >
                 {option.label}
@@ -241,7 +246,7 @@ export function AddReminderModal() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitButton, saving && styles.disabledButton]}
+          style={[styles.submitButton, neuShadow(scheme, 'raised'), saving && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={saving}
           accessibilityRole="button"
@@ -296,24 +301,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD',
     color: colors.secondary,
   },
 
   // Date picker
   dateButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#DDD',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -395,21 +394,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#DDD',
-  },
-  frequencyButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   frequencyButtonText: {
     fontSize: 14,
     color: '#666',
     fontWeight: '500',
-  },
-  frequencyButtonTextActive: {
-    color: '#fff',
   },
 
   // Buttons

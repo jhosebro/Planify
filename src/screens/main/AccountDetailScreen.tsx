@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   FlatList,
@@ -40,6 +42,7 @@ function formatDate(date: Date): string {
 }
 
 export function AccountDetailScreen() {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<AccountDetailNavProp>();
   const route = useRoute<AccountDetailRouteProp>();
   const { accountId } = route.params;
@@ -89,7 +92,7 @@ export function AccountDetailScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Cuenta no encontrada.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={[styles.backButton, neuShadow(scheme, 'raised')]} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
       </View>
@@ -99,7 +102,7 @@ export function AccountDetailScreen() {
   return (
     <View style={styles.container}>
       {/* Account Header */}
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, neuShadow(scheme, 'raised')]}>
         <Text style={styles.accountName}>{account.name}</Text>
         <Text style={styles.accountType}>{ACCOUNT_TYPE_LABELS[account.type]}</Text>
         <Text style={[styles.accountBalance, account.balance < 0 && styles.negativeBalance]}>
@@ -143,13 +146,14 @@ interface TransactionItemProps {
 }
 
 function TransactionItem({ transaction }: TransactionItemProps) {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const isTransfer = !!transaction.linkedTransferId;
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
   const amountColor = isTransfer ? '#607D8B' : isExpense ? colors.redExpenses : colors.greenEarns;
 
   return (
-    <View style={styles.transactionRow}>
+    <View style={[styles.transactionRow, neuSurface(scheme, 'flat')]}>
       <View style={[styles.transactionIcon, isTransfer && styles.transactionIconTransfer]}>
         <Text style={styles.transactionIconText}>{isTransfer ? '↔' : isExpense ? '↓' : '↑'}</Text>
       </View>
@@ -221,11 +225,6 @@ const styles = StyleSheet.create({
     padding: 24,
     margin: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   accountName: {
     fontSize: 20,
@@ -277,17 +276,11 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   transactionRow: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   transactionIcon: {
     width: 36,

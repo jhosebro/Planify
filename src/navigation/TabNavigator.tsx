@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuShadow, neuSurface } from '@/lib/neumorphic';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,6 +82,8 @@ const SCREEN_TITLES: Record<keyof TabParamList, string> = {
  */
 function DesktopTabLayout() {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
     if (Platform.OS === 'web') {
       try {
@@ -104,7 +107,12 @@ function DesktopTabLayout() {
     <View style={desktopStyles.container}>
       <DesktopSidebar currentRoute={currentRoute} onNavigate={handleNavigate} />
       <View style={[desktopStyles.mainContent, { backgroundColor: colors.backgroundPrimary }]}>
-        <View style={[desktopStyles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            desktopStyles.header,
+            { backgroundColor: colors.surface, ...neuShadow(scheme, 'flat') },
+          ]}
+        >
           <Text style={[desktopStyles.headerTitle, { color: colors.textPrimary }]}>{SCREEN_TITLES[currentRoute]}</Text>
         </View>
         <View style={desktopStyles.screenContainer}>
@@ -121,17 +129,22 @@ function DesktopTabLayout() {
  */
 function MobileTabLayout() {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
 
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
       screenOptions={({ route }) => ({
         headerShown: true,
-        headerStyle: { backgroundColor: colors.cardBackground },
+        headerStyle: { backgroundColor: colors.surface },
+        headerShadowVisible: false,
+        headerTitleStyle: { color: colors.textPrimary, fontWeight: '700' },
         headerTintColor: colors.textPrimary,
         tabBarStyle: {
-          backgroundColor: colors.cardBackground,
-          borderTopColor: colors.border,
+          backgroundColor: colors.surface,
+          borderTopWidth: 0,
+          ...neuShadow(scheme, 'raised'),
         },
         tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
@@ -237,16 +250,9 @@ const desktopStyles = StyleSheet.create({
   },
   header: {
     height: 60,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     paddingHorizontal: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   headerTitle: {
     fontSize: 20,

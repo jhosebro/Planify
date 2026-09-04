@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuInset } from '@/lib/neumorphic';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -57,6 +59,9 @@ export function CyclicDatePicker({
   minYear = 2020,
   maxYear = 2040,
 }: CyclicDatePickerProps) {
+  const themeColors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const daysInMonth = getDaysInMonth(year, month);
 
   // Ensure day doesn't exceed days in current month
@@ -118,7 +123,7 @@ export function CyclicDatePicker({
   const nextMonth = month === 11 ? 0 : month + 1;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, neuInset(scheme)]}>
       {/* Day Column */}
       <WheelColumn
         label="Día"
@@ -250,12 +255,9 @@ function WheelColumn({ label, prevValue, currentValue, nextValue, onPrev, onNext
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#EEE',
     justifyContent: 'space-around',
     gap: 8,
   },

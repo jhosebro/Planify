@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { colors } from '@/theme';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -13,7 +12,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { useProfileStore } from '@/store/profileStore';
 import { ProfileService } from '@/services/profile';
 import type { Currency } from '@/types';
@@ -35,6 +35,7 @@ const CURRENCIES: { value: Currency; label: string }[] = [
 export function EditProfileModal() {
   const navigation = useNavigation<NavProp>();
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const { profile, setProfile } = useProfileStore();
   const profileService = useMemo(() => new ProfileService(), []);
 
@@ -85,7 +86,7 @@ export function EditProfileModal() {
         {/* Display Name */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Nombre</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border, color: themeColors.textPrimary }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Tu nombre"
@@ -96,7 +97,7 @@ export function EditProfileModal() {
         {/* Phone */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Teléfono (opcional)</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border, color: themeColors.textPrimary }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={phone}
           onChangeText={setPhone}
           placeholder="+57 300 123 4567"
@@ -112,8 +113,9 @@ export function EditProfileModal() {
               key={c.value}
               style={[
                 styles.currencyChip,
-                { borderColor: currency === c.value ? themeColors.primary : themeColors.border },
-                currency === c.value && { backgroundColor: themeColors.primary + '15' },
+                neuSurface(scheme, 'flat'),
+                { borderRadius: 20 },
+                currency === c.value && { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setCurrency(c.value)}
               accessibilityRole="button"
@@ -122,7 +124,7 @@ export function EditProfileModal() {
               <Text
                 style={[
                   styles.currencyChipText,
-                  { color: currency === c.value ? themeColors.primary : themeColors.textSecondary },
+                  { color: currency === c.value ? themeColors.textInverse : themeColors.textSecondary },
                   currency === c.value && { fontWeight: '700' },
                 ]}
               >
@@ -134,7 +136,7 @@ export function EditProfileModal() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitBtn, saving && { opacity: 0.6 }]}
+          style={[styles.submitBtn, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised'), saving && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={saving}
           accessibilityRole="button"
@@ -157,11 +159,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 16 },
   input: {
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    borderWidth: 1,
   },
   currencyGrid: {
     flexDirection: 'row',
@@ -172,14 +173,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 2,
   },
   currencyChipText: {
     fontSize: 14,
     fontWeight: '500',
   },
   submitBtn: {
-    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -23,6 +25,7 @@ import type { MainStackParamList } from '@/navigation/types';
 export function AddBudgetModal() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const budgetService = useMemo(() => new BudgetService(), []);
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState('');
@@ -87,7 +90,7 @@ export function AddBudgetModal() {
         {/* Monthly Limit */}
         <Text style={styles.inputLabel}>Límite mensual ($)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={displayLimit}
           onChangeText={handleLimitChange}
           placeholder="0"
@@ -99,7 +102,7 @@ export function AddBudgetModal() {
         {/* Alert Threshold */}
         <Text style={styles.inputLabel}>Umbral de alerta (%)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]}
           value={alertThreshold}
           onChangeText={setAlertThreshold}
           placeholder="80"
@@ -115,7 +118,7 @@ export function AddBudgetModal() {
         {/* Include in General Budget */}
         <Text style={styles.inputLabel}>Presupuesto General</Text>
         <TouchableOpacity
-          style={styles.switchRow}
+          style={[styles.switchRow, neuSurface(scheme, 'flat'), { borderRadius: 12 }]}
           onPress={() => setIncludeInGeneral((v) => !v)}
           activeOpacity={0.7}
           accessibilityRole="switch"
@@ -138,7 +141,7 @@ export function AddBudgetModal() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitButton, saving && styles.disabledButton]}
+          style={[styles.submitButton, neuShadow(scheme, 'raised'), saving && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={saving}
           accessibilityRole="button"
@@ -193,13 +196,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD',
     color: colors.secondary,
   },
   inputHint: {
@@ -211,12 +211,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#DDD',
   },
   switchTextBlock: {
     flex: 1,

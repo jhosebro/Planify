@@ -4,7 +4,8 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
@@ -40,6 +41,7 @@ const SYNC_STATUS_MAP: Record<SyncStatus, SyncStatusConfig> = {
 export function SettingsScreen() {
   const navigation = useNavigation<SettingsNavProp>();
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const { status, lastSyncAt, pendingCount } = useSyncStore();
@@ -104,7 +106,7 @@ export function SettingsScreen() {
       isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
     ]}>
       {/* Profile Card */}
-      <View style={[styles.profileCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.profileCard]}>
         <View style={styles.profileHeader}>
           <ProfileAvatar
             displayName={profile?.displayName}
@@ -147,7 +149,7 @@ export function SettingsScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.editProfileBtn, { borderColor: themeColors.primary }]}
+          style={[neuSurface(scheme, 'flat'), styles.editProfileBtn, { borderColor: themeColors.primary }]}
           onPress={handleEditProfile}
           accessibilityRole="button"
           accessibilityLabel="Editar perfil"
@@ -157,7 +159,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Sync Status Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Estado de Sincronización</Text>
         <SyncStatusIndicator
           status={status}
@@ -169,7 +171,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Theme Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Apariencia</Text>
         <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
           Elige el tema de la aplicación.
@@ -197,13 +199,13 @@ export function SettingsScreen() {
       </View>
 
       {/* Export Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Exportar Datos</Text>
         <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
           Genera reportes en PDF o CSV con los movimientos de tu cuenta.
         </Text>
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised')]}
           onPress={handleExportData}
           accessibilityRole="button"
           accessibilityLabel="Generar reporte"
@@ -213,13 +215,13 @@ export function SettingsScreen() {
       </View>
 
       {/* Export for AI Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Asesoría con IA</Text>
         <Text style={[styles.sectionDescription, { color: themeColors.textSecondary }]}>
           Exporta tus datos financieros con un prompt listo para pegar en ChatGPT y recibir asesoría personalizada.
         </Text>
         <TouchableOpacity
-          style={[styles.actionButton, styles.aiButton]}
+          style={[styles.actionButton, styles.aiButton, { backgroundColor: themeColors.tertiary }, neuShadow(scheme, 'raised')]}
           onPress={() => navigation.navigate('ExportForAI')}
           accessibilityRole="button"
           accessibilityLabel="Exportar para ChatGPT"
@@ -229,9 +231,9 @@ export function SettingsScreen() {
       </View>
 
       {/* Logout Section */}
-      <View style={[styles.sectionCard, { backgroundColor: themeColors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <TouchableOpacity
-          style={[styles.logoutButton, { borderColor: themeColors.redExpenses }]}
+          style={[neuSurface(scheme, 'flat'), styles.logoutButton, { borderColor: themeColors.redExpenses }]}
           onPress={handleLogout}
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
@@ -318,12 +320,13 @@ interface ThemeOptionProps {
 }
 
 function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps) {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   return (
     <TouchableOpacity
       style={[
+        neuSurface(scheme, 'flat'),
         styles.themeOption,
-        { borderColor: isActive ? themeColors.primary : themeColors.border },
-        isActive && { backgroundColor: themeColors.primary + '12' },
+        isActive && { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'pressed') },
       ]}
       onPress={onPress}
       accessibilityRole="button"
@@ -332,7 +335,7 @@ function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps
     >
       <Text style={[
         styles.themeOptionText,
-        { color: isActive ? themeColors.primary : themeColors.textSecondary },
+        { color: isActive ? themeColors.textInverse : themeColors.textSecondary },
         isActive && { fontWeight: '700' },
       ]}>
         {label}
@@ -379,11 +382,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -448,11 +446,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,
@@ -495,7 +488,6 @@ const styles = StyleSheet.create({
 
   // Action Button
   actionButton: {
-    backgroundColor: colors.primary,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -506,8 +498,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   aiButton: {
-    backgroundColor: colors.tertiary,
-  },
+},
 
   // Theme Section
   themeRow: {
@@ -518,7 +509,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

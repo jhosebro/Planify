@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   FlatList,
@@ -88,6 +89,7 @@ function sortGoals(goals: Goal[], sortKey: GoalSortKey): Goal[] {
 
 export function GoalsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -161,7 +163,7 @@ export function GoalsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>🎯 Mis Metas</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity
-                style={[styles.filterToggle, { backgroundColor: colors.cardBackground, borderColor: colors.border }, hasActiveFilters && styles.filterToggleActive]}
+                style={[neuSurface(scheme, 'flat'), styles.filterToggle, hasActiveFilters && { borderColor: colors.primary, borderWidth: 2 }]}
                 onPress={() => setShowFilters(!showFilters)}
                 accessibilityRole="button"
                 accessibilityLabel="Mostrar filtros y ordenamiento"
@@ -171,7 +173,7 @@ export function GoalsScreen() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.addButton}
+                style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
                 onPress={() => navigation.navigate('AddGoal')}
               >
                 <Text style={styles.addButtonText}>+ Nueva</Text>
@@ -181,7 +183,7 @@ export function GoalsScreen() {
 
           {/* Filters & Sort Panel */}
           {showFilters && (
-            <View style={[styles.filtersCard, { backgroundColor: colors.cardBackground }]}>
+            <View style={[neuSurface(scheme, 'raised'), styles.filtersCard]}>
               {/* Sort */}
               <Text style={[styles.filterLabel, { color: colors.textTertiary }]}>Ordenar por</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
@@ -189,10 +191,14 @@ export function GoalsScreen() {
                   {SORT_OPTIONS.map((opt) => (
                     <TouchableOpacity
                       key={opt.key}
-                      style={[styles.filterChip, { borderColor: colors.border }, sortKey === opt.key && styles.filterChipActive]}
+                      style={[
+                        neuSurface(scheme, 'flat'),
+                        styles.filterChip,
+                        sortKey === opt.key && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
+                      ]}
                       onPress={() => setSortKey(opt.key)}
                     >
-                      <Text style={[styles.filterChipText, { color: colors.textSecondary }, sortKey === opt.key && styles.filterChipTextActive]}>
+                      <Text style={[styles.filterChipText, { color: colors.textSecondary }, sortKey === opt.key && { color: colors.textInverse }]}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
@@ -206,10 +212,14 @@ export function GoalsScreen() {
                 {FILTER_TYPE_OPTIONS.map((opt) => (
                   <TouchableOpacity
                     key={opt.key}
-                    style={[styles.filterChip, { borderColor: colors.border }, filterType === opt.key && styles.filterChipActive]}
+                    style={[
+                      neuSurface(scheme, 'flat'),
+                      styles.filterChip,
+                      filterType === opt.key && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
+                    ]}
                     onPress={() => setFilterType(opt.key)}
                   >
-                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterType === opt.key && styles.filterChipTextActive]}>
+                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterType === opt.key && { color: colors.textInverse }]}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -223,14 +233,13 @@ export function GoalsScreen() {
                   <TouchableOpacity
                     key={opt.key}
                     style={[
+                      neuSurface(scheme, 'flat'),
                       styles.filterChip,
-                      { borderColor: colors.border },
-                      filterPriority === opt.key && styles.filterChipActive,
-                      filterPriority === opt.key && opt.color ? { backgroundColor: opt.color } : undefined,
+                      filterPriority === opt.key && { backgroundColor: opt.color ?? colors.primary, ...neuShadow(scheme, 'pressed') },
                     ]}
                     onPress={() => setFilterPriority(opt.key)}
                   >
-                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterPriority === opt.key && styles.filterChipTextActive]}>
+                    <Text style={[styles.filterChipText, { color: colors.textSecondary }, filterPriority === opt.key && { color: colors.textInverse }]}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -262,7 +271,7 @@ export function GoalsScreen() {
 
           {/* Summary card */}
           {activeGoals.length > 0 && (
-            <View style={styles.summaryCard}>
+            <View style={[styles.summaryCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
               <Text style={styles.summaryLabel}>Progreso total</Text>
               <Text style={styles.summaryValue}>
                 {formatAmount(activeGoals.reduce((s, g) => s + g.savedAmount, 0))}
@@ -298,7 +307,7 @@ export function GoalsScreen() {
               {pausedGoals.map((g) => (
                 <TouchableOpacity
                   key={g.id}
-                  style={[styles.pausedItem, { backgroundColor: colors.cardBackground }]}
+                  style={[neuSurface(scheme, 'flat'), styles.pausedItem]}
                   onPress={() => navigation.navigate('GoalDetail', { goalId: g.id })}
                 >
                   <View>
@@ -316,7 +325,7 @@ export function GoalsScreen() {
             <View style={styles.completedSection}>
               <Text style={[styles.completedTitle, { color: colors.textSecondary }]}>✅ Completadas ({completedGoals.length})</Text>
               {completedGoals.map((g) => (
-                <View key={g.id} style={[styles.completedItem, { borderBottomColor: colors.border }]}>
+                <View key={g.id} style={[styles.completedItem, { borderBottomColor: colors.borderInset }]}>
                   <Text style={[styles.completedName, { color: colors.textTertiary }]}>{g.name}</Text>
                   <Text style={[styles.completedAmount, { color: colors.textTertiary }]}>{formatAmount(g.targetAmount)}</Text>
                 </View>
@@ -333,11 +342,12 @@ export function GoalsScreen() {
 
 function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => void; isDesktop?: boolean }) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const priority = PRIORITY_LABELS[goal.priority] ?? PRIORITY_LABELS.medium;
   const daysLeft = Math.max(0, Math.ceil((goal.targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <TouchableOpacity style={[styles.goalCard, { backgroundColor: colors.cardBackground }, isDesktop && { flex: 1 }]} onPress={onPress}>
+    <TouchableOpacity style={[neuSurface(scheme, 'raised'), styles.goalCard, isDesktop && { flex: 1 }]} onPress={onPress}>
       <View style={styles.goalHeader}>
         <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
         <View style={[styles.priorityBadge, { backgroundColor: priority.color + '20' }]}>
@@ -346,7 +356,7 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
       </View>
 
       <View style={styles.goalProgressRow}>
-        <View style={[styles.goalBarBg, { backgroundColor: colors.border }]}>
+        <View style={[neuProgress(scheme), styles.goalBarBg]}>
           <View style={[styles.goalBarFill, { width: `${goal.progress}%` }]} />
         </View>
         <Text style={styles.goalPercent}>{goal.progress.toFixed(0)}%</Text>
@@ -380,24 +390,21 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.secondary },
-  addButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  addButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
   // Filter toggle
-  filterToggle: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#DDD' },
-  filterToggleActive: { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
+  filterToggle: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
   filterToggleText: { fontSize: 13, fontWeight: '500', color: '#666' },
   filterToggleTextActive: { color: colors.primary },
 
   // Filters card
-  filtersCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
+  filtersCard: { borderRadius: 12, padding: 16, marginBottom: 16 },
   filterLabel: { fontSize: 12, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 12 },
   filterScroll: { marginBottom: 4 },
   filterChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, backgroundColor: colors.backgroundPrimary, borderWidth: 1, borderColor: '#E8E8E8' },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18 },
   filterChipText: { fontSize: 13, fontWeight: '500', color: '#666' },
-  filterChipTextActive: { color: '#fff' },
   resetButton: { marginTop: 14, alignItems: 'center', paddingVertical: 8 },
   resetButtonText: { fontSize: 13, color: colors.redExpenses, fontWeight: '500' },
 
@@ -405,21 +412,21 @@ const styles = StyleSheet.create({
   activeFiltersBadge: { backgroundColor: colors.primary + '10', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
   activeFiltersText: { fontSize: 12, color: colors.primary, fontWeight: '500' },
 
-  summaryCard: { backgroundColor: colors.primary, borderRadius: 16, padding: 20, marginBottom: 20 },
+  summaryCard: { borderRadius: 16, padding: 20, marginBottom: 20 },
   summaryLabel: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
   summaryValue: { fontSize: 20, fontWeight: '700', color: '#fff', marginTop: 4 },
   summaryBarBg: { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, marginTop: 12, overflow: 'hidden' },
   summaryBarFill: { height: '100%', backgroundColor: '#fff', borderRadius: 4 },
   summaryMeta: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8 },
 
-  goalCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  goalCard: { borderRadius: 14, padding: 16, marginBottom: 12 },
   goalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   goalName: { fontSize: 16, fontWeight: '600', color: colors.secondary, flex: 1, marginRight: 8 },
   priorityBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   priorityText: { fontSize: 11, fontWeight: '600' },
 
   goalProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  goalBarBg: { flex: 1, height: 8, backgroundColor: '#EEEEEE', borderRadius: 4, overflow: 'hidden' },
+  goalBarBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   goalBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
   goalPercent: { fontSize: 13, fontWeight: '600', color: colors.primary, minWidth: 36, textAlign: 'right' },
 
@@ -444,7 +451,7 @@ const styles = StyleSheet.create({
 
   pausedSection: { marginTop: 24 },
   pausedTitle: { fontSize: 16, fontWeight: '600', color: colors.tertiary, marginBottom: 8 },
-  pausedItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: colors.tertiary },
+  pausedItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: 10, padding: 14, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: colors.tertiary },
   pausedName: { fontSize: 14, fontWeight: '500', color: colors.secondary },
   pausedProgress: { fontSize: 12, color: '#999', marginTop: 2 },
   pausedArrow: { fontSize: 20, color: '#CCC' },

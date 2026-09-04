@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface } from '@/lib/neumorphic';
+import { ClayButton, ClayInput } from '@/components/clay';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -22,6 +24,9 @@ type LoginNavProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
+  const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
@@ -81,46 +86,48 @@ export function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={[styles.container, isDesktopWeb && styles.containerDesktop]}
+        contentContainerStyle={[styles.container, { backgroundColor: isDesktopWeb ? colors.backgroundPrimary : colors.surface }, isDesktopWeb && styles.containerDesktop]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[isDesktopWeb && styles.desktopCard]}>
+        {!isDesktopWeb && (
+          <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
+        )}
+        <View style={[styles.desktopCard, neuSurface(scheme, 'raised')]}>
           {isDesktopWeb && (
-            <Text style={styles.brandText}>Planify</Text>
+            <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
           )}
-          <Text style={styles.title}>Iniciar Sesión</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Iniciar Sesión</Text>
 
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           {/* Google Sign-In Button */}
           <TouchableOpacity
-            style={[styles.googleButton, isDesktopWeb && styles.googleButtonDesktop, googleLoading && styles.buttonDisabled]}
+            style={[styles.googleButton, neuSurface(scheme, 'flat'), googleLoading && styles.buttonDisabled]}
             onPress={handleGoogleLogin}
             disabled={googleLoading || loading}
             accessibilityLabel="Continuar con Google"
             accessibilityRole="button"
           >
             {googleLoading ? (
-              <ActivityIndicator color="#333" />
+              <ActivityIndicator color={colors.primary} />
             ) : (
               <>
                 <Text style={styles.googleIcon}>G</Text>
-                <Text style={styles.googleButtonText}>Continuar con Google</Text>
+                <Text style={[styles.googleButtonText, { color: colors.textPrimary }]}>Continuar con Google</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.borderInset }]} />
+            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>o</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.borderInset }]} />
           </View>
 
-          <TextInput
-            style={[styles.input, isDesktopWeb && styles.inputDesktop]}
-            placeholder="Correo electrónico"
-            placeholderTextColor="#999"
+          <ClayInput
+            label="Correo electrónico"
+            placeholder="tucorreo@ejemplo.com"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -129,10 +136,9 @@ export function LoginScreen() {
             accessibilityLabel="Correo electrónico"
           />
 
-          <TextInput
-            style={[styles.input, isDesktopWeb && styles.inputDesktop]}
-            placeholder="Contraseña"
-            placeholderTextColor="#999"
+          <ClayInput
+            label="Contraseña"
+            placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -140,19 +146,9 @@ export function LoginScreen() {
             accessibilityLabel="Contraseña"
           />
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled, isDesktopWeb && styles.buttonDesktop]}
-            onPress={handleLogin}
-            disabled={loading}
-            accessibilityLabel="Iniciar sesión"
-            accessibilityRole="button"
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Iniciar Sesión</Text>
-            )}
-          </TouchableOpacity>
+          <ClayButton onPress={handleLogin} loading={loading} style={isDesktopWeb ? styles.submitDesktop : undefined}>
+            Iniciar Sesión
+          </ClayButton>
 
           <TouchableOpacity
             onPress={() => navigation.navigate('ForgotPassword')}
@@ -160,7 +156,7 @@ export function LoginScreen() {
             accessibilityLabel="¿Olvidaste tu contraseña?"
             accessibilityRole="link"
           >
-            <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
+            <Text style={[styles.linkText, { color: colors.primary }]}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -169,7 +165,7 @@ export function LoginScreen() {
             accessibilityLabel="Crear una cuenta"
             accessibilityRole="link"
           >
-            <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
+            <Text style={[styles.linkText, { color: colors.primary }]}>¿No tienes cuenta? Regístrate</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -186,82 +182,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    backgroundColor: '#fff',
   },
   containerDesktop: {
-    backgroundColor: colors.backgroundPrimary,
     alignItems: 'center',
   },
   desktopCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 48,
     width: '100%',
     maxWidth: 440,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 5,
   },
   brandText: {
     fontSize: 28,
     fontWeight: '700',
-    color: colors.primary,
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 32,
-    color: '#1a1a1a',
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-    color: '#1a1a1a',
-  },
-  inputDesktop: {
-    height: 52,
-    fontSize: 15,
-    borderRadius: 10,
-  },
-  button: {
-    height: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submitDesktop: {
     marginTop: 8,
-  },
-  buttonDesktop: {
-    height: 52,
-    borderRadius: 10,
-    marginTop: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   link: {
     marginTop: 16,
     alignItems: 'center',
   },
   linkText: {
-    color: colors.primary,
     fontSize: 14,
   },
   errorText: {
@@ -273,19 +224,12 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     height: 48,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
     marginBottom: 16,
     gap: 10,
-  },
-  googleButtonDesktop: {
-    height: 52,
-    borderRadius: 10,
   },
   googleIcon: {
     fontSize: 18,
@@ -295,7 +239,9 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#333',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   divider: {
     flexDirection: 'row',
@@ -305,11 +251,9 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
   },
   dividerText: {
     marginHorizontal: 12,
     fontSize: 13,
-    color: '#999',
   },
 });

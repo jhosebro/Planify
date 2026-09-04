@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Platform,
@@ -32,6 +33,7 @@ const CATEGORY_CONFIG: Record<DebtCategory, { label: string; icon: string; color
 
 export function DebtsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<DebtsNavProp>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -99,7 +101,7 @@ export function DebtsScreen() {
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>📊 Mis Deudas</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
           onPress={() => navigation.navigate('AddDebt')}
           accessibilityRole="button"
           accessibilityLabel="Agregar nueva deuda"
@@ -110,7 +112,7 @@ export function DebtsScreen() {
 
       {/* Summary Card */}
       {summary && (
-        <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
+        <View style={[styles.summaryCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryCol}>
               <Text style={styles.summaryLabel}>Yo debo</Text>
@@ -150,7 +152,7 @@ export function DebtsScreen() {
         return (
           <View key={category} style={styles.sectionContainer}>
             <TouchableOpacity
-              style={[styles.sectionHeader, { backgroundColor: colors.cardBackground }]}
+              style={[neuSurface(scheme, 'flat'), styles.sectionHeader]}
               onPress={() => toggleSection(category)}
               accessibilityRole="button"
               accessibilityLabel={`${isExpanded ? 'Colapsar' : 'Expandir'} sección ${config.label}`}
@@ -199,7 +201,7 @@ export function DebtsScreen() {
                         {/* Single-installment purchases - show as compact summary card */}
                         {singleInstallmentDebts.length > 0 && (
                           <TouchableOpacity
-                            style={[styles.singleInstCard, { backgroundColor: colors.cardBackground }]}
+                            style={[neuSurface(scheme, 'flat'), styles.singleInstCard]}
                             onPress={() => navigation.navigate('SingleInstallmentDebts', { linkedAccountId: accountId, cardName })}
                             accessibilityRole="button"
                             accessibilityLabel={`Ver ${singleInstallmentDebts.length} gastos individuales`}
@@ -257,7 +259,7 @@ export function DebtsScreen() {
             ✅ Pagadas ({paidDebts.length})
           </Text>
           {paidDebts.map((debt) => (
-            <View key={debt.id} style={[styles.paidItem, { borderBottomColor: colors.border }]}>
+            <View key={debt.id} style={[styles.paidItem, { borderBottomColor: colors.borderInset }]}>
               <Text style={[styles.paidName, { color: colors.textTertiary }]}>{debt.name}</Text>
               <Text style={[styles.paidAmount, { color: colors.textTertiary }]}>{formatAmount(debt.totalAmount)}</Text>
             </View>
@@ -272,13 +274,14 @@ export function DebtsScreen() {
 
 function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () => void; showProvisioned?: boolean }) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const remaining = debt.totalAmount - debt.paidAmount;
   const progress = debt.totalAmount > 0 ? (debt.paidAmount / debt.totalAmount) * 100 : 0;
   const isReceivable = debt.direction === 'they_owe_me';
 
   return (
     <TouchableOpacity
-      style={[styles.debtCard, { backgroundColor: colors.cardBackground }, debt.isProvisioned && styles.debtCardProvisioned]}
+      style={[neuSurface(scheme, 'raised'), styles.debtCard, debt.isProvisioned && styles.debtCardProvisioned]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Deuda ${debt.name}, pendiente ${formatAmount(remaining)}`}
@@ -312,7 +315,7 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
       </View>
 
       {/* Progress bar */}
-      <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+      <View style={[neuProgress(scheme), styles.progressBarBg]}>
         <View
           style={[
             styles.progressBarFill,
@@ -350,7 +353,7 @@ const styles = StyleSheet.create({
 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
-  addButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  addButton: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
   addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
   // Summary
@@ -389,8 +392,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   singleInstCardHeader: { flexDirection: 'row', alignItems: 'center' },
   singleInstCardTitle: { fontSize: 14, fontWeight: '600' },
@@ -404,11 +405,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   debtCardProvisioned: {
     borderWidth: 1,

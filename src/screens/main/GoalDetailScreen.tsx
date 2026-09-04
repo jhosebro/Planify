@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +36,7 @@ function formatDate(date: Date): string {
 }
 
 export function GoalDetailScreen() {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const route = useRoute<RouteProp<MainStackParamList, 'GoalDetail'>>();
   const { goalId } = route.params;
@@ -135,7 +138,7 @@ export function GoalDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, neuShadow(scheme, 'raised')]}>
         <Text style={styles.headerName}>{goal.name}</Text>
         {goal.description && <Text style={styles.headerDesc}>{goal.description}</Text>}
         <Text style={styles.headerProgress}>{goal.progress.toFixed(0)}%</Text>
@@ -150,15 +153,15 @@ export function GoalDetailScreen() {
 
       {/* Info chips */}
       <View style={styles.chipsRow}>
-        <View style={styles.chip}>
+        <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
           <Text style={styles.chipLabel}>📅 Fecha</Text>
           <Text style={styles.chipValue}>{formatDate(goal.targetDate)}</Text>
         </View>
-        <View style={styles.chip}>
+        <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
           <Text style={styles.chipLabel}>⏳ Faltan</Text>
           <Text style={styles.chipValue}>{daysLeft} días</Text>
         </View>
-        <View style={styles.chip}>
+        <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
           <Text style={styles.chipLabel}>💡 Ahorra</Text>
           <Text style={styles.chipValue}>{formatAmount(goal.suggestedInstallment)}/{goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'qna' : 'sem'}</Text>
         </View>
@@ -166,17 +169,17 @@ export function GoalDetailScreen() {
 
       {/* Action buttons */}
       <View style={styles.actionButtonsRow}>
-        <TouchableOpacity style={styles.contributeButton} onPress={() => setShowContribute(true)}>
+        <TouchableOpacity style={[styles.contributeButton, neuShadow(scheme, 'raised')]} onPress={() => setShowContribute(true)}>
           <Text style={styles.contributeText}>💰 Abonar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editGoalButton} onPress={() => navigation.navigate('AddGoal', { goalId: goal.id })}>
+        <TouchableOpacity style={[styles.editGoalButton, neuSurface(scheme, 'flat')]} onPress={() => navigation.navigate('AddGoal', { goalId: goal.id })}>
           <Text style={styles.editGoalText}>✏️ Editar</Text>
         </TouchableOpacity>
       </View>
 
       {/* Pause/Activate button */}
       <TouchableOpacity
-        style={[styles.pauseButton, goal.status === 'paused' && styles.activateButton]}
+        style={[styles.pauseButton, neuSurface(scheme, 'flat'), goal.status === 'paused' && styles.activateButton]}
         onPress={async () => {
           const newStatus = goal.status === 'paused' ? 'active' : 'paused';
           try {
@@ -193,7 +196,7 @@ export function GoalDetailScreen() {
       </TouchableOpacity>
 
       {/* Actions section */}
-      <View style={styles.section}>
+      <View style={[styles.section, neuSurface(scheme, 'flat')]}>
         <Text style={styles.sectionTitle}>
           📋 Acciones ({completedActions}/{actions.length})
         </Text>
@@ -211,21 +214,21 @@ export function GoalDetailScreen() {
         ))}
         <View style={styles.addActionRow}>
           <TextInput
-            style={styles.addActionInput}
+            style={[styles.addActionInput, neuInset(scheme)]}
             value={newAction}
             onChangeText={setNewAction}
             placeholder="Agregar acción concreta..."
             placeholderTextColor="#999"
             onSubmitEditing={handleAddAction}
           />
-          <TouchableOpacity style={styles.addActionBtn} onPress={handleAddAction}>
+          <TouchableOpacity style={[styles.addActionBtn, neuShadow(scheme, 'raised')]} onPress={handleAddAction}>
             <Text style={styles.addActionBtnText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Contributions history */}
-      <View style={styles.section}>
+      <View style={[styles.section, neuSurface(scheme, 'flat')]}>
         <Text style={styles.sectionTitle}>📊 Historial de aportes</Text>
         {contributions.length === 0 && (
           <Text style={styles.emptyText}>Aún no has hecho aportes a esta meta.</Text>
@@ -249,7 +252,7 @@ export function GoalDetailScreen() {
         onClose={() => setShowContribute(false)}
       >
         <TextInput
-          style={styles.modalInput}
+          style={[styles.modalInput, neuInset(scheme)]}
           value={contributeAmount}
           onChangeText={(t) => setContributeAmount(formatWithThousands(t.replace(/[^0-9]/g, '')))}
           placeholder="0"
@@ -258,13 +261,13 @@ export function GoalDetailScreen() {
           autoFocus
         />
         <TextInput
-          style={[styles.modalInput, { marginTop: 10 }]}
+          style={[styles.modalInput, neuInset(scheme), { marginTop: 10 }]}
           value={contributeNote}
           onChangeText={setContributeNote}
           placeholder="Nota (opcional)"
           placeholderTextColor="#999"
         />
-        <TouchableOpacity style={styles.modalConfirmBtn} onPress={handleContribute}>
+        <TouchableOpacity style={[styles.modalConfirmBtn, neuShadow(scheme, 'raised')]} onPress={handleContribute}>
           <Text style={styles.modalConfirmText}>Registrar aporte</Text>
         </TouchableOpacity>
       </BottomModal>
@@ -288,22 +291,22 @@ const styles = StyleSheet.create({
   headerTarget: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
 
   chipsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  chip: { flex: 1, backgroundColor: '#fff', borderRadius: 10, padding: 12, alignItems: 'center' },
+  chip: { flex: 1, borderRadius: 10, padding: 12, alignItems: 'center' },
   chipLabel: { fontSize: 11, color: '#999', marginBottom: 2 },
   chipValue: { fontSize: 13, fontWeight: '600', color: colors.secondary },
 
   actionButtonsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   contributeButton: { flex: 1, backgroundColor: colors.greenEarns, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   contributeText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  editGoalButton: { flex: 1, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.primary },
+  editGoalButton: { flex: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.primary },
   editGoalText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
 
-  pauseButton: { backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: colors.tertiary },
+  pauseButton: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: colors.tertiary },
   pauseButtonText: { color: colors.tertiary, fontSize: 15, fontWeight: '600' },
   activateButton: { borderColor: colors.greenEarns },
   activateButtonText: { color: colors.greenEarns },
 
-  section: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16 },
+  section: { borderRadius: 12, padding: 16, marginBottom: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '600', color: colors.secondary, marginBottom: 12 },
 
   actionItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
@@ -312,7 +315,7 @@ const styles = StyleSheet.create({
   actionCompleted: { textDecorationLine: 'line-through', color: '#999' },
 
   addActionRow: { flexDirection: 'row', marginTop: 10, gap: 8 },
-  addActionInput: { flex: 1, backgroundColor: colors.backgroundPrimary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.secondary },
+  addActionInput: { flex: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.secondary },
   addActionBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   addActionBtnText: { color: '#fff', fontSize: 20, fontWeight: '600' },
 
@@ -323,7 +326,7 @@ const styles = StyleSheet.create({
 
   emptyText: { fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 16 },
 
-  modalInput: { backgroundColor: colors.backgroundPrimary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 18, fontWeight: '600', textAlign: 'center', borderWidth: 1, borderColor: '#DDD', color: colors.secondary },
+  modalInput: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 18, fontWeight: '600', textAlign: 'center', color: colors.secondary },
   modalConfirmBtn: { backgroundColor: colors.greenEarns, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
   modalConfirmText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

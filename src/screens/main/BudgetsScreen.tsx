@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -33,6 +34,7 @@ function formatAmount(centavos: number): string {
 
 export function BudgetsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -143,7 +145,7 @@ export function BudgetsScreen() {
           <View style={styles.headerRow}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos</Text>
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
               onPress={handleAddBudget}
               accessibilityRole="button"
               accessibilityLabel="Agregar presupuesto"
@@ -161,7 +163,7 @@ export function BudgetsScreen() {
         />
       )}
       ListEmptyComponent={
-        <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground }]}>
+        <View style={[neuSurface(scheme, 'raised'), styles.emptyCard]}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No hay presupuestos activos.</Text>
           <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea uno para controlar tus gastos.</Text>
         </View>
@@ -172,7 +174,7 @@ export function BudgetsScreen() {
           <View style={styles.remindersHeader}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Recordatorios</Text>
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
               onPress={handleAddReminder}
               accessibilityRole="button"
               accessibilityLabel="Agregar recordatorio"
@@ -193,7 +195,7 @@ export function BudgetsScreen() {
       onClose={() => setSpendingBudgetId(null)}
     >
       <TextInput
-        style={[styles.spendInput, { borderColor: colors.border, color: colors.textPrimary }]}
+        style={[neuInset(scheme), styles.spendInput, { color: colors.textPrimary, borderRadius: 12 }]}
         value={spendAmount}
         onChangeText={handleSpendAmountChange}
         placeholder="0"
@@ -204,7 +206,7 @@ export function BudgetsScreen() {
       />
       <Text style={[styles.spendHint, { color: colors.textTertiary }]}>Este gasto no crea un movimiento en tus cuentas.</Text>
       <TouchableOpacity
-        style={styles.spendConfirmBtn}
+        style={[styles.spendConfirmBtn, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
         onPress={handleConfirmSpent}
       >
         <Text style={styles.spendConfirmText}>Registrar</Text>
@@ -223,6 +225,7 @@ interface GeneralBudgetCardProps {
 
 function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   // Total limit = sum of all budget limits + sum of pending recurring reminder amounts
   // Only include monthly/biweekly/weekly reminders (exclude once and yearly)
   const recurringFrequencies = ['monthly', 'biweekly', 'weekly'];
@@ -247,7 +250,7 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
       : colors.greenEarns;
 
   return (
-    <View style={styles.generalCard}>
+    <View style={[styles.generalCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
       <Text style={styles.generalTitle}>💰 Presupuesto General</Text>
       <View style={styles.generalAmounts}>
         <View style={styles.generalAmountItem}>
@@ -291,6 +294,7 @@ interface BudgetProgressItemProps {
 
 function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgressItemProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const percentage = Math.min(consumption.percentage, 100);
   const barColor = consumption.isOverBudget
     ? colors.redExpenses
@@ -299,7 +303,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
       : colors.greenEarns;
 
   return (
-    <View style={[styles.budgetCard, { backgroundColor: colors.cardBackground }]}>
+    <View style={[neuSurface(scheme, 'raised'), styles.budgetCard]}>
       <TouchableOpacity
         onPress={onPress}
         accessibilityRole="button"
@@ -311,7 +315,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
             {consumption.percentage.toFixed(1)}%
           </Text>
         </View>
-        <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
+        <View style={[neuProgress(scheme), styles.progressBarBackground]}>
           <View
             style={[
               styles.progressBarFill,
@@ -325,7 +329,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
           {formatAmount(consumption.spent)} / {formatAmount(consumption.limit)}
         </Text>
         <TouchableOpacity
-          style={styles.addSpentButton}
+          style={[styles.addSpentButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
           onPress={onAddSpent}
           accessibilityRole="button"
           accessibilityLabel="Registrar gasto manual"
@@ -374,7 +378,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -385,15 +388,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   budgetCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   budgetHeader: {
     flexDirection: 'row',
@@ -411,9 +408,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   progressBarBackground: {
-    height: 10,
-    backgroundColor: '#EEEEEE',
-    borderRadius: 5,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
@@ -442,7 +438,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   addSpentButton: {
-    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 12,
@@ -453,7 +448,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -478,7 +472,6 @@ const styles = StyleSheet.create({
 
   // General Budget Card
   generalCard: {
-    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
@@ -534,14 +527,10 @@ const styles = StyleSheet.create({
   },
 
   spendInput: {
-    backgroundColor: colors.backgroundPrimary,
-    borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 24,
     fontWeight: '600',
-    borderWidth: 1,
-    borderColor: '#DDD',
     color: colors.secondary,
     textAlign: 'center',
   },
@@ -553,7 +542,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   spendConfirmBtn: {
-    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

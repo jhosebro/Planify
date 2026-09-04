@@ -13,6 +13,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import { ExportForAIService, type AIExportData } from '@/services/export/exportForAIService';
 
 /**
@@ -23,6 +25,7 @@ import { ExportForAIService, type AIExportData } from '@/services/export/exportF
 export function ExportForAIModal() {
   const navigation = useNavigation();
   const service = useMemo(() => new ExportForAIService(), []);
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   const [loading, setLoading] = useState(false);
   const [exportData, setExportData] = useState<AIExportData | null>(null);
@@ -113,7 +116,7 @@ export function ExportForAIModal() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header explanation */}
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
         <Ionicons name="sparkles" size={32} color={colors.primary} />
         <Text style={styles.headerTitle}>Exportar para ChatGPT</Text>
         <Text style={styles.headerDescription}>
@@ -123,7 +126,7 @@ export function ExportForAIModal() {
       </View>
 
       {/* What's included */}
-      <View style={styles.card}>
+      <View style={[styles.card, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
         <Text style={styles.cardTitle}>¿Qué se incluye?</Text>
         <View style={styles.featureList}>
           <FeatureItem icon="wallet-outline" text="Cuentas y saldos" />
@@ -139,7 +142,7 @@ export function ExportForAIModal() {
       {/* Generate button */}
       {!exportData && (
         <TouchableOpacity
-          style={[styles.generateButton, loading && styles.disabledButton]}
+          style={[styles.generateButton, neuShadow(scheme, 'raised'), loading && styles.disabledButton]}
           onPress={handleGenerate}
           disabled={loading}
           accessibilityRole="button"
@@ -167,7 +170,7 @@ export function ExportForAIModal() {
       {/* Results */}
       {exportData && summary && (
         <>
-          <View style={styles.card}>
+          <View style={[styles.card, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
             <Text style={styles.cardTitle}>Resumen generado</Text>
             <View style={styles.statsGrid}>
               <StatBadge label="Cuentas" value={summary.cuentas} />
@@ -188,7 +191,7 @@ export function ExportForAIModal() {
           {/* Action buttons */}
           <View style={styles.actionsRow}>
             <TouchableOpacity
-              style={[styles.actionButton, copied && styles.actionButtonSuccess]}
+              style={[styles.actionButton, neuShadow(scheme, 'raised'), copied && styles.actionButtonSuccess]}
               onPress={handleCopy}
               accessibilityRole="button"
               accessibilityLabel={copied ? 'Copiado' : 'Copiar al portapapeles'}
@@ -204,7 +207,7 @@ export function ExportForAIModal() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, neuShadow(scheme, 'raised')]}
               onPress={handleShare}
               accessibilityRole="button"
               accessibilityLabel="Compartir exportación"
@@ -252,8 +255,9 @@ function FeatureItem({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; tex
 }
 
 function StatBadge({ label, value }: { label: string; value: number }) {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   return (
-    <View style={styles.statBadge}>
+    <View style={[styles.statBadge, neuSurface(scheme, 'flat'), { borderRadius: 8 }]}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -274,16 +278,10 @@ const styles = StyleSheet.create({
 
   // Header
   headerCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   headerTitle: {
     fontSize: 20,
@@ -301,15 +299,9 @@ const styles = StyleSheet.create({
 
   // Cards
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   cardTitle: {
     fontSize: 16,
@@ -376,7 +368,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statBadge: {
-    backgroundColor: colors.backgroundPrimary,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,

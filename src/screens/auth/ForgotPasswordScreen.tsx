@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface } from '@/lib/neumorphic';
+import { ClayButton, ClayInput } from '@/components/clay';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,6 +23,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ForgotPasswordScreen() {
   const navigation = useNavigation<ForgotPasswordNavProp>();
+  const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,57 +66,48 @@ export function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Restablecer Contraseña</Text>
+        <View style={[styles.card, neuSurface(scheme, 'raised')]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Restablecer Contraseña</Text>
 
-        <Text style={styles.description}>
-          Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
-        </Text>
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        {success && (
-          <Text style={styles.successText}>
-            Se ha enviado un enlace de restablecimiento a tu correo electrónico.
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
+            Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
           </Text>
-        )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Correo electrónico"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          accessibilityLabel="Correo electrónico"
-        />
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-          accessibilityLabel="Enviar enlace de restablecimiento"
-          accessibilityRole="button"
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Enviar Enlace</Text>
+          {success && (
+            <Text style={styles.successText}>
+              Se ha enviado un enlace de restablecimiento a tu correo electrónico.
+            </Text>
           )}
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Login')}
-          style={styles.link}
-          accessibilityLabel="Volver a iniciar sesión"
-          accessibilityRole="link"
-        >
-          <Text style={styles.linkText}>Volver a Iniciar Sesión</Text>
-        </TouchableOpacity>
+          <ClayInput
+            label="Correo electrónico"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            accessibilityLabel="Correo electrónico"
+          />
+
+          <ClayButton onPress={handleSubmit} loading={loading} style={styles.submit}>
+            Enviar Enlace
+          </ClayButton>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            style={styles.link}
+            accessibilityLabel="Volver a iniciar sesión"
+            accessibilityRole="link"
+          >
+            <Text style={[styles.linkText, { color: colors.primary }]}>Volver a Iniciar Sesión</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -127,55 +122,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    backgroundColor: '#fff',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
+    borderRadius: 20,
+    padding: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#1a1a1a',
   },
   description: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-    color: '#1a1a1a',
-  },
-  button: {
-    height: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submit: {
     marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   link: {
     marginTop: 16,
     alignItems: 'center',
   },
   linkText: {
-    color: colors.primary,
     fontSize: 14,
   },
   errorText: {

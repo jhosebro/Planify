@@ -15,7 +15,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { TrackingService } from '@/services/tracking';
 import type { MainStackParamList } from '@/navigation/types';
 import { supabase } from '@/lib/supabase';
@@ -37,6 +38,7 @@ function formatAmount(centavos: number): string {
 
 export function AddTrackingListModal() {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const route = useRoute<RouteProp<MainStackParamList, 'AddTrackingList'>>();
   const listId = route.params?.listId;
@@ -169,7 +171,7 @@ export function AddTrackingListModal() {
         {/* Name */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Nombre *</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="Ej: Productos de aseo"
           placeholderTextColor={themeColors.textTertiary}
           value={name}
@@ -180,7 +182,7 @@ export function AddTrackingListModal() {
         {/* Description */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Descripción (opcional)</Text>
         <TextInput
-          style={[styles.input, styles.textArea, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, styles.textArea, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="Describe brevemente esta lista"
           placeholderTextColor={themeColors.textTertiary}
           value={description}
@@ -198,7 +200,7 @@ export function AddTrackingListModal() {
         {loadingBudgets ? (
           <ActivityIndicator size="small" color={themeColors.primary} style={{ marginVertical: 12 }} />
         ) : budgetOptions.length === 0 ? (
-          <View style={[styles.noBudgetsCard, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}>
+          <View style={[styles.noBudgetsCard, neuSurface(scheme, 'flat')]}>
             <Ionicons name="information-circle-outline" size={18} color={themeColors.textTertiary} />
             <Text style={[styles.noBudgetsText, { color: themeColors.textTertiary }]}>
               No tienes presupuestos activos. Crea uno primero desde la sección de Presupuestos.
@@ -210,8 +212,8 @@ export function AddTrackingListModal() {
             <TouchableOpacity
               style={[
                 styles.budgetOption,
-                { borderColor: themeColors.border, backgroundColor: themeColors.inputBackground },
-                selectedBudgetId === null && { borderColor: themeColors.primary, backgroundColor: themeColors.primary + '10' },
+                neuSurface(scheme, 'flat'),
+                selectedBudgetId === null && { backgroundColor: themeColors.primary + '12' },
               ]}
               onPress={() => setSelectedBudgetId(null)}
             >
@@ -230,8 +232,8 @@ export function AddTrackingListModal() {
                 key={budget.id}
                 style={[
                   styles.budgetOption,
-                  { borderColor: themeColors.border, backgroundColor: themeColors.inputBackground },
-                  selectedBudgetId === budget.id && { borderColor: themeColors.primary, backgroundColor: themeColors.primary + '10' },
+                  neuSurface(scheme, 'flat'),
+                  selectedBudgetId === budget.id && { backgroundColor: themeColors.primary + '12' },
                 ]}
                 onPress={() => setSelectedBudgetId(budget.id)}
               >
@@ -262,8 +264,8 @@ export function AddTrackingListModal() {
               key={icon}
               style={[
                 styles.iconOption,
-                { borderColor: themeColors.border },
-                selectedIcon === icon && { borderColor: selectedColor, backgroundColor: selectedColor + '15' },
+                neuSurface(scheme, 'flat'),
+                selectedIcon === icon && { backgroundColor: selectedColor + '22', ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setSelectedIcon(icon)}
             >
@@ -293,7 +295,7 @@ export function AddTrackingListModal() {
         </View>
 
         {/* Preview */}
-        <View style={[styles.previewCard, { backgroundColor: themeColors.cardBackground }]}>
+        <View style={[styles.previewCard, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
           <Text style={[styles.previewLabel, { color: themeColors.textTertiary }]}>Vista previa</Text>
           <View style={styles.previewContent}>
             <View style={[styles.previewIcon, { backgroundColor: selectedColor + '20' }]}>
@@ -314,7 +316,7 @@ export function AddTrackingListModal() {
 
         {/* Save button */}
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: themeColors.primary }, saving && { opacity: 0.6 }]}
+          style={[styles.saveButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised'), saving && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={saving}
         >
@@ -333,20 +335,20 @@ const styles = StyleSheet.create({
 
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
   hint: { fontSize: 12, marginBottom: 12 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
 
   // Budget selector
-  noBudgetsCard: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
+  noBudgetsCard: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 12 },
   noBudgetsText: { fontSize: 13, flex: 1 },
   budgetList: { gap: 8 },
-  budgetOption: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12, borderWidth: 1.5 },
+  budgetOption: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12 },
   budgetOptionInfo: { flex: 1 },
   budgetOptionText: { fontSize: 14, fontWeight: '500' },
   budgetOptionLimit: { fontSize: 12, marginTop: 2 },
 
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  iconOption: { width: 48, height: 48, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  iconOption: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconOptionText: { fontSize: 22 },
   colorOption: { width: 40, height: 40, borderRadius: 20 },
   colorOptionSelected: { borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 4 },

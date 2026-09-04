@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -37,6 +39,7 @@ export function AddGoalModal() {
   const isEditMode = !!goalId;
 
   const goalService = useMemo(() => new GoalService(), []);
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -118,44 +121,44 @@ export function AddGoalModal() {
         <Text style={styles.title}>{isEditMode ? '✏️ Editar Meta' : '🎯 Nueva Meta'}</Text>
 
         <Text style={styles.label}>Nombre</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ej: Viaje a Cartagena" placeholderTextColor="#999" />
+        <TextInput style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]} value={name} onChangeText={setName} placeholder="Ej: Viaje a Cartagena" placeholderTextColor="#999" />
 
         <Text style={styles.label}>Descripción (opcional)</Text>
-        <TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="¿Por qué es importante?" placeholderTextColor="#999" multiline />
+        <TextInput style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]} value={description} onChangeText={setDescription} placeholder="¿Por qué es importante?" placeholderTextColor="#999" multiline />
 
         <Text style={styles.label}>Costo estimado ($)</Text>
-        <TextInput style={styles.input} value={displayAmount} onChangeText={(t) => setDisplayAmount(formatWithThousands(t.replace(/[^0-9]/g, '')))} placeholder="0" placeholderTextColor="#999" keyboardType="numeric" />
+        <TextInput style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]} value={displayAmount} onChangeText={(t) => setDisplayAmount(formatWithThousands(t.replace(/[^0-9]/g, '')))} placeholder="0" placeholderTextColor="#999" keyboardType="numeric" />
 
         <Text style={styles.label}>Prioridad</Text>
         <View style={styles.row}>
           {([['high','Alta'],['medium','Media'],['low','Baja']] as [GoalPriority,string][]).map(([k,l]) => (
-            <TouchableOpacity key={k} style={[styles.chip, priority===k && styles.chipActive]} onPress={() => setPriority(k)}>
-              <Text style={[styles.chipText, priority===k && styles.chipTextActive]}>{l}</Text>
+            <TouchableOpacity key={k} style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, priority===k && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setPriority(k)}>
+              <Text style={[styles.chipText, { color: priority===k ? colors.textInverse : colors.textSecondary }]}>{l}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <Text style={styles.label}>Tipo</Text>
         <View style={styles.row}>
-          <TouchableOpacity style={[styles.chip, type==='personal' && styles.chipActive]} onPress={() => setType('personal')}>
-            <Text style={[styles.chipText, type==='personal' && styles.chipTextActive]}>👤 Personal</Text>
+          <TouchableOpacity style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, type==='personal' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setType('personal')}>
+            <Text style={[styles.chipText, { color: type==='personal' ? colors.textInverse : colors.textSecondary }]}>👤 Personal</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, type==='couple' && styles.chipActive]} onPress={() => setType('couple')}>
-            <Text style={[styles.chipText, type==='couple' && styles.chipTextActive]}>👥 Pareja</Text>
+          <TouchableOpacity style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, type==='couple' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setType('couple')}>
+            <Text style={[styles.chipText, { color: type==='couple' ? colors.textInverse : colors.textSecondary }]}>👥 Pareja</Text>
           </TouchableOpacity>
         </View>
 
         <Text style={styles.label}>Frecuencia de ahorro</Text>
         <View style={styles.row}>
           {([['weekly','Semanal'],['biweekly','Quincenal'],['monthly','Mensual']] as [InstallmentFrequency,string][]).map(([k,l]) => (
-            <TouchableOpacity key={k} style={[styles.chip, frequency===k && styles.chipActive]} onPress={() => setFrequency(k)}>
-              <Text style={[styles.chipText, frequency===k && styles.chipTextActive]}>{l}</Text>
+            <TouchableOpacity key={k} style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, frequency===k && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setFrequency(k)}>
+              <Text style={[styles.chipText, { color: frequency===k ? colors.textInverse : colors.textSecondary }]}>{l}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <Text style={styles.label}>Fecha objetivo</Text>
-        <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDate(!showDate)}>
+        <TouchableOpacity style={[styles.dateBtn, neuInset(scheme)]} onPress={() => setShowDate(!showDate)}>
           <Text style={styles.dateBtnText}>{formattedDate}</Text>
           <Text style={styles.dateBtnIcon}>{showDate ? '▲' : '▼'}</Text>
         </TouchableOpacity>
@@ -171,7 +174,7 @@ export function AddGoalModal() {
           />
         )}
 
-        <TouchableOpacity style={[styles.submitBtn, saving && {opacity:0.6}]} onPress={handleSubmit} disabled={saving}>
+        <TouchableOpacity style={[styles.submitBtn, neuShadow(scheme, 'raised'), saving && {opacity:0.6}]} onPress={handleSubmit} disabled={saving}>
           <Text style={styles.submitText}>{saving ? 'Guardando...' : (isEditMode ? 'Guardar cambios' : 'Crear meta')}</Text>
         </TouchableOpacity>
 
@@ -188,13 +191,11 @@ const styles = StyleSheet.create({
   content: { padding: 24, paddingBottom: 40 },
   title: { fontSize: 22, fontWeight: '700', color: colors.secondary, marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', color: colors.secondary, marginBottom: 6, marginTop: 16 },
-  input: { backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, borderWidth: 1, borderColor: '#DDD', color: colors.secondary },
+  input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.secondary },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#DDD' },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   chipText: { fontSize: 14, color: '#666', fontWeight: '500' },
-  chipTextActive: { color: '#fff' },
-  dateBtn: { backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1, borderColor: '#DDD', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dateBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dateBtnText: { fontSize: 16, color: colors.secondary },
   dateBtnIcon: { fontSize: 12, color: '#999' },
   submitBtn: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 32 },

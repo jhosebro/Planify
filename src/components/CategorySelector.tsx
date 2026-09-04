@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuInset, neuShadow, neuSurface } from '@/lib/neumorphic';
+import { ClayChip } from '@/components/clay';
 import {
   Alert,
   StyleSheet,
@@ -24,6 +26,9 @@ interface CategorySelectorProps {
 const CATEGORY_COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#7BC67E', '#95A5A6'];
 
 export function CategorySelector({ selectedId, onSelect }: CategorySelectorProps) {
+  const themeColors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -94,52 +99,48 @@ export function CategorySelector({ selectedId, onSelect }: CategorySelectorProps
     <View>
       <View style={styles.container}>
         {categories.map((cat) => (
-          <TouchableOpacity
+          <ClayChip
             key={cat.id}
-            style={[styles.chip, selectedId === cat.id && styles.chipActive]}
+            label={cat.name}
+            active={selectedId === cat.id}
             onPress={() => onSelect(cat.id)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: selectedId === cat.id }}
-          >
-            <Text style={[styles.chipText, selectedId === cat.id && styles.chipTextActive]}>
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
+            style={styles.chip}
+          />
         ))}
 
         <TouchableOpacity
-          style={styles.addChip}
+          style={[styles.addChip, neuSurface(scheme, 'flat'), { borderColor: themeColors.primary }]}
           onPress={() => setShowCreate(true)}
           accessibilityRole="button"
           accessibilityLabel="Crear nueva categoría"
         >
-          <Text style={styles.addChipText}>+ Nueva</Text>
+          <Text style={[styles.addChipText, { color: themeColors.primary }]}>+ Nueva</Text>
         </TouchableOpacity>
       </View>
 
       {showCreate && (
         <View style={styles.createRow}>
           <TextInput
-            style={styles.createInput}
+            style={[styles.createInput, { ...neuInset(scheme), color: themeColors.textPrimary }]}
             value={newName}
             onChangeText={setNewName}
             placeholder="Nombre de categoría"
-            placeholderTextColor="#999"
+            placeholderTextColor={themeColors.textTertiary}
             autoFocus
             accessibilityLabel="Nombre de la nueva categoría"
           />
           <TouchableOpacity
-            style={[styles.createButton, creating && styles.createButtonDisabled]}
+            style={[styles.createButton, { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'raised') }, creating && styles.createButtonDisabled]}
             onPress={handleCreate}
             disabled={creating}
           >
             <Text style={styles.createButtonText}>{creating ? '...' : '✓'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[styles.cancelButton, neuSurface(scheme, 'flat')]}
             onPress={() => { setShowCreate(false); setNewName(''); }}
           >
-            <Text style={styles.cancelButtonText}>✕</Text>
+            <Text style={[styles.cancelButtonText, { color: themeColors.textSecondary }]}>✕</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -154,37 +155,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    backgroundColor: '#fff',
-  },
-  chipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#E6F4FF',
-  },
-  chipText: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.primary,
+    marginVertical: 4,
   },
   addChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    borderRadius: 20,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    backgroundColor: '#fff',
+    marginVertical: 4,
   },
   addChipText: {
     fontSize: 13,
-    color: colors.primary,
     fontWeight: '600',
   },
   createRow: {
@@ -195,20 +177,16 @@ const styles = StyleSheet.create({
   },
   createInput: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: colors.primary,
-    color: colors.secondary,
   },
   createButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -223,13 +201,11 @@ const styles = StyleSheet.create({
   cancelButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EEE',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
-    color: '#666',
     fontSize: 16,
     fontWeight: '700',
   },

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Platform,
@@ -28,6 +29,7 @@ function formatAmount(centavos: number): string {
 
 export function SingleInstallmentDebtsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const layout = useResponsiveLayout();
@@ -107,7 +109,7 @@ export function SingleInstallmentDebtsScreen() {
       </Text>
 
       {/* Summary */}
-      <View style={[styles.summaryCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.summaryCard]}>
         <View style={styles.summaryRow}>
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Total pendiente</Text>
@@ -115,14 +117,14 @@ export function SingleInstallmentDebtsScreen() {
               {formatAmount(totalAmount)}
             </Text>
           </View>
-          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+          <View style={[styles.summaryDivider, { backgroundColor: colors.borderInset }]} />
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Sin separar</Text>
             <Text style={[styles.summaryValue, { color: colors.redExpenses }]}>
               {formatAmount(unprovisionedAmount)}
             </Text>
           </View>
-          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+          <View style={[styles.summaryDivider, { backgroundColor: colors.borderInset }]} />
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Ya separado</Text>
             <Text style={[styles.summaryValue, { color: '#2EAD5D' }]}>
@@ -149,8 +151,8 @@ export function SingleInstallmentDebtsScreen() {
             <View
               key={debt.id}
               style={[
+                neuSurface(scheme, 'flat'),
                 styles.debtItem,
-                { backgroundColor: colors.cardBackground },
                 debt.isProvisioned && styles.debtItemProvisioned,
               ]}
             >
@@ -178,8 +180,8 @@ export function SingleInstallmentDebtsScreen() {
               {/* Provisioned toggle */}
               <TouchableOpacity
                 style={[
+                  neuSurface(scheme, 'flat'),
                   styles.provisionedBtn,
-                  { borderColor: colors.border },
                   debt.isProvisioned && styles.provisionedBtnActive,
                 ]}
                 onPress={() => handleToggleProvisioned(debt.id, debt.isProvisioned)}
@@ -223,11 +225,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   debtItemProvisioned: {
     borderWidth: 1,
@@ -250,10 +247,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
   },
   provisionedBtnActive: {
+    borderWidth: 1,
     borderColor: '#2EAD5D',
     backgroundColor: '#2EAD5D10',
   },

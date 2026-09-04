@@ -2,7 +2,8 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface } from '@/lib/neumorphic';
 import type { TabParamList } from '@/navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
@@ -47,6 +48,7 @@ const MENU_ITEMS: MoreMenuItem[] = [
 
 export function MoreScreen() {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
 
   return (
@@ -57,7 +59,7 @@ export function MoreScreen() {
       {MENU_ITEMS.map((item, index) => (
         <TouchableOpacity
           key={item.key}
-          style={[styles.menuItem, { backgroundColor: themeColors.cardBackground }]}
+          style={[neuSurface(scheme, 'flat'), styles.menuItem]}
           onPress={() => navigation.navigate(item.key)}
           activeOpacity={0.7}
           accessibilityRole="button"
@@ -86,11 +88,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
   iconContainer: {
     width: 44,

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { colors } from '@/theme';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface } from '@/lib/neumorphic';
+import { ClayButton, ClayInput } from '@/components/clay';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -25,6 +27,9 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterScreen() {
   const navigation = useNavigation<RegisterNavProp>();
+  const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
@@ -97,98 +102,85 @@ export function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={[styles.container, isDesktopWeb && styles.containerDesktop]}
+        contentContainerStyle={[styles.container, { backgroundColor: isDesktopWeb ? colors.backgroundPrimary : colors.surface }, isDesktopWeb && styles.containerDesktop]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[isDesktopWeb && styles.desktopCard]}>
+        <View style={[styles.desktopCard, neuSurface(scheme, 'raised')]}>
           {isDesktopWeb && (
-            <Text style={styles.brandText}>Planify</Text>
+            <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
           )}
-          <Text style={styles.title}>Crear Cuenta</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Crear Cuenta</Text>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           {/* Google Sign-Up Button */}
           <TouchableOpacity
-            style={[styles.googleButton, isDesktopWeb && styles.googleButtonDesktop, googleLoading && styles.buttonDisabled]}
+            style={[styles.googleButton, neuSurface(scheme, 'flat'), googleLoading && styles.buttonDisabled]}
             onPress={handleGoogleSignUp}
             disabled={googleLoading || loading}
             accessibilityLabel="Registrarse con Google"
             accessibilityRole="button"
           >
             {googleLoading ? (
-              <ActivityIndicator color="#333" />
+              <ActivityIndicator color={colors.primary} />
             ) : (
               <>
                 <Text style={styles.googleIcon}>G</Text>
-                <Text style={styles.googleButtonText}>Registrarse con Google</Text>
+                <Text style={[styles.googleButtonText, { color: colors.textPrimary }]}>Registrarse con Google</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.borderInset }]} />
+            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>o</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.borderInset }]} />
           </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Correo electrónico"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          accessibilityLabel="Correo electrónico"
-        />
+          <ClayInput
+            label="Correo electrónico"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            accessibilityLabel="Correo electrónico"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña (mínimo 8 caracteres)"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          textContentType="newPassword"
-          accessibilityLabel="Contraseña"
-        />
+          <ClayInput
+            label="Contraseña (mínimo 8 caracteres)"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            textContentType="newPassword"
+            accessibilityLabel="Contraseña"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Confirmar contraseña"
-          placeholderTextColor="#999"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          textContentType="newPassword"
-          accessibilityLabel="Confirmar contraseña"
-        />
+          <ClayInput
+            label="Confirmar contraseña"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            textContentType="newPassword"
+            accessibilityLabel="Confirmar contraseña"
+          />
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}
-          accessibilityLabel="Registrarse"
-          accessibilityRole="button"
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Registrarse</Text>
-          )}
-        </TouchableOpacity>
+          <ClayButton onPress={handleRegister} loading={loading} style={styles.submitDesktop}>
+            Registrarse
+          </ClayButton>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Login')}
-          style={styles.link}
-          accessibilityLabel="Ir a iniciar sesión"
-          accessibilityRole="link"
-        >
-          <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesión</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            style={styles.link}
+            accessibilityLabel="Ir a iniciar sesión"
+            accessibilityRole="link"
+          >
+            <Text style={[styles.linkText, { color: colors.primary }]}>¿Ya tienes cuenta? Inicia sesión</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -204,23 +196,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    backgroundColor: '#fff',
   },
   containerDesktop: {
-    backgroundColor: colors.backgroundPrimary,
     alignItems: 'center',
   },
   desktopCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 48,
     width: '100%',
     maxWidth: 440,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 5,
   },
   brandText: {
     fontSize: 28,
@@ -231,45 +215,22 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 32,
-    color: '#1a1a1a',
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-    color: '#1a1a1a',
-  },
-  button: {
-    height: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  submitDesktop: {
     marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   link: {
     marginTop: 16,
     alignItems: 'center',
   },
   linkText: {
-    color: colors.primary,
     fontSize: 14,
   },
   errorText: {
@@ -281,19 +242,12 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     height: 48,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
     marginBottom: 16,
     gap: 10,
-  },
-  googleButtonDesktop: {
-    height: 52,
-    borderRadius: 10,
   },
   googleIcon: {
     fontSize: 18,
@@ -303,7 +257,6 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#333',
   },
   divider: {
     flexDirection: 'row',
@@ -313,11 +266,9 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
   },
   dividerText: {
     marginHorizontal: 12,
     fontSize: 13,
-    color: '#999',
   },
 });

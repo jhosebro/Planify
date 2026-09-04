@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +30,7 @@ function formatAmount(centavos: number): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BudgetDetailScreen() {
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const route = useRoute<RouteProp<MainStackParamList, 'BudgetDetail'>>();
   const { budgetId } = route.params;
@@ -151,7 +154,7 @@ export function BudgetDetailScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.emptyText}>No se encontró el presupuesto.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={[styles.backButton, neuShadow(scheme, 'raised')]} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
       </View>
@@ -168,7 +171,7 @@ export function BudgetDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Category Header */}
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, neuShadow(scheme, 'raised')]}>
         <Text style={styles.categoryTitle}>{consumption.categoryId}</Text>
         <Text style={[styles.percentageText, { color: barColor }]}>
           {consumption.percentage.toFixed(1)}%
@@ -176,9 +179,9 @@ export function BudgetDetailScreen() {
       </View>
 
       {/* Progress Section */}
-      <View style={styles.card}>
+      <View style={[styles.card, neuSurface(scheme, 'flat')]}>
         <Text style={styles.cardTitle}>Consumo del mes</Text>
-        <View style={styles.progressBarBackground}>
+        <View style={[styles.progressBarBackground, neuProgress(scheme)]}>
           <View
             style={[
               styles.progressBarFill,
@@ -205,7 +208,7 @@ export function BudgetDetailScreen() {
       </View>
 
       {/* Details / Edit Section */}
-      <View style={styles.card}>
+      <View style={[styles.card, neuSurface(scheme, 'flat')]}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Configuración</Text>
           {!isEditing && (
@@ -219,7 +222,7 @@ export function BudgetDetailScreen() {
           <View>
             <Text style={styles.inputLabel}>Límite mensual ($)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, neuInset(scheme)]}
               value={editLimit}
               onChangeText={setEditLimit}
               keyboardType="decimal-pad"
@@ -229,7 +232,7 @@ export function BudgetDetailScreen() {
 
             <Text style={styles.inputLabel}>Umbral de alerta (%)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, neuInset(scheme)]}
               value={editThreshold}
               onChangeText={setEditThreshold}
               keyboardType="number-pad"
@@ -240,7 +243,7 @@ export function BudgetDetailScreen() {
 
             <Text style={styles.inputLabel}>Presupuesto General</Text>
             <TouchableOpacity
-              style={styles.switchRow}
+              style={[styles.switchRow, neuSurface(scheme, 'flat')]}
               onPress={() => setEditIncludeInGeneral((v) => !v)}
               activeOpacity={0.7}
               accessibilityRole="switch"
@@ -263,13 +266,13 @@ export function BudgetDetailScreen() {
 
             <View style={styles.editActions}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, neuSurface(scheme, 'flat')]}
                 onPress={() => setIsEditing(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.saveButton, saving && styles.disabledButton]}
+                style={[styles.saveButton, neuShadow(scheme, 'raised'), saving && styles.disabledButton]}
                 onPress={handleSaveEdit}
                 disabled={saving}
               >
@@ -311,7 +314,7 @@ export function BudgetDetailScreen() {
 
       {/* Delete Button */}
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={[styles.deleteButton, neuSurface(scheme, 'flat')]}
         onPress={handleDelete}
         accessibilityRole="button"
         accessibilityLabel="Eliminar presupuesto"
@@ -366,11 +369,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   categoryTitle: {
     fontSize: 18,
@@ -384,15 +382,9 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -413,9 +405,6 @@ const styles = StyleSheet.create({
   },
   progressBarBackground: {
     height: 12,
-    backgroundColor: '#EEEEEE',
-    borderRadius: 6,
-    overflow: 'hidden',
     marginBottom: 8,
   },
   progressBarFill: {
@@ -457,7 +446,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.borderInset,
   },
   detailLabel: {
     fontSize: 14,
@@ -479,12 +468,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.backgroundPrimary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#DDD',
   },
   switchTextBlock: {
     flex: 1,
@@ -501,13 +487,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   input: {
-    backgroundColor: colors.backgroundPrimary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD',
+    color: colors.textPrimary,
   },
   editActions: {
     flexDirection: 'row',
@@ -516,11 +500,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cancelButton: {
+    borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
   },
   cancelButtonText: {
     fontSize: 14,
@@ -542,7 +524,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   deleteButton: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

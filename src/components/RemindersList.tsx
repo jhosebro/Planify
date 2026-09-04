@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuShadow, neuSurface } from '@/lib/neumorphic';
 import {
   Alert,
   Platform,
@@ -59,6 +60,8 @@ interface RemindersListProps {
 
 export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const reminderService = useMemo(() => new ReminderService(), []);
   const accountService = useMemo(() => new AccountService(), []);
@@ -164,7 +167,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
 
   if (overdueReminders.length === 0 && currentMonthReminders.length === 0 && upcomingReminders.length === 0) {
     return (
-      <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'flat'), styles.emptyCard]}>
         <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No hay recordatorios pendientes.</Text>
       </View>
     );
@@ -235,7 +238,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
           {availableAccounts.map((account) => (
             <TouchableOpacity
               key={account.id}
-              style={[styles.pickerOption, { backgroundColor: colors.backgroundPrimary }]}
+              style={[neuSurface(scheme, 'flat'), styles.pickerOption]}
               onPress={() => handleSelectAccount(account.id)}
               disabled={paying}
             >
@@ -261,9 +264,11 @@ interface ReminderItemProps {
 
 function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: ReminderItemProps) {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
 
   return (
-    <View style={[styles.reminderCard, { backgroundColor: colors.cardBackground }, isOverdue && styles.overdueCard]}>
+    <View style={[neuSurface(scheme, 'flat'), styles.reminderCard, isOverdue && styles.overdueCard]}>
       <TouchableOpacity style={styles.reminderInfo} onPress={onEdit} accessibilityLabel={`Editar ${reminder.description}`}>
         <Text style={[styles.reminderDescription, { color: colors.textPrimary }]}>{reminder.description}</Text>
         <View style={styles.reminderDetails}>
@@ -276,7 +281,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
       </TouchableOpacity>
       <View style={styles.reminderActions}>
         <TouchableOpacity
-          style={[styles.deleteReminderBtn, { backgroundColor: colors.backgroundPrimary }]}
+          style={[neuSurface(scheme, 'flat'), styles.deleteReminderBtn]}
           onPress={onDelete}
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${reminder.description}`}
@@ -284,7 +289,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
           <Text style={styles.deleteReminderBtnText}>🗑️</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.editButton, { backgroundColor: colors.backgroundPrimary }]}
+          style={[neuSurface(scheme, 'flat'), styles.editButton]}
           onPress={onEdit}
           accessibilityRole="button"
           accessibilityLabel={`Editar ${reminder.description}`}
@@ -292,7 +297,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
           <Text style={styles.editButtonText}>✏️</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.paidButton, isOverdue && styles.overduePaidButton]}
+          style={[styles.paidButton, neuShadow(scheme, 'raised'), isOverdue && styles.overduePaidButton]}
           onPress={onMarkAsPaid}
           accessibilityRole="button"
           accessibilityLabel={`Marcar ${reminder.description} como pagado`}
@@ -335,11 +340,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   overdueCard: {
     borderLeftWidth: 3,

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -40,6 +41,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function DebtDetailScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<DetailNavProp>();
   const route = useRoute<DetailRouteProp>();
   const layout = useResponsiveLayout();
@@ -245,7 +247,7 @@ export function DebtDetailScreen() {
       ]}
     >
       {/* Header info */}
-      <View style={[styles.headerCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[styles.headerCard, { backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') }]}>
         <View style={styles.headerCardTop}>
           <Text style={[styles.categoryLabel, { color: colors.textTertiary }]}>
             {CATEGORY_LABELS[debt.category]}
@@ -282,12 +284,12 @@ export function DebtDetailScreen() {
 
       {/* Edit form */}
       {editing && (
-        <View style={[styles.editForm, { backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.editForm, { backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') }]}>
           <Text style={[styles.editFormTitle, { color: colors.textPrimary }]}>Editar Deuda</Text>
 
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Nombre</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={editName}
             onChangeText={setEditName}
             placeholder="Nombre de la deuda"
@@ -296,7 +298,7 @@ export function DebtDetailScreen() {
 
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Descripción</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={editDescription}
             onChangeText={setEditDescription}
             placeholder="Opcional"
@@ -305,7 +307,7 @@ export function DebtDetailScreen() {
 
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Monto total</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={editTotalAmount}
             onChangeText={setEditTotalAmount}
             placeholder="0.00"
@@ -316,13 +318,13 @@ export function DebtDetailScreen() {
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Dirección</Text>
           <View style={styles.editDirectionRow}>
             <TouchableOpacity
-              style={[styles.editDirChip, { borderColor: colors.border }, editDirection === 'i_owe' && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }]}
+              style={[styles.editDirChip, neuSurface(scheme, 'flat'), editDirection === 'i_owe' && { borderColor: colors.primary, backgroundColor: colors.primary + '15', ...neuShadow(scheme, 'pressed') }]}
               onPress={() => setEditDirection('i_owe')}
             >
               <Text style={[styles.editDirChipText, { color: colors.textSecondary }, editDirection === 'i_owe' && { color: colors.primary, fontWeight: '600' }]}>Yo debo</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.editDirChip, { borderColor: colors.border }, editDirection === 'they_owe_me' && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }]}
+              style={[styles.editDirChip, neuSurface(scheme, 'flat'), editDirection === 'they_owe_me' && { borderColor: colors.primary, backgroundColor: colors.primary + '15', ...neuShadow(scheme, 'pressed') }]}
               onPress={() => setEditDirection('they_owe_me')}
             >
               <Text style={[styles.editDirChipText, { color: colors.textSecondary }, editDirection === 'they_owe_me' && { color: colors.primary, fontWeight: '600' }]}>Me deben</Text>
@@ -331,7 +333,7 @@ export function DebtDetailScreen() {
 
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Persona/Entidad</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={editCounterparty}
             onChangeText={setEditCounterparty}
             placeholder="Opcional"
@@ -342,7 +344,7 @@ export function DebtDetailScreen() {
             <>
               <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Número de cuotas</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+                style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
                 value={editTotalInstallments}
                 onChangeText={setEditTotalInstallments}
                 placeholder="Ej: 12"
@@ -352,7 +354,7 @@ export function DebtDetailScreen() {
 
               <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Monto por cuota</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+                style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
                 value={editInstallmentAmount}
                 onChangeText={setEditInstallmentAmount}
                 placeholder="0.00"
@@ -364,13 +366,13 @@ export function DebtDetailScreen() {
 
           <View style={styles.editFormButtons}>
             <TouchableOpacity
-              style={[styles.editCancelBtn, { borderColor: colors.border }]}
+              style={[styles.editCancelBtn, { ...neuSurface(scheme, 'flat') }]}
               onPress={() => setEditing(false)}
             >
               <Text style={[styles.editCancelText, { color: colors.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.editSaveBtn, { backgroundColor: colors.primary }, editSaving && { opacity: 0.6 }]}
+              style={[styles.editSaveBtn, { backgroundColor: colors.primary, ...neuShadow(scheme, 'raised') }, editSaving && { opacity: 0.6 }]}
               onPress={handleSaveEdit}
               disabled={editSaving}
             >
@@ -381,7 +383,7 @@ export function DebtDetailScreen() {
       )}
 
       {/* Progress card */}
-      <View style={[styles.progressCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[styles.progressCard, { backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') }]}>
         <View style={styles.progressHeader}>
           <View>
             <Text style={[styles.progressLabel, { color: colors.textTertiary }]}>Pendiente</Text>
@@ -395,7 +397,7 @@ export function DebtDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+        <View style={[styles.progressBarBg, { ...neuProgress(scheme) }]}>
           <View
             style={[
               styles.progressBarFill,
@@ -411,7 +413,7 @@ export function DebtDetailScreen() {
         </View>
 
         {debt.totalInstallments && (
-          <View style={[styles.installmentInfo, { borderTopColor: colors.border }]}>
+          <View style={[styles.installmentInfo, { borderTopColor: colors.borderInset }]}>
             <Text style={[styles.installmentText, { color: colors.textSecondary }]}>
               📅 Cuota {debt.paidInstallments ?? 0} de {debt.totalInstallments}
             </Text>
@@ -429,7 +431,7 @@ export function DebtDetailScreen() {
         <TouchableOpacity
           style={[
             styles.provisionedToggle,
-            { borderColor: colors.border, backgroundColor: colors.cardBackground },
+            { borderColor: colors.borderInset, backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') },
             debt.isProvisioned && { borderColor: '#2EAD5D', backgroundColor: '#2EAD5D10' },
           ]}
           onPress={async () => {
@@ -462,7 +464,7 @@ export function DebtDetailScreen() {
       {!isPaidOff && (
         <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            style={[styles.actionButton, { backgroundColor: colors.primary, ...neuShadow(scheme, 'raised') }]}
             onPress={() => setShowPaymentForm(!showPaymentForm)}
             accessibilityRole="button"
             accessibilityLabel="Registrar pago"
@@ -472,7 +474,7 @@ export function DebtDetailScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButtonSecondary, { borderColor: colors.greenEarns }]}
+            style={[styles.actionButtonSecondary, { borderColor: colors.greenEarns, ...neuSurface(scheme, 'flat') }]}
             onPress={handleMarkPaidOff}
             accessibilityRole="button"
             accessibilityLabel="Marcar como pagada"
@@ -484,10 +486,10 @@ export function DebtDetailScreen() {
 
       {/* Payment form */}
       {showPaymentForm && (
-        <View style={[styles.paymentForm, { backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.paymentForm, { backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') }]}>
           <Text style={[styles.paymentFormTitle, { color: colors.textPrimary }]}>Registrar Pago</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={paymentAmount}
             onChangeText={setPaymentAmount}
             placeholder={debt.installmentAmount ? `Sugerido: ${(debt.installmentAmount / 100).toFixed(2)}` : '0.00'}
@@ -496,14 +498,14 @@ export function DebtDetailScreen() {
             autoFocus
           />
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
+            style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={paymentNote}
             onChangeText={setPaymentNote}
             placeholder="Nota (opcional)"
             placeholderTextColor={colors.textTertiary}
           />
           <TouchableOpacity
-            style={[styles.savePaymentButton, saving && { opacity: 0.6 }]}
+            style={[styles.savePaymentButton, { ...neuShadow(scheme, 'raised') }, saving && { opacity: 0.6 }]}
             onPress={handleAddPayment}
             disabled={saving}
           >
@@ -523,7 +525,7 @@ export function DebtDetailScreen() {
           </Text>
         ) : (
           payments.map((payment) => (
-            <View key={payment.id} style={[styles.paymentItem, { borderBottomColor: colors.border }]}>
+            <View key={payment.id} style={[styles.paymentItem, { borderBottomColor: colors.borderInset }]}>
               <View>
                 <Text style={[styles.paymentAmount, { color: colors.greenEarns }]}>
                   +{formatAmount(payment.amount)}
@@ -574,10 +576,10 @@ const styles = StyleSheet.create({
   editFormTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
   editLabel: { fontSize: 13, fontWeight: '500', marginBottom: 6, marginTop: 12 },
   editDirectionRow: { flexDirection: 'row', gap: 10 },
-  editDirChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  editDirChip: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   editDirChipText: { fontSize: 14 },
   editFormButtons: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  editCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
+  editCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   editCancelText: { fontSize: 14, fontWeight: '500' },
   editSaveBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   editSaveText: { color: '#fff', fontSize: 14, fontWeight: '600' },

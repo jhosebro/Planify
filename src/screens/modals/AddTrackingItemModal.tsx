@@ -14,13 +14,15 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { TrackingService } from '@/services/tracking';
 import type { TrackingItem } from '@/services/tracking';
 import type { MainStackParamList } from '@/navigation/types';
 
 export function AddTrackingItemModal() {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const route = useRoute<RouteProp<MainStackParamList, 'AddTrackingItem'>>();
   const { listId, itemId } = route.params;
@@ -130,7 +132,7 @@ export function AddTrackingItemModal() {
         {/* Name */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Nombre del producto *</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="Ej: Detergente líquido"
           placeholderTextColor={themeColors.textTertiary}
           value={name}
@@ -141,7 +143,7 @@ export function AddTrackingItemModal() {
         {/* Price */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Precio *</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="Ej: 15000"
           placeholderTextColor={themeColors.textTertiary}
           value={priceText}
@@ -152,7 +154,7 @@ export function AddTrackingItemModal() {
         {/* Last purchase date */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Última fecha de compra</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="DD/MM/AAAA"
           placeholderTextColor={themeColors.textTertiary}
           value={lastPurchaseDateText}
@@ -166,7 +168,7 @@ export function AddTrackingItemModal() {
         {/* Average duration */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Duración promedio (días)</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: themeColors.inputBackground, color: themeColors.textPrimary, borderColor: themeColors.border }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           placeholder="Ej: 30"
           placeholderTextColor={themeColors.textTertiary}
           value={durationDaysText}
@@ -178,7 +180,7 @@ export function AddTrackingItemModal() {
         </Text>
 
         {/* Needs to buy toggle */}
-        <View style={[styles.toggleRow, { borderColor: themeColors.border }]}>
+        <View style={[styles.toggleRow, neuSurface(scheme, 'flat')]}>
           <View style={styles.toggleInfo}>
             <Text style={[styles.toggleLabel, { color: themeColors.textPrimary }]}>Necesito comprarlo</Text>
             <Text style={[styles.toggleHint, { color: themeColors.textTertiary }]}>
@@ -206,7 +208,7 @@ export function AddTrackingItemModal() {
 
         {/* Save button */}
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: themeColors.primary }, saving && { opacity: 0.6 }]}
+          style={[styles.saveButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised'), saving && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={saving}
         >
@@ -255,11 +257,11 @@ const styles = StyleSheet.create({
   loadingText: { textAlign: 'center', marginTop: 40, fontSize: 15 },
 
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   hint: { fontSize: 12, marginTop: 4 },
 
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, paddingVertical: 14, paddingHorizontal: 14, borderWidth: 1, borderRadius: 12 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12 },
   toggleInfo: { flex: 1, marginRight: 12 },
   toggleLabel: { fontSize: 15, fontWeight: '600' },
   toggleHint: { fontSize: 12, marginTop: 2 },

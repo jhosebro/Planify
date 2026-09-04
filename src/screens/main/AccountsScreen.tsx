@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -43,6 +44,7 @@ function formatAmount(centavos: number): string {
 
 export function AccountsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<AccountsNavProp>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -92,6 +94,8 @@ export function AccountsScreen() {
       {/* Total Balance Header */}
       <View style={[
         styles.balanceCard,
+        { backgroundColor: colors.primary },
+        neuShadow(scheme, 'raised'),
         isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
       ]}>
         <Text style={styles.balanceLabel}>Saldo Total</Text>
@@ -116,7 +120,7 @@ export function AccountsScreen() {
         columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.accountCard, { backgroundColor: colors.cardBackground }, isDesktop && { flex: 1 }]}
+            style={[neuSurface(scheme, 'raised'), styles.accountCard, isDesktop && { flex: 1 }]}
             onPress={() => handleAccountPress(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`Cuenta ${item.name}, saldo ${formatAmount(item.balance)}`}
@@ -140,7 +144,7 @@ export function AccountsScreen() {
             <Text style={styles.emptyIcon}>🏦</Text>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes cuentas registradas.</Text>
             <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea tu primera cuenta para comenzar a registrar tus movimientos.</Text>
-            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => setShowCreateForm(true)}>
+            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]} onPress={() => setShowCreateForm(true)}>
               <Text style={styles.emptyButtonText}>Crear Cuenta</Text>
             </TouchableOpacity>
           </View>
@@ -164,7 +168,7 @@ export function AccountsScreen() {
         <View style={styles.fabGroup}>
           {accounts.length >= 2 && (
             <TouchableOpacity
-              style={[styles.fab, styles.fabSecondary, { backgroundColor: colors.cardBackground, borderColor: colors.primary }]}
+              style={[neuSurface(scheme, 'raised'), styles.fab, styles.fabSecondary, { borderColor: colors.primary }]}
               onPress={() => navigation.navigate('AddTransfer')}
               accessibilityRole="button"
               accessibilityLabel="Nueva transferencia"
@@ -173,7 +177,7 @@ export function AccountsScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.fab, { backgroundColor: colors.primary }]}
+            style={[styles.fab, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
             onPress={() => setShowCreateForm(true)}
             accessibilityRole="button"
             accessibilityLabel="Crear nueva cuenta"
@@ -204,6 +208,7 @@ function showAlert(title: string, message: string) {
 
 function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccountFormProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('bank');
   const [initialBalance, setInitialBalance] = useState('');
@@ -254,12 +259,12 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
 
   return (
     <View style={[styles.formOverlay, { backgroundColor: colors.overlay }]}>
-      <View style={[styles.formCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.formCard]}>
         <Text style={[styles.formTitle, { color: colors.textPrimary }]}>Nueva Cuenta</Text>
 
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nombre</Text>
         <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+          style={[neuInset(scheme), styles.input, { color: colors.textPrimary, borderRadius: 12 }]}
           value={name}
           onChangeText={setName}
           placeholder="Ej: Cuenta de ahorros"
@@ -273,16 +278,16 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
             <TouchableOpacity
               key={t}
               style={[
+                neuSurface(scheme, 'flat'),
                 styles.typeButton,
-                { borderColor: colors.border, backgroundColor: colors.inputBackground },
-                type === t && { backgroundColor: colors.primary, borderColor: colors.primary },
+                type === t && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') },
               ]}
               onPress={() => setType(t)}
               accessibilityRole="button"
               accessibilityState={{ selected: type === t }}
             >
               <Text style={styles.typeIcon}>{ACCOUNT_TYPE_ICONS[t]}</Text>
-              <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === t && { color: '#fff' }]}>
+              <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === t && { color: colors.textInverse }]}>
                 {ACCOUNT_TYPE_LABELS[t]}
               </Text>
             </TouchableOpacity>
@@ -291,7 +296,7 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
 
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Saldo Inicial ($)</Text>
         <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.inputBackground }]}
+          style={[neuInset(scheme), styles.input, { color: colors.textPrimary, borderRadius: 12 }]}
           value={displayBalance}
           onChangeText={handleBalanceChange}
           placeholder="0"
@@ -301,11 +306,11 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
         />
 
         <View style={styles.formButtons}>
-          <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.border }]} onPress={onCancel}>
+          <TouchableOpacity style={[neuSurface(scheme, 'flat'), styles.cancelButton]} onPress={onCancel}>
             <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
           <Pressable
-            style={[styles.submitButton, { backgroundColor: colors.primary }, submitting && { opacity: 0.6 }]}
+            style={[styles.submitButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised'), submitting && { opacity: 0.6 }]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -337,17 +342,11 @@ const styles = StyleSheet.create({
 
   // Balance Card
   balanceCard: {
-    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 24,
     margin: 16,
     marginBottom: 8,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   balanceLabel: {
     fontSize: 14,
@@ -381,11 +380,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   accountRow: {
     flexDirection: 'row',
@@ -466,16 +460,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
   fabSecondary: {
     borderWidth: 2,
-    shadowOpacity: 0.1,
-    elevation: 3,
   },
   fabText: {
     fontSize: 28,
@@ -504,11 +491,6 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 440,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
   },
   formTitle: {
     fontSize: 20,
@@ -522,8 +504,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
@@ -537,7 +517,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
@@ -560,7 +539,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
-    borderWidth: 1,
   },
   cancelButtonText: {
     fontSize: 15,

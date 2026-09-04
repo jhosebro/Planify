@@ -1,6 +1,6 @@
 import React from 'react';
-import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuShadow, neuSurface } from '@/lib/neumorphic';
 import {
   Dimensions,
   Modal,
@@ -27,6 +27,8 @@ interface BottomModalProps {
  */
 export function BottomModal({ visible, title, subtitle, onClose, children }: BottomModalProps) {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width >= 1024;
 
@@ -42,14 +44,18 @@ export function BottomModal({ visible, title, subtitle, onClose, children }: Bot
         onPress={onClose}
       >
         <Pressable
-          style={[styles.card, { backgroundColor: colors.cardBackground }, isDesktopWeb && styles.cardDesktop]}
+          style={[
+            styles.card,
+            { backgroundColor: colors.surface, ...neuShadow(scheme, 'raised') },
+            isDesktopWeb && styles.cardDesktop,
+          ]}
           onPress={() => {}}
         >
-          {!isDesktopWeb && <View style={[styles.handle, { backgroundColor: colors.border }]} />}
+          {!isDesktopWeb && <View style={[styles.handle, { backgroundColor: colors.borderInset }]} />}
           <Text style={[styles.title, { color: colors.textPrimary }, isDesktopWeb && styles.titleDesktop]}>{title}</Text>
           {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
           <View style={styles.content}>{children}</View>
-          <TouchableOpacity style={[styles.cancelButton, { borderTopColor: colors.border }]} onPress={onClose}>
+          <TouchableOpacity style={[styles.cancelButton, { borderTopColor: colors.borderInset }]} onPress={onClose}>
             <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
         </Pressable>
@@ -76,17 +82,12 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   cardDesktop: {
-    borderRadius: 16,
+    borderRadius: 20,
     width: '100%',
     maxWidth: 480,
     paddingHorizontal: 32,
     paddingTop: 28,
     paddingBottom: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
   },
   handle: {
     width: 36,

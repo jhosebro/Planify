@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Dimensions,
@@ -95,6 +96,7 @@ function formatDate(date: Date): string {
 
 export function DashboardScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const dashboardService = useMemo(() => new DashboardService(), []);
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -135,7 +137,7 @@ export function DashboardScreen() {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundPrimary }]}>
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No se pudieron cargar los datos del dashboard.</Text>
-        <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={loadDashboardData}>
+        <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]} onPress={loadDashboardData}>
           <Text style={[styles.retryButtonText, { color: colors.textInverse }]}>Reintentar</Text>
         </TouchableOpacity>
       </View>
@@ -205,6 +207,7 @@ const DATE_RANGE_OPTIONS: { key: DateRangeOption; label: string }[] = [
 
 function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   return (
     <View style={styles.dateRangeContainer}>
@@ -213,8 +216,9 @@ function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
           key={option.key}
           style={[
             styles.dateRangeButton,
-            { backgroundColor: colors.cardBackground, borderColor: colors.border },
-            selected === option.key && [styles.dateRangeButtonActive, { backgroundColor: colors.primary, borderColor: colors.primary }],
+            selected === option.key
+              ? { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }
+              : neuSurface(scheme, 'flat'),
           ]}
           onPress={() => onSelect(option.key)}
           accessibilityRole="button"
@@ -244,9 +248,10 @@ interface TotalBalanceCardProps {
 
 function TotalBalanceCard({ balance }: TotalBalanceCardProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   return (
-    <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
+    <View style={[styles.balanceCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
       <Text style={styles.balanceLabel}>Saldo Total</Text>
       <Text style={[styles.balanceAmount, { color: '#FFFFFF' }, balance < 0 && styles.negativeAmount]}>
         {formatAmount(balance)}
@@ -264,11 +269,12 @@ interface CategoryDistributionChartProps {
 
 function CategoryDistributionChart({ distribution, layout }: CategoryDistributionChartProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const [activeCat, setActiveCat] = useState<string | null>(null);
 
   if (distribution.length === 0) {
     return (
-      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.chartCard]}>
         <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Distribución por Categoría</Text>
         <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay gastos registrados en este período.</Text>
       </View>
@@ -284,7 +290,7 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
   const highlighted = activeCat ? (distribution.find((d) => d.categoryName === activeCat) ?? null) : null;
 
   return (
-    <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+    <View style={[neuSurface(scheme, 'raised'), styles.chartCard, { overflow: 'hidden' }]}>
       <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Distribución por Categoría</Text>
       {slices.length > 0 ? (
         <View style={styles.donutWrap}>
@@ -332,10 +338,11 @@ interface MonthlyTrendsChartProps {
 
 function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   if (trends.length === 0) {
     return (
-      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.chartCard]}>
         <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
         <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay datos de tendencia disponibles.</Text>
       </View>
@@ -350,7 +357,7 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
 
   if (!hasData) {
     return (
-      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.chartCard]}>
         <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
         <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>Aún no hay movimientos para mostrar tendencias.</Text>
       </View>
@@ -391,7 +398,7 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   // LineChart from react-native-chart-kit crashes on web — use SimpleLineChart instead
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.chartCard, { overflow: 'hidden' }]}>
         <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
         <SimpleLineChart
           labels={labels}
@@ -407,7 +414,7 @@ function MonthlyTrendsChart({ trends, layout }: MonthlyTrendsChartProps) {
   }
 
   return (
-    <View style={[styles.chartCard, { backgroundColor: colors.cardBackground, overflow: 'hidden' }]}>
+    <View style={[neuSurface(scheme, 'raised'), styles.chartCard, { overflow: 'hidden' }]}>
       <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Tendencia de Ingresos y Gastos</Text>
       {chartWidth > 0 && (
         <LineChart
@@ -444,10 +451,11 @@ interface BudgetProgressSectionProps {
 
 function BudgetProgressSection({ budgets }: BudgetProgressSectionProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   if (budgets.length === 0) {
     return (
-      <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos Activos</Text>
         <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay presupuestos activos.</Text>
       </View>
@@ -455,7 +463,7 @@ function BudgetProgressSection({ budgets }: BudgetProgressSectionProps) {
   }
 
   return (
-    <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+    <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
       <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Presupuestos Activos</Text>
       {budgets.map((budget) => (
         <BudgetProgressBar key={budget.budgetId} budget={budget} />
@@ -470,6 +478,7 @@ interface BudgetProgressBarProps {
 
 function BudgetProgressBar({ budget }: BudgetProgressBarProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const percentage = Math.min(budget.percentage, 100);
   const barColor = budget.isOverBudget
     ? colors.redExpenses
@@ -485,7 +494,7 @@ function BudgetProgressBar({ budget }: BudgetProgressBarProps) {
           {formatAmount(budget.spent)} / {formatAmount(budget.limit)}
         </Text>
       </View>
-      <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
+      <View style={[neuProgress(scheme), styles.progressBarBackground]}>
         <View
           style={[
             styles.progressBarFill,
@@ -509,10 +518,11 @@ interface RecentTransactionsSectionProps {
 
 function RecentTransactionsSection({ transactions }: RecentTransactionsSectionProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   if (transactions.length === 0) {
     return (
-      <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Últimos Movimientos</Text>
         <Text style={[styles.emptyChartText, { color: colors.textTertiary }]}>No hay movimientos recientes.</Text>
       </View>
@@ -520,7 +530,7 @@ function RecentTransactionsSection({ transactions }: RecentTransactionsSectionPr
   }
 
   return (
-    <View style={[styles.sectionCard, { backgroundColor: colors.cardBackground }]}>
+    <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
       <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Últimos Movimientos</Text>
       <FlatList
         data={transactions}
@@ -538,12 +548,13 @@ interface TransactionRowProps {
 
 function TransactionRow({ transaction }: TransactionRowProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
   const color = isExpense ? colors.redExpenses : colors.greenEarns;
 
   return (
-    <View style={[styles.transactionRow, { borderBottomColor: colors.border }]}>
+    <View style={[styles.transactionRow, { borderBottomColor: colors.borderInset }]}>
       <View style={styles.transactionInfo}>
         <Text style={[styles.transactionDescription, { color: colors.textPrimary }]}>
           {transaction.description || (isExpense ? 'Gasto' : 'Ingreso')}
@@ -608,10 +619,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
-  },
-  dateRangeButtonActive: {
-    borderWidth: 1,
   },
   dateRangeButtonText: {
     fontSize: 14,
@@ -627,11 +634,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   balanceLabel: {
     fontSize: 14,
@@ -651,11 +653,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   chartTitle: {
     fontSize: 16,
@@ -718,11 +715,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,

@@ -2,7 +2,8 @@ import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuShadow, neuSurface } from '@/lib/neumorphic';
 import type { TabParamList } from './types';
 
 interface SidebarItem {
@@ -34,13 +35,15 @@ interface DesktopSidebarProps {
  */
 export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps) {
   const colors = useThemeColors();
+  const isDark = useIsDarkTheme();
+  const scheme = isDark ? 'dark' : 'light';
 
   if (Platform.OS !== 'web') return null;
 
   return (
-    <View style={[styles.sidebar, { backgroundColor: colors.cardBackground, borderRightColor: colors.border }]}>
+    <View style={[styles.sidebar, { backgroundColor: colors.surface }]}>
       {/* Brand */}
-      <View style={[styles.brandContainer, { borderBottomColor: colors.border }]}>
+      <View style={[styles.brandContainer, { backgroundColor: colors.surfacePressed, ...neuShadow(scheme, 'flat') }]}>
         <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
       </View>
 
@@ -50,13 +53,18 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
           const isActive = currentRoute === item.key;
           const iconName = isActive ? item.iconFocused : item.iconUnfocused;
 
+          const itemStyle = isActive
+            ? [
+                styles.navItem,
+                neuSurface(scheme, 'pressed'),
+                { backgroundColor: colors.primary },
+              ]
+            : [styles.navItem, neuSurface(scheme, 'flat')];
+
           return (
             <TouchableOpacity
               key={item.key}
-              style={[
-                styles.navItem,
-                isActive && [styles.navItemActive, { backgroundColor: colors.primary + '15' }],
-              ]}
+              style={itemStyle}
               onPress={() => onNavigate(item.key)}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
@@ -65,12 +73,12 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
               <Ionicons
                 name={iconName}
                 size={22}
-                color={isActive ? colors.primary : colors.textSecondary}
+                color={isActive ? colors.textInverse : colors.textSecondary}
               />
               <Text style={[
                 styles.navLabel,
-                { color: colors.textSecondary },
-                isActive && { color: colors.primary, fontWeight: '600' },
+                { color: isActive ? colors.textInverse : colors.textSecondary },
+                isActive && { fontWeight: '600' },
               ]}>
                 {item.label}
               </Text>
@@ -80,7 +88,7 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
       </View>
 
       {/* Footer */}
-      <View style={[styles.sidebarFooter, { borderTopColor: colors.border }]}>
+      <View style={[styles.sidebarFooter]}>
         <Text style={[styles.footerText, { color: colors.textTertiary }]}>© 2025 Planify</Text>
       </View>
     </View>
@@ -90,16 +98,15 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
 const styles = StyleSheet.create({
   sidebar: {
     width: 240,
-    borderRightWidth: 1,
     paddingVertical: 24,
     paddingHorizontal: 12,
     justifyContent: 'flex-start',
   },
   brandContainer: {
     paddingHorizontal: 12,
-    paddingBottom: 24,
-    marginBottom: 8,
-    borderBottomWidth: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 24,
   },
   brandText: {
     fontSize: 22,
@@ -108,7 +115,7 @@ const styles = StyleSheet.create({
   },
   navItems: {
     flex: 1,
-    gap: 4,
+    gap: 10,
   },
   navItem: {
     flexDirection: 'row',
@@ -116,7 +123,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   navItemActive: {},
   navLabel: {
@@ -125,7 +132,6 @@ const styles = StyleSheet.create({
   },
   sidebarFooter: {
     paddingTop: 16,
-    borderTopWidth: 1,
     alignItems: 'center',
   },
   footerText: {

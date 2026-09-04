@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import {
   ActivityIndicator,
   Alert,
@@ -69,6 +70,7 @@ const DATE_FILTER_OPTIONS: { key: DateFilter; label: string }[] = [
 
 export function TransactionsScreen() {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<TransactionsNavProp>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -122,15 +124,16 @@ export function TransactionsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.backgroundPrimary }, isDesktop && { alignItems: 'center' }]}>
       {/* Date Filter */}
-      <View style={[styles.filterSection, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
+      <View style={[neuSurface(scheme, 'flat'), styles.filterSection, { borderBottomColor: colors.borderInset }, isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%' }]}>
         <View style={styles.dateFilterRow}>
           {DATE_FILTER_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.key}
               style={[
                 styles.filterChip,
-                { backgroundColor: colors.border },
-                dateFilter === option.key && styles.filterChipActive,
+                dateFilter === option.key
+                  ? { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }
+                  : neuSurface(scheme, 'flat'),
               ]}
               onPress={() => setDateFilter(option.key)}
               accessibilityRole="button"
@@ -141,7 +144,7 @@ export function TransactionsScreen() {
                 style={[
                   styles.filterChipText,
                   { color: colors.textSecondary },
-                  dateFilter === option.key && styles.filterChipTextActive,
+                  dateFilter === option.key && { color: colors.textInverse },
                 ]}
               >
                 {option.label}
@@ -154,24 +157,34 @@ export function TransactionsScreen() {
         {accounts.length > 0 && (
           <View style={styles.accountFilterRow}>
             <TouchableOpacity
-              style={[styles.accountChip, { borderColor: colors.border, backgroundColor: colors.cardBackground }, !accountFilter && styles.accountChipActive]}
+              style={[
+                styles.accountChip,
+                !accountFilter
+                  ? { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }
+                  : neuSurface(scheme, 'flat'),
+              ]}
               onPress={() => setAccountFilter(undefined)}
             >
-              <Text style={[styles.accountChipText, { color: colors.textSecondary }, !accountFilter && styles.accountChipTextActive]}>
+              <Text style={[styles.accountChipText, { color: colors.textSecondary }, !accountFilter && { color: colors.textInverse }]}>
                 Todas
               </Text>
             </TouchableOpacity>
             {accounts.map((acc) => (
               <TouchableOpacity
                 key={acc.id}
-                style={[styles.accountChip, { borderColor: colors.border, backgroundColor: colors.cardBackground }, accountFilter === acc.id && styles.accountChipActive]}
+                style={[
+                  styles.accountChip,
+                  accountFilter === acc.id
+                    ? { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }
+                    : neuSurface(scheme, 'flat'),
+                ]}
                 onPress={() => setAccountFilter(acc.id === accountFilter ? undefined : acc.id)}
               >
                 <Text
                   style={[
                     styles.accountChipText,
                     { color: colors.textSecondary },
-                    accountFilter === acc.id && styles.accountChipTextActive,
+                    accountFilter === acc.id && { color: colors.textInverse },
                   ]}
                 >
                   {acc.name}
@@ -207,7 +220,7 @@ export function TransactionsScreen() {
 
       {/* FAB to add transaction */}
       <TouchableOpacity
-        style={[styles.fab, isDesktop && styles.fabDesktop]}
+        style={[styles.fab, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised'), isDesktop && styles.fabDesktop]}
         onPress={handleAddTransaction}
         accessibilityRole="button"
         accessibilityLabel="Agregar movimiento"
@@ -229,6 +242,7 @@ interface TransactionItemProps {
 
 function TransactionItem({ transaction, accounts, onDelete, onEdit }: TransactionItemProps) {
   const colors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const isTransfer = !!transaction.linkedTransferId;
   const isExpense = transaction.type === 'expense';
   const sign = isExpense ? '-' : '+';
@@ -256,7 +270,7 @@ function TransactionItem({ transaction, accounts, onDelete, onEdit }: Transactio
 
   return (
     <TouchableOpacity
-      style={[styles.transactionRow, { backgroundColor: colors.cardBackground }]}
+      style={[neuSurface(scheme, 'flat'), styles.transactionRow]}
       onPress={() => !isTransfer && onEdit(transaction.id)}
       onLongPress={handleLongPress}
       accessibilityRole="button"
@@ -314,11 +328,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterSection: {
-    backgroundColor: '#fff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
   },
   dateFilterRow: {
     flexDirection: 'row',
@@ -329,18 +341,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#F0F0F0',
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary,
   },
   filterChipText: {
     fontSize: 13,
     color: '#666',
     fontWeight: '500',
-  },
-  filterChipTextActive: {
-    color: '#fff',
   },
   accountFilterRow: {
     flexDirection: 'row',
@@ -351,38 +356,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    backgroundColor: '#fff',
-  },
-  accountChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#EBF4FF',
   },
   accountChipText: {
     fontSize: 12,
     color: '#666',
-  },
-  accountChipTextActive: {
-    color: colors.primary,
-    fontWeight: '500',
   },
   listContent: {
     padding: 16,
     paddingBottom: 80,
   },
   transactionRow: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   transactionIcon: {
     width: 36,
@@ -464,14 +452,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
   fabText: {
     fontSize: 28,

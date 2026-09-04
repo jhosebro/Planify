@@ -12,7 +12,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { TrackingService } from '@/services/tracking';
 import type { TrackingList } from '@/services/tracking';
@@ -25,6 +26,7 @@ function formatAmount(centavos: number): string {
 
 export function TrackingScreen() {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
@@ -75,7 +77,7 @@ export function TrackingScreen() {
           <View style={styles.headerRow}>
             <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>📦 Seguimiento</Text>
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: themeColors.primary }]}
+              style={[styles.addButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised')]}
               onPress={() => navigation.navigate('AddTrackingList')}
             >
               <Text style={styles.addButtonText}>+ Nueva lista</Text>
@@ -84,7 +86,7 @@ export function TrackingScreen() {
 
           {/* Summary */}
           {lists.length > 0 && (
-            <View style={[styles.summaryCard, { backgroundColor: themeColors.primary }]}>
+            <View style={[styles.summaryCard, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised')]}>
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNumber}>{lists.length}</Text>
@@ -131,10 +133,11 @@ export function TrackingScreen() {
 
 function TrackingListCard({ list, onPress, isDesktop }: { list: TrackingList; onPress: () => void; isDesktop?: boolean }) {
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   return (
     <TouchableOpacity
-      style={[styles.listCard, { backgroundColor: themeColors.cardBackground }, isDesktop && { flex: 1 }]}
+      style={[neuSurface(scheme, 'raised'), styles.listCard, isDesktop && { flex: 1 }]}
       onPress={onPress}
     >
       <View style={styles.listCardHeader}>
@@ -154,7 +157,7 @@ function TrackingListCard({ list, onPress, isDesktop }: { list: TrackingList; on
         <Ionicons name="chevron-forward" size={20} color={themeColors.textTertiary} />
       </View>
 
-      <View style={[styles.listCardFooter, { borderTopColor: themeColors.border }]}>
+      <View style={[styles.listCardFooter, { borderTopColor: themeColors.borderInset }]}>
         <View style={styles.listStat}>
           <Ionicons name="cube-outline" size={14} color={themeColors.textSecondary} />
           <Text style={[styles.listStatText, { color: themeColors.textSecondary }]}>
@@ -202,7 +205,7 @@ const styles = StyleSheet.create({
   summaryDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.3)' },
 
   // List card
-  listCard: { borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  listCard: { borderRadius: 14, padding: 16, marginBottom: 12 },
   listCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   listIconContainer: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   listIcon: { fontSize: 22 },

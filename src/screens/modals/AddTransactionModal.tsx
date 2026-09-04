@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -59,6 +60,7 @@ export function AddTransactionModal() {
   const transactionId = route.params?.transactionId;
   const isEditMode = !!transactionId;
   const themeColors = useThemeColors();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
 
   const transactionService = useMemo(() => new TransactionService(), []);
   const accountService = useMemo(() => new AccountService(), []);
@@ -251,22 +253,22 @@ export function AddTransactionModal() {
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Tipo</Text>
         <View style={styles.typeRow}>
           <TouchableOpacity
-            style={[styles.typeButton, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, type === 'expense' && { backgroundColor: themeColors.redExpenses + '18', borderColor: themeColors.redExpenses }]}
+            style={[styles.typeButton, neuSurface(scheme, 'flat'), { borderRadius: 8 }, type === 'expense' && { backgroundColor: themeColors.redExpenses, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setType('expense')}
             accessibilityRole="button"
             accessibilityState={{ selected: type === 'expense' }}
           >
-            <Text style={[styles.typeButtonText, { color: themeColors.textSecondary }, type === 'expense' && { color: themeColors.textPrimary }]}>
+            <Text style={[styles.typeButtonText, { color: type === 'expense' ? themeColors.textInverse : themeColors.textSecondary }]}>
               Gasto
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.typeButton, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, type === 'income' && { backgroundColor: themeColors.greenEarns + '18', borderColor: themeColors.greenEarns }]}
+            style={[styles.typeButton, neuSurface(scheme, 'flat'), { borderRadius: 8 }, type === 'income' && { backgroundColor: themeColors.greenEarns, ...neuShadow(scheme, 'pressed') }]}
             onPress={() => setType('income')}
             accessibilityRole="button"
             accessibilityState={{ selected: type === 'income' }}
           >
-            <Text style={[styles.typeButtonText, { color: themeColors.textSecondary }, type === 'income' && { color: themeColors.textPrimary }]}>
+            <Text style={[styles.typeButtonText, { color: type === 'income' ? themeColors.textInverse : themeColors.textSecondary }]}>
               Ingreso
             </Text>
           </TouchableOpacity>
@@ -275,7 +277,7 @@ export function AddTransactionModal() {
         {/* Amount with thousand separators */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Monto ($)</Text>
         <TextInput
-          style={[styles.input, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+          style={[styles.input, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={displayAmount}
           onChangeText={handleAmountChange}
           placeholder="0"
@@ -290,15 +292,15 @@ export function AddTransactionModal() {
           {accounts.map((acc) => (
             <TouchableOpacity
               key={acc.id}
-              style={[styles.selectorChip, { borderColor: themeColors.border, backgroundColor: themeColors.cardBackground }, selectedAccountId === acc.id && { borderColor: themeColors.primary, backgroundColor: themeColors.primary + '15' }]}
+              style={[styles.selectorChip, neuSurface(scheme, 'flat'), { borderRadius: 8 }, selectedAccountId === acc.id && { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'pressed') }]}
               onPress={() => setSelectedAccountId(acc.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: selectedAccountId === acc.id }}
             >
-              <Text style={[styles.selectorChipText, { color: themeColors.textSecondary }, selectedAccountId === acc.id && { color: themeColors.primary }]}>
+              <Text style={[styles.selectorChipText, { color: selectedAccountId === acc.id ? themeColors.textInverse : themeColors.textSecondary }]}>
                 {acc.name}
               </Text>
-              <Text style={[styles.selectorChipBalance, { color: themeColors.textTertiary }, selectedAccountId === acc.id && { color: themeColors.primary }]}>
+              <Text style={[styles.selectorChipBalance, { color: selectedAccountId === acc.id ? themeColors.textInverse : themeColors.textTertiary }]}>
                 {formatAccountBalance(acc.balance)}
               </Text>
             </TouchableOpacity>
@@ -307,7 +309,7 @@ export function AddTransactionModal() {
 
         {/* Credit Card Installment Options */}
         {isCreditCard && (
-          <View style={[styles.installmentSection, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}>
+          <View style={[styles.installmentSection, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
             <TouchableOpacity
               style={styles.installmentToggle}
               onPress={() => setIsInstallment(!isInstallment)}
@@ -328,7 +330,7 @@ export function AddTransactionModal() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.installmentLabel, { color: themeColors.textSecondary }]}>Total de cuotas</Text>
                     <TextInput
-                      style={[styles.installmentInput, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+                      style={[styles.installmentInput, neuInset(scheme), { color: themeColors.textPrimary }]}
                       value={installmentCount}
                       onChangeText={setInstallmentCount}
                       placeholder="Ej: 6"
@@ -339,7 +341,7 @@ export function AddTransactionModal() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.installmentLabel, { color: themeColors.textSecondary }]}>Cuotas ya pagadas</Text>
                     <TextInput
-                      style={[styles.installmentInput, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+                      style={[styles.installmentInput, neuInset(scheme), { color: themeColors.textPrimary }]}
                       value={paidInstallments}
                       onChangeText={setPaidInstallments}
                       placeholder="0"
@@ -365,7 +367,7 @@ export function AddTransactionModal() {
         {/* Date Picker */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Fecha</Text>
         <TouchableOpacity
-          style={[styles.dateButton, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.border }]}
+          style={[styles.dateButton, neuInset(scheme)]}
           onPress={() => setShowDatePicker(!showDatePicker)}
           accessibilityLabel="Seleccionar fecha"
           accessibilityRole="button"
@@ -388,7 +390,7 @@ export function AddTransactionModal() {
         {/* Description */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Descripción (opcional)</Text>
         <TextInput
-          style={[styles.input, styles.textArea, { borderColor: themeColors.border, color: themeColors.textPrimary, backgroundColor: themeColors.inputBackground }]}
+          style={[styles.input, styles.textArea, neuInset(scheme), { color: themeColors.textPrimary }]}
           value={description}
           onChangeText={setDescription}
           placeholder="Descripción del movimiento..."
@@ -404,7 +406,7 @@ export function AddTransactionModal() {
             <Text style={[styles.cancelButtonText, { color: themeColors.textSecondary }]}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: themeColors.primary }, submitting && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised'), submitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -440,8 +442,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
   },
@@ -457,7 +458,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
   },
   typeButtonText: {
@@ -473,7 +473,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
   },
   selectorChipText: {
     fontSize: 13,
@@ -489,7 +488,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
   },
   installmentToggle: {
     flexDirection: 'row',
@@ -526,8 +524,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   installmentInput: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
@@ -542,7 +539,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
