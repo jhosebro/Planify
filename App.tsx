@@ -113,6 +113,9 @@ export default function App() {
       }
     });
 
+    // Hydrate onboarding flag from AsyncStorage
+    useAuthStore.getState().hydrateOnboarding();
+
     return () => subscription.unsubscribe();
   }, []);
 
