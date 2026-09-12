@@ -10,6 +10,7 @@ import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useThemeStore, type ThemeMode } from '@/store/themeStore';
+import { authService } from '@/services/auth';
 import { ProfileService } from '@/services/profile';
 import type { MainStackParamList } from '@/navigation/types';
 import type { SyncStatus } from '@/types';
@@ -73,10 +74,18 @@ export function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
-      if (confirmed) {
+    const doLogout = async () => {
+      try {
+        await authService.logout();
+      } catch {
+        // Force clear even if Supabase signOut fails (e.g. offline)
         clearAuth();
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        doLogout();
       }
     } else {
       Alert.alert(
@@ -84,13 +93,7 @@ export function SettingsScreen() {
         '¿Estás seguro de que deseas cerrar sesión?',
         [
           { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Cerrar sesión',
-            style: 'destructive',
-            onPress: () => {
-              clearAuth();
-            },
-          },
+          { text: 'Cerrar sesión', style: 'destructive', onPress: doLogout },
         ]
       );
     }

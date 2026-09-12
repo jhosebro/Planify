@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
+import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
   Alert,
@@ -40,6 +42,31 @@ export function BudgetsScreen() {
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const budgetService = useMemo(() => new BudgetService(), []);
   const reminderService = useMemo(() => new ReminderService(), []);
+
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('budgets');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '💰',
+      title: 'Presupuesto General',
+      description: 'La tarjeta superior muestra tu gasto total vs el presupuesto combinado de todas tus categorías activas en el mes.',
+    },
+    {
+      emoji: '📊',
+      title: 'Presupuestos por categoría',
+      description: 'Cada tarjeta muestra el progreso de gasto de una categoría. Se vuelve naranja al acercarse al límite y rojo al excederlo.',
+    },
+    {
+      emoji: '✏️',
+      title: 'Registrar gasto manual',
+      description: 'Usa el botón "+ Gasto" para registrar un gasto que no creó un movimiento en tus cuentas (como gastos en efectivo sin registrar).',
+    },
+    {
+      emoji: '🔔',
+      title: 'Recordatorios',
+      description: 'En la parte inferior gestiona pagos recurrentes: servicios, suscripciones y deudas. Marca como pagado cuando los realices.',
+    },
+  ];
 
   const [consumptions, setConsumptions] = useState<(BudgetConsumption & { categoryName: string })[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -229,6 +256,9 @@ export function BudgetsScreen() {
         <Text style={styles.spendConfirmText}>Registrar</Text>
       </TouchableOpacity>
     </BottomModal>
+
+    <TourButton onPress={openTour} />
+    <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
   </View>
   );
 }

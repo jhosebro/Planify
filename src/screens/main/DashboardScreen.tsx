@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
+import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
   Dimensions,
@@ -101,6 +103,31 @@ export function DashboardScreen() {
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
 
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('dashboard');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '📊',
+      title: 'Tu resumen financiero',
+      description: 'El Dashboard muestra un resumen completo de tu situación financiera: saldo total, gastos por categoría y tendencias mensuales.',
+    },
+    {
+      emoji: '🎯',
+      title: 'Filtros de tiempo',
+      description: 'Usa los botones "Este mes", "3 meses" y "6 meses" para ver cómo evolucionaron tus finanzas en diferentes períodos.',
+    },
+    {
+      emoji: '🍩',
+      title: 'Distribución de gastos',
+      description: 'El gráfico de dona muestra en qué categorías gastas más. Toca cada categoría de la leyenda para resaltarla.',
+    },
+    {
+      emoji: '📈',
+      title: 'Tendencias y presupuestos',
+      description: 'Debajo de los gráficos verás el estado de tus presupuestos activos y tus últimos movimientos registrados.',
+    },
+  ];
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<DateRangeOption>('this_month');
@@ -145,50 +172,55 @@ export function DashboardScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.backgroundPrimary }]} contentContainerStyle={[
-      styles.contentContainer,
-      isDesktop && { paddingHorizontal: layout.contentPadding, maxWidth: layout.contentMaxWidth, alignSelf: 'center', width: '100%' },
-    ]}>
-      {/* Date Range Selector */}
-      <DateRangeSelector selected={selectedRange} onSelect={setSelectedRange} />
+    <View style={{ flex: 1 }}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.backgroundPrimary }]} contentContainerStyle={[
+        styles.contentContainer,
+        isDesktop && { paddingHorizontal: layout.contentPadding, maxWidth: layout.contentMaxWidth, alignSelf: 'center', width: '100%' },
+      ]}>
+        {/* Date Range Selector */}
+        <DateRangeSelector selected={selectedRange} onSelect={setSelectedRange} />
 
-      {/* Total Balance */}
-      <TotalBalanceCard balance={data.totalBalance} />
+        {/* Total Balance */}
+        <TotalBalanceCard balance={data.totalBalance} />
 
-      {/* Desktop: Two-column grid for charts */}
-      {isDesktop ? (
-        <View style={desktopStyles.gridRow}>
-          <View style={desktopStyles.gridCol}>
+        {/* Desktop: Two-column grid for charts */}
+        {isDesktop ? (
+          <View style={desktopStyles.gridRow}>
+            <View style={desktopStyles.gridCol}>
+              <CategoryDistributionChart distribution={data.categoryDistribution} layout={layout} />
+            </View>
+            <View style={desktopStyles.gridCol}>
+              <MonthlyTrendsChart trends={data.monthlyTrends} layout={layout} />
+            </View>
+          </View>
+        ) : (
+          <>
             <CategoryDistributionChart distribution={data.categoryDistribution} layout={layout} />
-          </View>
-          <View style={desktopStyles.gridCol}>
             <MonthlyTrendsChart trends={data.monthlyTrends} layout={layout} />
-          </View>
-        </View>
-      ) : (
-        <>
-          <CategoryDistributionChart distribution={data.categoryDistribution} layout={layout} />
-          <MonthlyTrendsChart trends={data.monthlyTrends} layout={layout} />
-        </>
-      )}
+          </>
+        )}
 
-      {/* Desktop: Two-column grid for budgets and transactions */}
-      {isDesktop ? (
-        <View style={desktopStyles.gridRow}>
-          <View style={desktopStyles.gridCol}>
+        {/* Desktop: Two-column grid for budgets and transactions */}
+        {isDesktop ? (
+          <View style={desktopStyles.gridRow}>
+            <View style={desktopStyles.gridCol}>
+              <BudgetProgressSection budgets={data.activeBudgets} />
+            </View>
+            <View style={desktopStyles.gridCol}>
+              <RecentTransactionsSection transactions={data.recentTransactions} />
+            </View>
+          </View>
+        ) : (
+          <>
             <BudgetProgressSection budgets={data.activeBudgets} />
-          </View>
-          <View style={desktopStyles.gridCol}>
             <RecentTransactionsSection transactions={data.recentTransactions} />
-          </View>
-        </View>
-      ) : (
-        <>
-          <BudgetProgressSection budgets={data.activeBudgets} />
-          <RecentTransactionsSection transactions={data.recentTransactions} />
-        </>
-      )}
-    </ScrollView>
+          </>
+        )}
+      </ScrollView>
+
+      <TourButton onPress={openTour} />
+      <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
+    </View>
   );
 }
 

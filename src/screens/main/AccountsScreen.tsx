@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
+import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
   Alert,
@@ -49,6 +51,31 @@ export function AccountsScreen() {
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const accountService = useMemo(() => new AccountService(), []);
+
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('accounts');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '🏦',
+      title: 'Tus cuentas',
+      description: 'Aquí gestionas todas tus cuentas financieras: banco, efectivo y tarjetas de crédito. El saldo total se calcula automáticamente.',
+    },
+    {
+      emoji: '➕',
+      title: 'Crear cuenta',
+      description: 'Toca el botón + para crear una nueva cuenta. Elige el tipo, el nombre y el saldo inicial.',
+    },
+    {
+      emoji: '↔️',
+      title: 'Transferencias',
+      description: 'Usa el botón de transferencia para mover dinero entre tus cuentas. Los saldos se actualizan automáticamente.',
+    },
+    {
+      emoji: '📋',
+      title: 'Detalle de cuenta',
+      description: 'Toca cualquier cuenta para ver su historial completo de movimientos y transferir dinero directamente desde ahí.',
+    },
+  ];
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
@@ -186,6 +213,9 @@ export function AccountsScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <TourButton onPress={openTour} bottomOffset={56} />
+      <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
     </View>
   );
 }

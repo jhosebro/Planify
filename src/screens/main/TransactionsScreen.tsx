@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
+import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
   Alert,
@@ -76,6 +78,31 @@ export function TransactionsScreen() {
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const transactionService = useMemo(() => new TransactionService(), []);
   const accountService = useMemo(() => new AccountService(), []);
+
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('transactions');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '💸',
+      title: 'Tus movimientos',
+      description: 'Aquí ves todos tus ingresos y gastos ordenados por fecha. Los movimientos con ↔ son transferencias entre cuentas.',
+    },
+    {
+      emoji: '🔍',
+      title: 'Filtros',
+      description: 'Filtra por período (este mes, mes anterior, 3 meses) y por cuenta para encontrar rápidamente cualquier movimiento.',
+    },
+    {
+      emoji: '✏️',
+      title: 'Editar y eliminar',
+      description: 'Toca un movimiento para editarlo. Mantén presionado para ver opciones de edición y eliminación.',
+    },
+    {
+      emoji: '➕',
+      title: 'Nuevo movimiento',
+      description: 'Presiona el botón + para registrar un ingreso o gasto. Asigna categoría, cuenta, monto y descripción.',
+    },
+  ];
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -227,6 +254,9 @@ export function TransactionsScreen() {
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      <TourButton onPress={openTour} bottomOffset={56} />
+      <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
     </View>
   );
 }
