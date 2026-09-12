@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
-import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
@@ -218,7 +218,6 @@ export function DashboardScreen() {
         )}
       </ScrollView>
 
-      <TourButton onPress={openTour} />
       <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
     </View>
   );

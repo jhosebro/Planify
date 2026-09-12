@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
-import { ScreenTourModal, TourButton, type TourSlide } from '@/components/ScreenTourModal';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import {
   ActivityIndicator,
@@ -255,7 +255,6 @@ export function TransactionsScreen() {
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      <TourButton onPress={openTour} bottomOffset={56} />
       <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
     </View>
   );

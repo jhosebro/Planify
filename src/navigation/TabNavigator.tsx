@@ -17,6 +17,8 @@ import { GoalsScreen } from '@/screens/main/GoalsScreen';
 import { TrackingScreen } from '@/screens/main/TrackingScreen';
 import { SettingsScreen } from '@/screens/main/SettingsScreen';
 import { MoreScreen } from '@/screens/main/MoreScreen';
+import { TourHeaderButton } from '@/components/TourHeaderButton';
+import { useTourStore } from '@/store/tourStore';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -84,6 +86,8 @@ function DesktopTabLayout() {
   const colors = useThemeColors();
   const isDark = useIsDarkTheme();
   const scheme = isDark ? 'dark' : 'light';
+  const openCurrentTour = useTourStore((s) => s.openCurrentTour);
+  const TOUR_TABS = new Set(['Dashboard', 'Transactions', 'Accounts', 'Budgets']);
   const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
     if (Platform.OS === 'web') {
       try {
@@ -114,6 +118,9 @@ function DesktopTabLayout() {
           ]}
         >
           <Text style={[desktopStyles.headerTitle, { color: colors.textPrimary }]}>{SCREEN_TITLES[currentRoute]}</Text>
+          {TOUR_TABS.has(currentRoute) && openCurrentTour && (
+            <TourHeaderButton onPress={openCurrentTour} />
+          )}
         </View>
         <View style={desktopStyles.screenContainer}>
           <ActiveScreen />
@@ -160,22 +167,22 @@ function MobileTabLayout() {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ title: 'Inicio' }}
+        options={{ title: 'Inicio', headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} /> }}
       />
       <Tab.Screen
         name="Transactions"
         component={TransactionsScreen}
-        options={{ title: 'Movimientos' }}
+        options={{ title: 'Movimientos', headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} /> }}
       />
       <Tab.Screen
         name="Accounts"
         component={AccountsScreen}
-        options={{ title: 'Cuentas' }}
+        options={{ title: 'Cuentas', headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} /> }}
       />
       <Tab.Screen
         name="Budgets"
         component={BudgetsScreen}
-        options={{ title: 'Presupuestos' }}
+        options={{ title: 'Presupuestos', headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} /> }}
       />
       <Tab.Screen
         name="More"
@@ -251,7 +258,9 @@ const desktopStyles = StyleSheet.create({
   header: {
     height: 60,
     backgroundColor: colors.surface,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexDirection: 'row',
     paddingHorizontal: 32,
   },
   headerTitle: {
