@@ -87,7 +87,7 @@ function DesktopTabLayout() {
   const isDark = useIsDarkTheme();
   const scheme = isDark ? 'dark' : 'light';
   const openCurrentTour = useTourStore((s) => s.openCurrentTour);
-  const TOUR_TABS = new Set(['Dashboard', 'Transactions', 'Accounts', 'Budgets']);
+  const TOUR_TABS = new Set(['Dashboard', 'Transactions', 'Accounts', 'Budgets', 'Debts', 'Goals', 'Tracking', 'Settings']);
   const [currentRoute, setCurrentRoute] = useState<keyof TabParamList>(() => {
     if (Platform.OS === 'web') {
       try {
@@ -198,6 +198,7 @@ function MobileTabLayout() {
           title: 'Deudas',
           tabBarItemStyle: { display: 'none' },
           headerLeft: () => <BackToMore />,
+          headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} />,
         }}
       />
       <Tab.Screen
@@ -207,6 +208,7 @@ function MobileTabLayout() {
           title: 'Metas',
           tabBarItemStyle: { display: 'none' },
           headerLeft: () => <BackToMore />,
+          headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} />,
         }}
       />
       <Tab.Screen
@@ -216,6 +218,7 @@ function MobileTabLayout() {
           title: 'Seguimiento',
           tabBarItemStyle: { display: 'none' },
           headerLeft: () => <BackToMore />,
+          headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} />,
         }}
       />
       <Tab.Screen
@@ -225,6 +228,7 @@ function MobileTabLayout() {
           title: 'Ajustes',
           tabBarItemStyle: { display: 'none' },
           headerLeft: () => <BackToMore />,
+          headerRight: () => <TourHeaderButton onPress={() => useTourStore.getState().openCurrentTour?.()} />,
         }}
       />
     </Tab.Navigator>

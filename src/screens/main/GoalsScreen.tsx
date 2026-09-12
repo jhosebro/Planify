@@ -18,6 +18,8 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { GoalService } from '@/services/goals';
 import type { Goal } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
@@ -95,6 +97,31 @@ export function GoalsScreen() {
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const goalService = useMemo(() => new GoalService(), []);
 
+  const { visible: tourVisible, closeTour } = useScreenTour('goals');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '🏆',
+      title: 'Metas de ahorro',
+      description: 'Crea metas financieras con un monto objetivo y una fecha límite. Planify calcula cuánto debes ahorrar por mes para llegar a tiempo.',
+    },
+    {
+      emoji: '📈',
+      title: 'Seguimiento de progreso',
+      description: 'Cada meta muestra una barra de progreso con el monto acumulado vs el objetivo. Al tocarla ves el detalle y puedes registrar abonos.',
+    },
+    {
+      emoji: '🔽',
+      title: 'Filtros y orden',
+      description: 'Filtra por tipo (personal o pareja) y prioridad. Ordena por fecha, progreso o monto para enfocarte en lo más urgente.',
+    },
+    {
+      emoji: '➕',
+      title: 'Nueva meta',
+      description: 'Presiona "+ Nueva Meta" para crearla. Define nombre, monto objetivo, fecha límite, prioridad y si es personal o compartida.',
+    },
+  ];
+
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -146,6 +173,7 @@ export function GoalsScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <FlatList
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
       contentContainerStyle={[
@@ -335,6 +363,8 @@ export function GoalsScreen() {
         </View>
       }
     />
+    <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
+    </View>
   );
 }
 

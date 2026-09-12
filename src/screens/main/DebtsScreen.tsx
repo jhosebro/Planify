@@ -17,6 +17,8 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DebtService } from '@/services/debts';
 import type { Debt, DebtCategory, DebtSummary } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 
 type DebtsNavProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -38,6 +40,31 @@ export function DebtsScreen() {
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const debtService = useMemo(() => new DebtService(), []);
+
+  const { visible: tourVisible, closeTour } = useScreenTour('debts');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '💳',
+      title: 'Control de deudas',
+      description: 'Gestiona tus tarjetas de crédito, deudas en cuotas y cuentas personales (lo que debes y lo que te deben) en un solo lugar.',
+    },
+    {
+      emoji: '📋',
+      title: 'Tipos de deuda',
+      description: 'Tarjetas de crédito registran tus compras y cuotas pendientes. Deudas en cuotas rastrean pagos mensuales. Cuentas personales llevan el saldo entre personas.',
+    },
+    {
+      emoji: '📊',
+      title: 'Resumen total',
+      description: 'La tarjeta superior muestra el total que debes y el total que te deben, para tener siempre clara tu posición financiera neta.',
+    },
+    {
+      emoji: '➕',
+      title: 'Agregar deuda',
+      description: 'Presiona "+ Nueva Deuda" para registrar una tarjeta, una compra en cuotas o una cuenta personal. Puedes editar y eliminar en cualquier momento.',
+    },
+  ];
 
   const [debts, setDebts] = useState<Debt[]>([]);
   const [summary, setSummary] = useState<DebtSummary | null>(null);
@@ -90,6 +117,7 @@ export function DebtsScreen() {
   }
 
   return (
+  <View style={{ flex: 1 }}>
     <ScrollView
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
       contentContainerStyle={[
@@ -267,6 +295,8 @@ export function DebtsScreen() {
         </View>
       )}
     </ScrollView>
+    <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
+  </View>
   );
 }
 

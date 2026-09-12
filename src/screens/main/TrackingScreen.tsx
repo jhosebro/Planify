@@ -18,6 +18,8 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { TrackingService } from '@/services/tracking';
 import type { TrackingList } from '@/services/tracking';
 import type { MainStackParamList } from '@/navigation/types';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
@@ -31,6 +33,31 @@ export function TrackingScreen() {
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const trackingService = useMemo(() => new TrackingService(), []);
+
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('tracking');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '📦',
+      title: 'Seguimiento de productos',
+      description: 'Crea listas para rastrear productos y compras recurrentes. Cada lista muestra cuántos productos tiene y cuántos faltan por comprar.',
+    },
+    {
+      emoji: '📊',
+      title: 'Resumen general',
+      description: 'La tarjeta superior resume tus listas, productos totales y pendientes por comprar, para que sepas de un vistazo cómo va todo.',
+    },
+    {
+      emoji: '🔗',
+      title: 'Vinculación con presupuesto',
+      description: 'Una lista puede vincularse a un presupuesto. Cuando marcas productos como comprados, el gasto se registra en la categoría correspondiente.',
+    },
+    {
+      emoji: '➕',
+      title: 'Nueva lista',
+      description: 'Presiona "+ Nueva lista" para crear una. Agrega productos, defínelos como comprados o pendientes, y relaciónala con un presupuesto si quieres.',
+    },
+  ];
 
   const [lists, setLists] = useState<TrackingList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +88,7 @@ export function TrackingScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <FlatList
       style={[styles.container, { backgroundColor: themeColors.backgroundPrimary }]}
       contentContainerStyle={[
@@ -126,6 +154,8 @@ export function TrackingScreen() {
         </View>
       }
     />
+    <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
+    </View>
   );
 }
 

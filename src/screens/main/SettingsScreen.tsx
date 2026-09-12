@@ -14,6 +14,8 @@ import { authService } from '@/services/auth';
 import { ProfileService } from '@/services/profile';
 import type { MainStackParamList } from '@/navigation/types';
 import type { SyncStatus } from '@/types';
+import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
+import { useScreenTour } from '@/hooks/useScreenTour';
 
 type SettingsNavProp = NativeStackNavigationProp<MainStackParamList, 'Tabs'>;
 
@@ -52,6 +54,31 @@ export function SettingsScreen() {
 
   const profileService = useMemo(() => new ProfileService(), []);
   const syncConfig = SYNC_STATUS_MAP[status] ?? SYNC_STATUS_MAP.pending;
+
+  const { visible: tourVisible, openTour, closeTour } = useScreenTour('settings');
+
+  const TOUR_SLIDES: TourSlide[] = [
+    {
+      emoji: '👤',
+      title: 'Tu perfil',
+      description: 'La tarjeta superior muestra tu nombre, correo, moneda y antigüedad. Toca "Editar Perfil" para actualizar tus datos.',
+    },
+    {
+      emoji: '🔄',
+      title: 'Sincronización',
+      description: 'Revisa el estado de sincronización de tu información. Te indica si hay cambios pendientes por subir a la nube.',
+    },
+    {
+      emoji: '🎨',
+      title: 'Apariencia',
+      description: 'Cambia el tema de la aplicación: claro, oscuro o que siga la configuración de tu dispositivo.',
+    },
+    {
+      emoji: '📤',
+      title: 'Exportar y cerrar sesión',
+      description: 'Genera reportes en PDF o CSV, exporta tus datos con un prompt para asesoría con IA, o cierra sesión cuando lo necesites.',
+    },
+  ];
 
   // Load profile on mount
   useEffect(() => {
@@ -104,6 +131,7 @@ export function SettingsScreen() {
     : null;
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={[styles.container, { backgroundColor: themeColors.backgroundPrimary }]} contentContainerStyle={[
       styles.contentContainer,
       isDesktop && { maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },
@@ -245,6 +273,8 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
+    </View>
   );
 }
 
