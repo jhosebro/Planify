@@ -1,8 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -10,6 +8,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ViewToken,
 } from 'react-native';
@@ -20,10 +19,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ProfileService } from '@/services/profile/profileService';
 import type { Currency } from '@/types';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SLIDE_WIDTH = Math.min(SCREEN_WIDTH, 480);
-
-// ─── Slide data ───────────────────────────────────────────────────────────────
+const SLIDE_WIDTH = 480;
 
 interface Slide {
   id: string;
@@ -90,6 +86,8 @@ export function OnboardingScreen() {
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const insets = useSafeAreaInsets();
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
+  const { width: windowWidth } = useWindowDimensions();
+  const slideWidth = Math.min(windowWidth, SLIDE_WIDTH);
 
   const flatListRef = useRef<FlatList<Slide>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -108,6 +106,22 @@ export function OnboardingScreen() {
   ).current;
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  const getItemLayout = useCallback(
+    (_data: ArrayLike<Slide> | null | undefined, index: number) => ({
+      length: slideWidth,
+      offset: slideWidth * index,
+      index,
+    }),
+    [slideWidth]
+  );
+
+  const onScrollToIndexFailed = useCallback(
+    ({ index }: { index: number }) => {
+      flatListRef.current?.scrollToOffset({ offset: slideWidth * index, animated: true });
+    },
+    [slideWidth]
+  );
 
   const goToNext = () => {
     if (activeIndex < SLIDES.length - 1) {
@@ -162,10 +176,14 @@ export function OnboardingScreen() {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        getItemLayout={getItemLayout}
+        onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
+        style={[styles.flatList, { width: slideWidth }]}
         renderItem={({ item }) => (
           <SlideItem
             slide={item}
+            width={slideWidth}
             scheme={scheme}
             displayName={displayName}
             onDisplayNameChange={setDisplayName}
@@ -173,7 +191,6 @@ export function OnboardingScreen() {
             onCurrencyChange={setCurrency}
           />
         )}
-        style={styles.flatList}
       />
 
       {/* Bottom controls */}
@@ -228,6 +245,7 @@ export function OnboardingScreen() {
 
 interface SlideItemProps {
   slide: Slide;
+  width: number;
   scheme: 'light' | 'dark';
   displayName: string;
   onDisplayNameChange: (v: string) => void;
@@ -237,6 +255,7 @@ interface SlideItemProps {
 
 function SlideItem({
   slide,
+  width,
   scheme,
   displayName,
   onDisplayNameChange,
@@ -246,7 +265,7 @@ function SlideItem({
   const colors = useThemeColors();
 
   return (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+    <View style={[styles.slide, { width }]}>
       <View style={[styles.slideInner, neuSurface(scheme, 'raised'), { backgroundColor: colors.surface }]}>
         {/* Emoji illustration */}
         <View style={[styles.emojiContainer, { backgroundColor: colors.primary + '18' }]}>
@@ -318,6 +337,7 @@ function SlideItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
   },
   flatList: {
     flex: 1,
@@ -407,6 +427,7 @@ const styles = StyleSheet.create({
   // Bottom bar
   bottomBar: {
     alignItems: 'center',
+    width: '100%',
     paddingHorizontal: 24,
     gap: 20,
   },

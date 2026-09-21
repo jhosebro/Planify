@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
-  Dimensions,
   FlatList,
   Modal,
   Platform,
@@ -8,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ViewToken,
 } from 'react-native';
@@ -31,16 +31,17 @@ interface ScreenTourModalProps {
 
 // ─── ScreenTourModal ──────────────────────────────────────────────────────────
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalProps) {
   const colors = useThemeColors();
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const flatListRef = useRef<FlatList<TourSlide>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const isLast = activeIndex === slides.length - 1;
+  const isDesktopWeb = Platform.OS === 'web' && windowWidth >= 1024;
+  const cardWidth = isDesktopWeb ? Math.min(windowWidth * 0.9, 480) : windowWidth;
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -52,18 +53,34 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  const getItemLayout = useCallback(
+    (_data: ArrayLike<TourSlide> | null | undefined, index: number) => ({
+      length: cardWidth,
+      offset: cardWidth * index,
+      index,
+    }),
+    [cardWidth]
+  );
+
+  const onScrollToIndexFailed = useCallback(
+    ({ index }: { index: number }) => {
+      flatListRef.current?.scrollToOffset({ offset: cardWidth * index, animated: true });
+    },
+    [cardWidth]
+  );
+
   const goNext = () => {
-    flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+    if (activeIndex < slides.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+    }
   };
 
   const handleClose = () => {
     // Reset to first slide for next open
     setActiveIndex(0);
-    flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     onClose();
   };
-
-  const isDesktopWeb = Platform.OS === 'web' && SCREEN_WIDTH >= 1024;
 
   return (
     <Modal
@@ -100,10 +117,12 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
             showsHorizontalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
+            getItemLayout={getItemLayout}
+            onScrollToIndexFailed={onScrollToIndexFailed}
             scrollEventThrottle={16}
             style={styles.flatList}
             renderItem={({ item }) => (
-              <SlideItem slide={item} isDesktopWeb={isDesktopWeb} />
+              <SlideItem slide={item} width={cardWidth} />
             )}
           />
 
@@ -183,16 +202,15 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
 
 interface SlideItemProps {
   slide: TourSlide;
-  isDesktopWeb: boolean;
+  width: number;
 }
 
-function SlideItem({ slide, isDesktopWeb }: SlideItemProps) {
+function SlideItem({ slide, width }: SlideItemProps) {
   const colors = useThemeColors();
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
-  const cardWidth = isDesktopWeb ? Math.min(SCREEN_WIDTH * 0.9, 480) : SCREEN_WIDTH;
 
   return (
-    <View style={[styles.slide, { width: cardWidth }]}>
+    <View style={[styles.slide, { width }]}>
       <View
         style={[
           styles.emojiWrap,
