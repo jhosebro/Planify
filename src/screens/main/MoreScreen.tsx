@@ -1,9 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface } from '@/lib/neumorphic';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 import type { TabParamList } from '@/navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
@@ -11,7 +11,7 @@ interface MoreMenuItem {
   key: keyof TabParamList;
   label: string;
   subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   color: string;
 }
 
@@ -20,28 +20,28 @@ const MENU_ITEMS: MoreMenuItem[] = [
     key: 'Debts',
     label: 'Deudas',
     subtitle: 'Tarjetas, créditos y préstamos',
-    icon: 'card-outline',
+    icon: 'credit-card',
     color: '#E74C3C',
   },
   {
     key: 'Goals',
     label: 'Metas',
     subtitle: 'Objetivos de ahorro',
-    icon: 'trophy-outline',
+    icon: 'trophy',
     color: '#F39C12',
   },
   {
     key: 'Tracking',
     label: 'Seguimiento',
     subtitle: 'Listas de productos y compras',
-    icon: 'cube-outline',
+    icon: 'package',
     color: '#2EAD5D',
   },
   {
     key: 'Settings',
     label: 'Ajustes',
     subtitle: 'Perfil, tema y preferencias',
-    icon: 'settings-outline',
+    icon: 'settings',
     color: '#7B7B7B',
   },
 ];
@@ -66,13 +66,13 @@ export function MoreScreen() {
           accessibilityLabel={`Ir a ${item.label}`}
         >
           <View style={[styles.iconContainer, { backgroundColor: item.color + '12' }]}>
-            <Ionicons name={item.icon} size={22} color={item.color} />
+            <AppIcon name={item.icon} size={22} color={item.color} />
           </View>
           <View style={styles.menuItemText}>
             <Text style={[styles.menuItemLabel, { color: themeColors.textPrimary }]}>{item.label}</Text>
             <Text style={[styles.menuItemSubtitle, { color: themeColors.textTertiary }]}>{item.subtitle}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={themeColors.textTertiary} />
+          <AppIcon name="chevron-right" size={18} color={themeColors.textTertiary} />
         </TouchableOpacity>
       ))}
     </ScrollView>

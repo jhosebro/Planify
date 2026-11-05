@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuInset, neuShadow, neuSurface } from '@/lib/neumorphic';
 import { ClayChip } from '@/components/clay';
+import { AppIcon } from '@/components/AppIcon';
 import {
   Alert,
   StyleSheet,
@@ -73,7 +74,7 @@ export function CategorySelector({ selectedId, onSelect }: CategorySelectorProps
         .insert({
           user_id: userId,
           name: newName.trim(),
-          icon: '📌',
+          icon: 'pin',
           color: randomColor,
           is_default: false,
         })
@@ -134,13 +135,13 @@ export function CategorySelector({ selectedId, onSelect }: CategorySelectorProps
             onPress={handleCreate}
             disabled={creating}
           >
-            <Text style={styles.createButtonText}>{creating ? '...' : '✓'}</Text>
+            <AppIcon name="check" size={16} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.cancelButton, neuSurface(scheme, 'flat')]}
             onPress={() => { setShowCreate(false); setNewName(''); }}
           >
-            <Text style={[styles.cancelButtonText, { color: themeColors.textSecondary }]}>✕</Text>
+            <AppIcon name="x" size={16} color={themeColors.textSecondary} />
           </TouchableOpacity>
         </View>
       )}
@@ -193,20 +194,11 @@ const styles = StyleSheet.create({
   createButtonDisabled: {
     opacity: 0.5,
   },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
   cancelButton: {
     width: 36,
     height: 36,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

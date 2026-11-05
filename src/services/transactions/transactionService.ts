@@ -16,6 +16,9 @@ export interface TransactionFilter {
   categoryId?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  type?: TransactionType;
+  /** true = solo transferencias, false = excluir transferencias */
+  isTransfer?: boolean;
 }
 
 function getUserId(): string {
@@ -189,6 +192,9 @@ export class TransactionService {
 
     if (filter.accountId) query = query.eq('account_id', filter.accountId);
     if (filter.categoryId) query = query.eq('category_id', filter.categoryId);
+    if (filter.type) query = query.eq('type', filter.type);
+    if (filter.isTransfer === true) query = query.not('linked_transfer_id', 'is', null);
+    if (filter.isTransfer === false) query = query.is('linked_transfer_id', null);
     if (filter.dateFrom) query = query.gte('date', filter.dateFrom.toISOString());
     if (filter.dateTo) query = query.lte('date', filter.dateTo.toISOString());
 

@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
+import { AppIcon } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -13,7 +14,6 @@ import {
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AccountService } from '@/services/accounts/accountService';
 import { TransactionService } from '@/services/transactions/transactionService';
 import { useAccountStore } from '@/store/accountStore';
@@ -80,12 +80,7 @@ export function AccountDetailScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Cargando cuenta...</Text>
-      </View>
-    );
+    return <ScreenSkeleton variant="rows" rows={6} />;
   }
 
   if (!account) {
@@ -115,7 +110,7 @@ export function AccountDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Nueva transferencia desde esta cuenta"
           >
-            <MaterialCommunityIcons name="bank-transfer" size={20} color="#fff" />
+            <AppIcon name="arrow-left-right" size={20} color="#fff" />
             <Text style={styles.transferButtonText}>Transferir</Text>
           </TouchableOpacity>
         )}
@@ -155,7 +150,11 @@ function TransactionItem({ transaction }: TransactionItemProps) {
   return (
     <View style={[styles.transactionRow, neuSurface(scheme, 'flat')]}>
       <View style={[styles.transactionIcon, isTransfer && styles.transactionIconTransfer]}>
-        <Text style={styles.transactionIconText}>{isTransfer ? '↔' : isExpense ? '↓' : '↑'}</Text>
+        <AppIcon
+          name={isTransfer ? 'arrow-left-right' : isExpense ? 'arrow-down' : 'arrow-up'}
+          size={18}
+          color={isTransfer ? '#607D8B' : isExpense ? colors.redExpenses : colors.greenEarns}
+        />
       </View>
       <View style={styles.transactionInfo}>
         <View style={styles.transactionTitleRow}>
@@ -293,9 +292,6 @@ const styles = StyleSheet.create({
   },
   transactionIconTransfer: {
     backgroundColor: '#ECEFF1',
-  },
-  transactionIconText: {
-    fontSize: 16,
   },
   transactionInfo: {
     flex: 1,

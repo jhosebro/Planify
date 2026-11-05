@@ -16,20 +16,21 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { useProfileStore } from '@/store/profileStore';
 import { ProfileService } from '@/services/profile';
+import { AppIcon } from '@/components/AppIcon';
 import type { Currency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 
 type NavProp = NativeStackNavigationProp<MainStackParamList>;
 
 const CURRENCIES: { value: Currency; label: string }[] = [
-  { value: 'COP', label: '🇨🇴 COP' },
-  { value: 'USD', label: '🇺🇸 USD' },
-  { value: 'EUR', label: '🇪🇺 EUR' },
-  { value: 'MXN', label: '🇲🇽 MXN' },
-  { value: 'ARS', label: '🇦🇷 ARS' },
-  { value: 'PEN', label: '🇵🇪 PEN' },
-  { value: 'CLP', label: '🇨🇱 CLP' },
-  { value: 'BRL', label: '🇧🇷 BRL' },
+  { value: 'COP', label: 'COP' },
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'MXN', label: 'MXN' },
+  { value: 'ARS', label: 'ARS' },
+  { value: 'PEN', label: 'PEN' },
+  { value: 'CLP', label: 'CLP' },
+  { value: 'BRL', label: 'BRL' },
 ];
 
 export function EditProfileModal() {
@@ -81,7 +82,10 @@ export function EditProfileModal() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: themeColors.textPrimary }]}>✏️ Editar Perfil</Text>
+        <View style={styles.titleRow}>
+          <AppIcon name="pencil" size={22} color={themeColors.textPrimary} />
+          <Text style={[styles.title, { color: themeColors.textPrimary }]}>Editar Perfil</Text>
+        </View>
 
         {/* Display Name */}
         <Text style={[styles.label, { color: themeColors.textSecondary }]}>Nombre</Text>
@@ -156,7 +160,8 @@ export function EditProfileModal() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 20 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: '700' },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 16 },
   input: {
     borderRadius: 12,

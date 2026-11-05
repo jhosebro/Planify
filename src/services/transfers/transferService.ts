@@ -39,7 +39,7 @@ export class TransferService {
     // Create it if it doesn't exist
     const { data: created, error } = await supabase
       .from('categories')
-      .insert({ user_id: userId, name: 'Transferencia', icon: '↔️', color: '#607D8B', is_default: true })
+      .insert({ user_id: userId, name: 'Transferencia', icon: 'arrow-left-right', color: '#607D8B', is_default: true })
       .select('id')
       .single();
 
@@ -85,8 +85,8 @@ export class TransferService {
     const destAccName = destAccResult.data?.name ?? 'Cuenta destino';
 
     const baseDesc = input.description?.trim() ?? '';
-    const sourceDesc = baseDesc ? `${baseDesc} → ${destAccName}` : `Transferencia → ${destAccName}`;
-    const destDesc = baseDesc ? `${baseDesc} ← ${srcAccName}` : `Transferencia ← ${srcAccName}`;
+    const sourceDesc = baseDesc ? `${baseDesc} (a ${destAccName})` : `Transferencia a ${destAccName}`;
+    const destDesc = baseDesc ? `${baseDesc} (desde ${srcAccName})` : `Transferencia desde ${srcAccName}`;
 
     // Create expense transaction (source)
     const { data: sourceTxn, error: srcErr } = await supabase

@@ -17,13 +17,14 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { useAuthStore } from '@/store/authStore';
 import { ProfileService } from '@/services/profile/profileService';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 import type { Currency } from '@/types';
 
 const SLIDE_WIDTH = 480;
 
 interface Slide {
   id: string;
-  emoji: string;
+  icon: IconName;
   title: string;
   description: string;
   isProfile?: boolean;
@@ -32,35 +33,35 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     id: 'welcome',
-    emoji: '👋',
+    icon: 'sparkles',
     title: '¡Bienvenido a Planify!',
     description:
       'Tu compañero financiero personal. Controla tus ingresos, gastos, presupuestos y metas desde un solo lugar.',
   },
   {
     id: 'accounts',
-    emoji: '🏦',
+    icon: 'landmark',
     title: 'Organiza tus cuentas',
     description:
       'Registra todas tus cuentas — banco, efectivo y tarjetas de crédito — y ten siempre a la vista tu saldo total actualizado.',
   },
   {
     id: 'transactions',
-    emoji: '📊',
+    icon: 'chart-bar',
     title: 'Registra tus movimientos',
     description:
       'Anota ingresos y gastos por categoría, filtra por fecha o cuenta y visualiza tendencias con gráficas claras.',
   },
   {
     id: 'budgets',
-    emoji: '🎯',
+    icon: 'target',
     title: 'Presupuestos y metas',
     description:
       'Crea presupuestos por categoría con alertas de límite. Establece metas de ahorro y haz seguimiento de tu progreso mes a mes.',
   },
   {
     id: 'profile',
-    emoji: '✨',
+    icon: 'sparkles',
     title: 'Personaliza tu experiencia',
     description:
       'Dinos cómo llamarte y cuál es tu moneda principal para adaptar Planify a tu día a día.',
@@ -69,14 +70,14 @@ const SLIDES: Slide[] = [
 ];
 
 const CURRENCIES: { value: Currency; label: string }[] = [
-  { value: 'COP', label: '🇨🇴 COP' },
-  { value: 'USD', label: '🇺🇸 USD' },
-  { value: 'MXN', label: '🇲🇽 MXN' },
-  { value: 'ARS', label: '🇦🇷 ARS' },
-  { value: 'PEN', label: '🇵🇪 PEN' },
-  { value: 'CLP', label: '🇨🇱 CLP' },
-  { value: 'BRL', label: '🇧🇷 BRL' },
-  { value: 'EUR', label: '🇪🇺 EUR' },
+  { value: 'COP', label: 'COP' },
+  { value: 'USD', label: 'USD' },
+  { value: 'MXN', label: 'MXN' },
+  { value: 'ARS', label: 'ARS' },
+  { value: 'PEN', label: 'PEN' },
+  { value: 'CLP', label: 'CLP' },
+  { value: 'BRL', label: 'BRL' },
+  { value: 'EUR', label: 'EUR' },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -231,9 +232,10 @@ export function OnboardingScreen() {
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.actionButtonText}>
-              {isLast ? 'Comenzar' : 'Siguiente →'}
-            </Text>
+            <View style={styles.actionButtonContent}>
+              <Text style={styles.actionButtonText}>{isLast ? 'Comenzar' : 'Siguiente'}</Text>
+              {!isLast && <AppIcon name="arrow-right" size={18} color="#fff" />}
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -269,7 +271,7 @@ function SlideItem({
       <View style={[styles.slideInner, neuSurface(scheme, 'raised'), { backgroundColor: colors.surface }]}>
         {/* Emoji illustration */}
         <View style={[styles.emojiContainer, { backgroundColor: colors.primary + '18' }]}>
-          <Text style={styles.emoji}>{slide.emoji}</Text>
+          <AppIcon name={slide.icon} size={44} color={colors.primary} strokeWidth={1.75} />
         </View>
 
         <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>{slide.title}</Text>
@@ -376,9 +378,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 28,
   },
-  emoji: {
-    fontSize: 48,
-  },
+
   slideTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -452,6 +452,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   actionButtonText: {
     color: '#fff',

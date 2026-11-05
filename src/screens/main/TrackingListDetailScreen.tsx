@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +14,6 @@ import {
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -27,6 +27,7 @@ import type { Account } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { BottomModal } from '@/components/BottomModal';
+import { AppIcon, StoredIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
 
 function formatAmount(centavos: number): string {
@@ -260,11 +261,7 @@ export function TrackingListDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={themeColors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="list" rows={4} />;
   }
 
   return (
@@ -281,7 +278,7 @@ export function TrackingListDetailScreen() {
           <View>
             {/* List info header */}
             <View style={[styles.listHeader, { backgroundColor: list?.color ?? themeColors.primary }, neuShadow(scheme, 'raised')]}>
-              <Text style={styles.listHeaderIcon}>{list?.icon ?? '📋'}</Text>
+              <StoredIcon value={list?.icon} fallback="clipboard-list" size={36} color="#fff" style={styles.listHeaderIcon} />
               <Text style={styles.listHeaderName}>{list?.name ?? 'Lista'}</Text>
               {list?.description ? (
                 <Text style={styles.listHeaderDesc}>{list.description}</Text>
@@ -319,14 +316,14 @@ export function TrackingListDetailScreen() {
                 style={[styles.addItemButton, { backgroundColor: themeColors.primary, ...neuShadow(scheme, 'raised') }]}
                 onPress={() => navigation.navigate('AddTrackingItem', { listId })}
               >
-                <Ionicons name="add" size={18} color="#fff" />
+                <AppIcon name="plus" size={18} color="#fff" />
                 <Text style={styles.addItemButtonText}>Agregar producto</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.editListButton, neuSurface(scheme, 'flat')]}
                 onPress={() => navigation.navigate('AddTrackingList', { listId })}
               >
-                <Ionicons name="pencil" size={16} color={themeColors.primary} />
+                <AppIcon name="pencil" size={16} color={themeColors.primary} />
                 <Text style={[styles.editListButtonText, { color: themeColors.primary }]}>Editar lista</Text>
               </TouchableOpacity>
             </View>
@@ -366,7 +363,7 @@ export function TrackingListDetailScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📦</Text>
+            <AppIcon name="package" size={40} color={themeColors.textTertiary} style={styles.emptyIcon} />
             <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
               {filter === 'pending' ? 'No tienes productos pendientes' :
                filter === 'stocked' ? 'No tienes productos en stock' :
@@ -450,8 +447,8 @@ function PurchaseConfirmModal({
               ]}
               onPress={() => onSelectAccount(acc.id)}
             >
-              <Ionicons
-                name={selectedAccountId === acc.id ? 'radio-button-on' : 'radio-button-off'}
+              <AppIcon
+                name={selectedAccountId === acc.id ? 'circle-dot' : 'circle'}
                 size={18}
                 color={selectedAccountId === acc.id ? themeColors.primary : themeColors.textTertiary}
               />
@@ -468,7 +465,7 @@ function PurchaseConfirmModal({
         {/* Category - auto from budget or selector */}
         {linkedCategoryName ? (
           <View style={[styles.modalCategoryAuto, { backgroundColor: themeColors.primary + '10' }]}>
-            <Ionicons name="pie-chart" size={14} color={themeColors.primary} />
+            <AppIcon name="chart-pie" size={14} color={themeColors.primary} />
             <Text style={[styles.modalCategoryAutoText, { color: themeColors.primary }]}>
               Categoría: {linkedCategoryName} (del presupuesto)
             </Text>
@@ -487,8 +484,8 @@ function PurchaseConfirmModal({
                   ]}
                   onPress={() => onSelectCategory(cat.id)}
                 >
-                  <Ionicons
-                    name={selectedCategoryId === cat.id ? 'radio-button-on' : 'radio-button-off'}
+                  <AppIcon
+                    name={selectedCategoryId === cat.id ? 'circle-dot' : 'circle'}
                     size={18}
                     color={selectedCategoryId === cat.id ? themeColors.primary : themeColors.textTertiary}
                   />
@@ -509,7 +506,10 @@ function PurchaseConfirmModal({
         {loading ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.modalConfirmText}>✓ Registrar compra</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="circle-check" size={16} color="#fff" />
+            <Text style={styles.modalConfirmText}>Registrar compra</Text>
+          </View>
         )}
       </TouchableOpacity>
     </BottomModal>
@@ -542,7 +542,7 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
   return (
     <View style={[styles.budgetCard, { backgroundColor: themeColors.cardBackground, ...neuSurface(scheme, 'raised') }]}>
       <View style={styles.budgetCardHeader}>
-        <Ionicons name="pie-chart" size={18} color={themeColors.primary} />
+        <AppIcon name="chart-pie" size={18} color={themeColors.primary} />
         <Text style={[styles.budgetCardTitle, { color: themeColors.textPrimary }]}>
           Presupuesto: {budgetInfo.categoryName}
         </Text>
@@ -585,8 +585,8 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
           styles.budgetWarning,
           { backgroundColor: estimateFits ? themeColors.greenEarns + '10' : themeColors.redExpenses + '10' },
         ]}>
-          <Ionicons
-            name={estimateFits ? 'checkmark-circle' : 'warning'}
+          <AppIcon
+            name={estimateFits ? 'circle-check' : 'triangle-exclamation'}
             size={16}
             color={estimateFits ? themeColors.greenEarns : themeColors.redExpenses}
           />
@@ -608,7 +608,7 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
 
       {monthlyEstimateRounded === 0 && (
         <View style={[styles.budgetWarning, { backgroundColor: themeColors.primary + '08' }]}>
-          <Ionicons name="information-circle-outline" size={16} color={themeColors.textTertiary} />
+          <AppIcon name="info" size={16} color={themeColors.textTertiary} />
           <Text style={[styles.budgetWarningText, { color: themeColors.textTertiary }]}>
             Agrega duración promedio a tus productos para calcular el gasto mensual estimado.
           </Text>
@@ -652,7 +652,7 @@ function TrackingItemCard({
           accessibilityLabel={`Marcar ${item.name} como ${item.needsToBuy ? 'en stock' : 'por comprar'}`}
         >
           {item.needsToBuy && (
-            <Ionicons name="cart" size={14} color={themeColors.tertiary} />
+            <AppIcon name="shopping-cart" size={14} color={themeColors.tertiary} />
           )}
         </TouchableOpacity>
 
@@ -676,19 +676,29 @@ function TrackingItemCard({
             </Text>
           )}
           {nextPurchase && (
-            <Text style={[
-              styles.itemNextPurchase,
-              { color: nextPurchase.isOverdue ? themeColors.redExpenses : themeColors.greenEarns },
-            ]}>
-              {nextPurchase.isOverdue
-                ? `⚠️ Vencido hace ${nextPurchase.days} día${nextPurchase.days !== 1 ? 's' : ''}`
-                : `🔄 Próxima compra en ${nextPurchase.days} día${nextPurchase.days !== 1 ? 's' : ''}`}
-            </Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon
+                name={nextPurchase.isOverdue ? 'triangle-exclamation' : 'refresh-cw'}
+                size={12}
+                color={nextPurchase.isOverdue ? themeColors.redExpenses : themeColors.greenEarns}
+              />
+              <Text style={[
+                styles.itemNextPurchase,
+                { color: nextPurchase.isOverdue ? themeColors.redExpenses : themeColors.greenEarns },
+              ]}>
+                {nextPurchase.isOverdue
+                  ? `Vencido hace ${nextPurchase.days} día${nextPurchase.days !== 1 ? 's' : ''}`
+                  : `Próxima compra en ${nextPurchase.days} día${nextPurchase.days !== 1 ? 's' : ''}`}
+              </Text>
+            </View>
           )}
           {item.notes && (
-            <Text style={[styles.itemNotes, { color: themeColors.textTertiary }]} numberOfLines={1}>
-              💬 {item.notes}
-            </Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="message-circle" size={12} color={themeColors.textTertiary} />
+              <Text style={[styles.itemNotes, { color: themeColors.textTertiary }]} numberOfLines={1}>
+                {item.notes}
+              </Text>
+            </View>
           )}
         </View>
       </View>
@@ -700,7 +710,7 @@ function TrackingItemCard({
             onPress={onMarkPurchased}
             accessibilityLabel="Marcar como comprado"
           >
-            <Ionicons name="checkmark-circle" size={18} color={themeColors.greenEarns} />
+            <AppIcon name="circle-check" size={18} color={themeColors.greenEarns} />
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -708,14 +718,14 @@ function TrackingItemCard({
           onPress={onEdit}
           accessibilityLabel="Editar producto"
         >
-          <Ionicons name="pencil" size={16} color={themeColors.primary} />
+          <AppIcon name="pencil" size={16} color={themeColors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.itemActionBtn, { backgroundColor: themeColors.redExpenses + '10' }]}
           onPress={onDelete}
           accessibilityLabel="Eliminar producto"
         >
-          <Ionicons name="trash" size={16} color={themeColors.redExpenses} />
+          <AppIcon name="trash" size={16} color={themeColors.redExpenses} />
         </TouchableOpacity>
       </View>
     </View>
@@ -731,7 +741,8 @@ const styles = StyleSheet.create({
 
   // List header
   listHeader: { borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  listHeaderIcon: { fontSize: 36, marginBottom: 8 },
+  listHeaderIcon: { marginBottom: 8 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   listHeaderName: { fontSize: 20, fontWeight: '700', color: '#fff' },
   listHeaderDesc: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4, textAlign: 'center' },
   listHeaderStats: { flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 6 },
@@ -786,7 +797,7 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: { alignItems: 'center', paddingVertical: 48 },
-  emptyIcon: { fontSize: 40, marginBottom: 12 },
+  emptyIcon: { marginBottom: 12 },
   emptyText: { fontSize: 15 },
 
   // Purchase modal

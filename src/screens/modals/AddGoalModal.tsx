@@ -20,6 +20,7 @@ import { GoalService } from '@/services/goals';
 import type { GoalPriority, GoalType, InstallmentFrequency } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
 import { CyclicDatePicker } from '@/components/CyclicDatePicker';
+import { AppIcon } from '@/components/AppIcon';
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -118,7 +119,10 @@ export function AddGoalModal() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{isEditMode ? '✏️ Editar Meta' : '🎯 Nueva Meta'}</Text>
+        <View style={styles.titleRow}>
+          <AppIcon name={isEditMode ? 'pencil' : 'target'} size={22} color={colors.secondary} />
+          <Text style={styles.title}>{isEditMode ? 'Editar Meta' : 'Nueva Meta'}</Text>
+        </View>
 
         <Text style={styles.label}>Nombre</Text>
         <TextInput style={[styles.input, neuInset(scheme), { color: colors.textPrimary }]} value={name} onChangeText={setName} placeholder="Ej: Viaje a Cartagena" placeholderTextColor="#999" />
@@ -141,10 +145,16 @@ export function AddGoalModal() {
         <Text style={styles.label}>Tipo</Text>
         <View style={styles.row}>
           <TouchableOpacity style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, type==='personal' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setType('personal')}>
-            <Text style={[styles.chipText, { color: type==='personal' ? colors.textInverse : colors.textSecondary }]}>👤 Personal</Text>
+            <View style={styles.chipContent}>
+              <AppIcon name="user" size={14} color={type==='personal' ? colors.textInverse : colors.textSecondary} />
+              <Text style={[styles.chipText, { color: type==='personal' ? colors.textInverse : colors.textSecondary }]}>Personal</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.chip, neuSurface(scheme, 'flat'), { borderRadius: 20 }, type==='couple' && { backgroundColor: colors.primary, ...neuShadow(scheme, 'pressed') }]} onPress={() => setType('couple')}>
-            <Text style={[styles.chipText, { color: type==='couple' ? colors.textInverse : colors.textSecondary }]}>👥 Pareja</Text>
+            <View style={styles.chipContent}>
+              <AppIcon name="users" size={14} color={type==='couple' ? colors.textInverse : colors.textSecondary} />
+              <Text style={[styles.chipText, { color: type==='couple' ? colors.textInverse : colors.textSecondary }]}>Pareja</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -160,7 +170,7 @@ export function AddGoalModal() {
         <Text style={styles.label}>Fecha objetivo</Text>
         <TouchableOpacity style={[styles.dateBtn, neuInset(scheme)]} onPress={() => setShowDate(!showDate)}>
           <Text style={styles.dateBtnText}>{formattedDate}</Text>
-          <Text style={styles.dateBtnIcon}>{showDate ? '▲' : '▼'}</Text>
+          <AppIcon name={showDate ? 'chevron-up' : 'chevron-down'} size={12} color="#999" />
         </TouchableOpacity>
 
         {showDate && (
@@ -189,7 +199,9 @@ export function AddGoalModal() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.backgroundPrimary },
   content: { padding: 24, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.secondary, marginBottom: 20 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: '700', color: colors.secondary },
+  chipContent: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   label: { fontSize: 14, fontWeight: '600', color: colors.secondary, marginBottom: 6, marginTop: 16 },
   input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.secondary },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -197,7 +209,6 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14, color: '#666', fontWeight: '500' },
   dateBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dateBtnText: { fontSize: 16, color: colors.secondary },
-  dateBtnIcon: { fontSize: 12, color: '#999' },
   submitBtn: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 32 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   cancelBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },

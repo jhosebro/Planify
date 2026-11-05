@@ -14,11 +14,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuShadow, neuSurface } from '@/lib/neumorphic';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TourSlide {
-  emoji: string;
+  icon: IconName;
   title: string;
   description: string;
 }
@@ -174,7 +175,10 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
                   accessibilityRole="button"
                   accessibilityLabel="Siguiente paso"
                 >
-                  <Text style={styles.nextBtnText}>Siguiente →</Text>
+                  <View style={styles.nextBtnContent}>
+                    <Text style={styles.nextBtnText}>Siguiente</Text>
+                    <AppIcon name="arrow-right" size={16} color="#fff" />
+                  </View>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -218,7 +222,7 @@ function SlideItem({ slide, width }: SlideItemProps) {
           neuSurface(scheme, 'flat'),
         ]}
       >
-        <Text style={styles.emoji}>{slide.emoji}</Text>
+        <AppIcon name={slide.icon} size={40} color={colors.primary} strokeWidth={1.75} />
       </View>
       <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>
         {slide.title}
@@ -307,9 +311,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  emoji: {
-    fontSize: 40,
-  },
+
   slideTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -363,6 +365,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  nextBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   nextBtnText: {
     color: '#fff',

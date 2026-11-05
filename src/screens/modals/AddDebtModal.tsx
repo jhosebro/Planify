@@ -21,14 +21,15 @@ import { AccountService } from '@/services/accounts/accountService';
 import type { DebtCategory, DebtDirection } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account } from '@/types';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 
 type AddDebtNavProp = NativeStackNavigationProp<MainStackParamList>;
 type AddDebtRouteProp = RouteProp<MainStackParamList, 'AddDebt'>;
 
-const CATEGORY_OPTIONS: { key: DebtCategory; label: string; icon: string }[] = [
-  { key: 'credit_card', label: 'Tarjeta de Crédito', icon: '💳' },
-  { key: 'installment', label: 'Deuda en Cuotas', icon: '📋' },
-  { key: 'personal', label: 'Cuenta Personal', icon: '🤝' },
+const CATEGORY_OPTIONS: { key: DebtCategory; label: string; icon: IconName }[] = [
+  { key: 'credit_card', label: 'Tarjeta de Crédito', icon: 'credit-card' },
+  { key: 'installment', label: 'Deuda en Cuotas', icon: 'clipboard-list' },
+  { key: 'personal', label: 'Cuenta Personal', icon: 'handshake' },
 ];
 
 const DIRECTION_OPTIONS: { key: DebtDirection; label: string }[] = [
@@ -184,7 +185,7 @@ export function AddDebtModal() {
               ]}
               onPress={() => setCategory(opt.key)}
             >
-              <Text style={styles.chipIcon}>{opt.icon}</Text>
+              <AppIcon name={opt.icon} size={16} color={category === opt.key ? colors.textInverse : colors.textSecondary} />
               <Text style={[styles.chipLabel, { color: category === opt.key ? colors.textInverse : colors.textSecondary }]}>
                 {opt.label}
               </Text>
@@ -283,7 +284,7 @@ export function AddDebtModal() {
                     ]}
                     onPress={() => setLinkedAccountId(linkedAccountId === acc.id ? null : acc.id)}
                   >
-                    <Text style={styles.chipIcon}>💳</Text>
+                    <AppIcon name="credit-card" size={16} color={linkedAccountId === acc.id ? colors.textInverse : colors.textSecondary} />
                     <Text style={[styles.chipLabel, { color: linkedAccountId === acc.id ? colors.textInverse : colors.textSecondary }]}>
                       {acc.name}
                     </Text>
@@ -347,7 +348,7 @@ export function AddDebtModal() {
               accessibilityState={{ checked: isProvisioned }}
               accessibilityLabel="Dinero ya separado"
             >
-              <Text style={styles.provisionedToggleIcon}>{isProvisioned ? '✅' : '💰'}</Text>
+              <AppIcon name={isProvisioned ? 'circle-check' : 'coins'} size={20} color={isProvisioned ? '#2EAD5D' : '#F39C12'} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.provisionedToggleLabel, { color: colors.textPrimary }]}>
                   Dinero ya separado
@@ -357,7 +358,7 @@ export function AddDebtModal() {
                 </Text>
               </View>
               <View style={[styles.provisionedCheckbox, isProvisioned && styles.provisionedCheckboxActive]}>
-                {isProvisioned && <Text style={styles.provisionedCheckmark}>✓</Text>}
+                {isProvisioned && <AppIcon name="check" size={14} color="#fff" />}
               </View>
             </TouchableOpacity>
           </>
@@ -400,7 +401,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
   },
-  chipIcon: { fontSize: 16 },
   chipLabel: { fontSize: 13 },
 
   saveButton: {
@@ -426,7 +426,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 16,
   },
-  provisionedToggleIcon: { fontSize: 20 },
   provisionedToggleLabel: { fontSize: 14, fontWeight: '600' },
   provisionedToggleHint: { fontSize: 11, marginTop: 2 },
   provisionedCheckbox: {
@@ -442,5 +441,4 @@ const styles = StyleSheet.create({
     borderColor: '#2EAD5D',
     backgroundColor: '#2EAD5D',
   },
-  provisionedCheckmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

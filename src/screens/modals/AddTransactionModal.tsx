@@ -20,6 +20,7 @@ import { AccountService } from '@/services/accounts/accountService';
 import { DebtService } from '@/services/debts';
 import { CategorySelector } from '@/components/CategorySelector';
 import { CyclicDatePicker } from '@/components/CyclicDatePicker';
+import { AppIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, TransactionType } from '@/types';
 
@@ -317,7 +318,7 @@ export function AddTransactionModal() {
               accessibilityState={{ checked: isInstallment }}
             >
               <View style={[styles.checkbox, { borderColor: themeColors.border }, isInstallment && { backgroundColor: themeColors.primary, borderColor: themeColors.primary }]}>
-                {isInstallment && <Text style={styles.checkmark}>✓</Text>}
+                {isInstallment && <AppIcon name="check" size={14} color="#fff" />}
               </View>
               <Text style={[styles.installmentToggleText, { color: themeColors.textPrimary }]}>
                 Este gasto es a cuotas
@@ -351,9 +352,12 @@ export function AddTransactionModal() {
                   </View>
                 </View>
                 {installmentCount && parseFormattedAmount(displayAmount) > 0 && (
-                  <Text style={[styles.installmentHint, { color: themeColors.textTertiary }]}>
-                    💡 Cuota de ~${(parseFormattedAmount(displayAmount) / parseInt(installmentCount || '1', 10)).toLocaleString('es')} cada una
-                  </Text>
+                  <View style={styles.inlineIconRow}>
+                    <AppIcon name="lightbulb" size={13} color={themeColors.textTertiary} />
+                    <Text style={[styles.installmentHint, { color: themeColors.textTertiary }]}>
+                      Cuota de ~${(parseFormattedAmount(displayAmount) / parseInt(installmentCount || '1', 10)).toLocaleString('es')} cada una
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
@@ -373,7 +377,7 @@ export function AddTransactionModal() {
           accessibilityRole="button"
         >
           <Text style={[styles.dateButtonText, { color: themeColors.textPrimary }]}>{formattedDate}</Text>
-          <Text style={[styles.dateButtonIcon, { color: themeColors.textTertiary }]}>{showDatePicker ? '▲' : '▼'}</Text>
+          <AppIcon name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={12} color={themeColors.textTertiary} />
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -502,6 +506,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   checkmark: {
     color: '#fff',
     fontSize: 13,
@@ -545,9 +550,6 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: 16,
-  },
-  dateButtonIcon: {
-    fontSize: 12,
   },
 
   // Buttons

@@ -131,19 +131,28 @@ export class DashboardService {
 
     if (error || !budgets) return [];
 
+    const categoryIds = [...new Set(budgets.map((budget) => budget.category_id))];
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('category_id, amount')
+      .eq('user_id', userId)
+      .in('category_id', categoryIds)
+      .eq('type', 'expense')
+      .is('linked_transfer_id', null)
+      .gte('date', from.toISOString())
+      .lte('date', to.toISOString());
+
+    const spendingByCategory = new Map<string, number>();
+    for (const transaction of transactions ?? []) {
+      spendingByCategory.set(
+        transaction.category_id,
+        (spendingByCategory.get(transaction.category_id) ?? 0) + transaction.amount
+      );
+    }
+
     const consumptions: (BudgetConsumption & { categoryName: string })[] = [];
     for (const budget of budgets) {
-      const { data: txns } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('user_id', userId)
-        .eq('category_id', budget.category_id)
-        .eq('type', 'expense')
-        .is('linked_transfer_id', null)
-        .gte('date', from.toISOString())
-        .lte('date', to.toISOString());
-
-      const transactionSpent = (txns ?? []).reduce((s, r) => s + r.amount, 0);
+      const transactionSpent = spendingByCategory.get(budget.category_id) ?? 0;
       const manualSpent = isWithinCurrentMonth(budget.updated_at) ? ((budget as any).manual_spent ?? 0) : 0;
       const totalSpent = transactionSpent + manualSpent;
       const percentage = (totalSpent / budget.monthly_limit) * 100;

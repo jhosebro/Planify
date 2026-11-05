@@ -16,6 +16,7 @@ import type { MainStackParamList } from '@/navigation/types';
 import type { SyncStatus } from '@/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 
 type SettingsNavProp = NativeStackNavigationProp<MainStackParamList, 'Tabs'>;
 
@@ -59,22 +60,22 @@ export function SettingsScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '👤',
+      icon: 'user',
       title: 'Tu perfil',
       description: 'La tarjeta superior muestra tu nombre, correo, moneda y antigüedad. Toca "Editar Perfil" para actualizar tus datos.',
     },
     {
-      emoji: '🔄',
+      icon: 'refresh-cw',
       title: 'Sincronización',
       description: 'Revisa el estado de sincronización de tu información. Te indica si hay cambios pendientes por subir a la nube.',
     },
     {
-      emoji: '🎨',
+      icon: 'palette',
       title: 'Apariencia',
       description: 'Cambia el tema de la aplicación: claro, oscuro o que siga la configuración de tu dispositivo.',
     },
     {
-      emoji: '📤',
+      icon: 'upload',
       title: 'Exportar y cerrar sesión',
       description: 'Genera reportes en PDF o CSV, exporta tus datos con un prompt para asesoría con IA, o cierra sesión cuando lo necesites.',
     },
@@ -151,14 +152,16 @@ export function SettingsScreen() {
               {userId ?? 'No disponible'}
             </Text>
             {profile?.phone ? (
-              <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>
-                📱 {profile.phone}
-              </Text>
+              <View style={styles.profileDetailRow}>
+                <AppIcon name="smartphone" size={12} color={themeColors.textTertiary} />
+                <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>{profile.phone}</Text>
+              </View>
             ) : null}
             {memberSince ? (
-              <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>
-                📅 Miembro desde {memberSince}
-              </Text>
+              <View style={styles.profileDetailRow}>
+                <AppIcon name="calendar" size={12} color={themeColors.textTertiary} />
+                <Text style={[styles.profileDetail, { color: themeColors.textTertiary }]}>Miembro desde {memberSince}</Text>
+              </View>
             ) : null}
           </View>
         </View>
@@ -167,15 +170,17 @@ export function SettingsScreen() {
         <View style={styles.chipRow}>
           {profile?.currency ? (
             <View style={[styles.infoChip, { backgroundColor: themeColors.primary + '12' }]}>
-              <Text style={[styles.infoChipText, { color: themeColors.primary }]}>
-                💰 {profile.currency}
-              </Text>
+              <View style={styles.infoChipContent}>
+                <AppIcon name="wallet" size={12} color={themeColors.primary} />
+                <Text style={[styles.infoChipText, { color: themeColors.primary }]}>{profile.currency}</Text>
+              </View>
             </View>
           ) : null}
           <View style={[styles.infoChip, { backgroundColor: themeColors.primary + '12' }]}>
-            <Text style={[styles.infoChipText, { color: themeColors.primary }]}>
-              🌐 Español
-            </Text>
+            <View style={styles.infoChipContent}>
+              <AppIcon name="globe" size={12} color={themeColors.primary} />
+              <Text style={[styles.infoChipText, { color: themeColors.primary }]}>Español</Text>
+            </View>
           </View>
         </View>
 
@@ -209,19 +214,22 @@ export function SettingsScreen() {
         </Text>
         <View style={styles.themeRow}>
           <ThemeOption
-            label="☀️ Claro"
+            label="Claro"
+            icon="sun"
             isActive={mode === 'light'}
             onPress={() => setMode('light')}
             themeColors={themeColors}
           />
           <ThemeOption
-            label="🌙 Oscuro"
+            label="Oscuro"
+            icon="moon"
             isActive={mode === 'dark'}
             onPress={() => setMode('dark')}
             themeColors={themeColors}
           />
           <ThemeOption
-            label="📱 Sistema"
+            label="Sistema"
+            icon="monitor"
             isActive={mode === 'system'}
             onPress={() => setMode('system')}
             themeColors={themeColors}
@@ -290,9 +298,11 @@ function ProfileAvatar({ displayName, themeColors }: ProfileAvatarProps) {
 
   return (
     <View style={[styles.avatar, { backgroundColor: themeColors.primary + '20' }]}>
-      <Text style={[styles.avatarText, { color: themeColors.primary }]}>
-        {initials || '👤'}
-      </Text>
+      {initials ? (
+        <Text style={[styles.avatarText, { color: themeColors.primary }]}>{initials}</Text>
+      ) : (
+        <AppIcon name="user" size={26} color={themeColors.primary} />
+      )}
     </View>
   );
 }
@@ -347,12 +357,13 @@ function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }:
 
 interface ThemeOptionProps {
   label: string;
+  icon: IconName;
   isActive: boolean;
   onPress: () => void;
   themeColors: any;
 }
 
-function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps) {
+function ThemeOption({ label, icon, isActive, onPress, themeColors }: ThemeOptionProps) {
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
   return (
     <TouchableOpacity
@@ -366,13 +377,16 @@ function ThemeOption({ label, isActive, onPress, themeColors }: ThemeOptionProps
       accessibilityState={{ selected: isActive }}
       accessibilityLabel={`Tema ${label}`}
     >
-      <Text style={[
-        styles.themeOptionText,
-        { color: isActive ? themeColors.textInverse : themeColors.textSecondary },
-        isActive && { fontWeight: '700' },
-      ]}>
-        {label}
-      </Text>
+      <View style={styles.themeOptionContent}>
+        <AppIcon name={icon} size={15} color={isActive ? themeColors.textInverse : themeColors.textSecondary} />
+        <Text style={[
+          styles.themeOptionText,
+          { color: isActive ? themeColors.textInverse : themeColors.textSecondary },
+          isActive && { fontWeight: '700' },
+        ]}>
+          {label}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -429,6 +443,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
+  profileDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  infoChipContent: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   avatarText: {
     fontSize: 24,
     fontWeight: '700',
@@ -545,6 +561,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  themeOptionContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   themeOptionText: {
     fontSize: 13,
     fontWeight: '500',

@@ -73,6 +73,30 @@ function getUserId(): string {
   return userId;
 }
 
+export function summarizeDebts(debts: Debt[]): DebtSummary {
+  const active = debts.filter((d) => d.status === 'active');
+
+  let totalIOwe = 0;
+  let totalTheyOweMe = 0;
+  let creditCardDebt = 0;
+  let installmentDebt = 0;
+  let personalDebt = 0;
+
+  for (const debt of active) {
+    const remaining = debt.totalAmount - debt.paidAmount;
+    if (debt.direction === 'i_owe') {
+      if (!debt.isProvisioned) totalIOwe += remaining;
+      if (debt.category === 'credit_card') creditCardDebt += remaining;
+      else if (debt.category === 'installment') installmentDebt += remaining;
+      else personalDebt += remaining;
+    } else {
+      totalTheyOweMe += remaining;
+    }
+  }
+
+  return { totalIOwe, totalTheyOweMe, creditCardDebt, installmentDebt, personalDebt };
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export class DebtService {
@@ -215,31 +239,7 @@ export class DebtService {
   }
 
   async getSummary(): Promise<DebtSummary> {
-    const debts = await this.getAll();
-    const active = debts.filter((d) => d.status === 'active');
-
-    let totalIOwe = 0;
-    let totalTheyOweMe = 0;
-    let creditCardDebt = 0;
-    let installmentDebt = 0;
-    let personalDebt = 0;
-
-    for (const debt of active) {
-      const remaining = debt.totalAmount - debt.paidAmount;
-      if (debt.direction === 'i_owe') {
-        // Provisioned debts don't count toward what we actually owe
-        if (!debt.isProvisioned) {
-          totalIOwe += remaining;
-        }
-        if (debt.category === 'credit_card') creditCardDebt += remaining;
-        else if (debt.category === 'installment') installmentDebt += remaining;
-        else personalDebt += remaining;
-      } else {
-        totalTheyOweMe += remaining;
-      }
-    }
-
-    return { totalIOwe, totalTheyOweMe, creditCardDebt, installmentDebt, personalDebt };
+    return summarizeDebts(await this.getAll());
   }
 
   async update(id: string, input: Partial<CreateDebtInput>): Promise<Debt> {

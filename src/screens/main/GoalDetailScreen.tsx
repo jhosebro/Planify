@@ -2,8 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import { useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   ScrollView,
@@ -19,6 +19,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { GoalService } from '@/services/goals';
 import type { Goal, GoalContribution, GoalAction } from '@/services/goals';
 import { BottomModal } from '@/components/BottomModal';
+import { AppIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
 
 function formatAmount(centavos: number): string {
@@ -125,11 +126,7 @@ export function GoalDetailScreen() {
   };
 
   if (loading || !goal) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="summary" rows={3} />;
   }
 
   const daysLeft = Math.max(0, Math.ceil((goal.targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -154,15 +151,24 @@ export function GoalDetailScreen() {
       {/* Info chips */}
       <View style={styles.chipsRow}>
         <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
-          <Text style={styles.chipLabel}>📅 Fecha</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="calendar" size={12} color="#999" />
+            <Text style={styles.chipLabel}>Fecha</Text>
+          </View>
           <Text style={styles.chipValue}>{formatDate(goal.targetDate)}</Text>
         </View>
         <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
-          <Text style={styles.chipLabel}>⏳ Faltan</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="clock" size={12} color="#999" />
+            <Text style={styles.chipLabel}>Faltan</Text>
+          </View>
           <Text style={styles.chipValue}>{daysLeft} días</Text>
         </View>
         <View style={[styles.chip, neuSurface(scheme, 'flat')]}>
-          <Text style={styles.chipLabel}>💡 Ahorra</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="lightbulb" size={12} color="#999" />
+            <Text style={styles.chipLabel}>Ahorra</Text>
+          </View>
           <Text style={styles.chipValue}>{formatAmount(goal.suggestedInstallment)}/{goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'qna' : 'sem'}</Text>
         </View>
       </View>
@@ -170,10 +176,16 @@ export function GoalDetailScreen() {
       {/* Action buttons */}
       <View style={styles.actionButtonsRow}>
         <TouchableOpacity style={[styles.contributeButton, neuShadow(scheme, 'raised')]} onPress={() => setShowContribute(true)}>
-          <Text style={styles.contributeText}>💰 Abonar</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="banknote" size={16} color="#fff" />
+            <Text style={styles.contributeText}>Abonar</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.editGoalButton, neuSurface(scheme, 'flat')]} onPress={() => navigation.navigate('AddGoal', { goalId: goal.id })}>
-          <Text style={styles.editGoalText}>✏️ Editar</Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name="pencil" size={16} color={colors.primary} />
+            <Text style={styles.editGoalText}>Editar</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -190,23 +202,32 @@ export function GoalDetailScreen() {
           }
         }}
       >
-        <Text style={[styles.pauseButtonText, goal.status === 'paused' && styles.activateButtonText]}>
-          {goal.status === 'paused' ? '▶️ Reactivar meta' : '⏸️ Pausar meta'}
-        </Text>
+        <View style={styles.inlineIconRow}>
+          <AppIcon name={goal.status === 'paused' ? 'play' : 'pause'} size={15} color={goal.status === 'paused' ? colors.greenEarns : colors.tertiary} />
+          <Text style={[styles.pauseButtonText, goal.status === 'paused' && styles.activateButtonText]}>
+            {goal.status === 'paused' ? 'Reactivar meta' : 'Pausar meta'}
+          </Text>
+        </View>
       </TouchableOpacity>
 
       {/* Actions section */}
       <View style={[styles.section, neuSurface(scheme, 'flat')]}>
-        <Text style={styles.sectionTitle}>
-          📋 Acciones ({completedActions}/{actions.length})
-        </Text>
+        <View style={styles.sectionTitleRow}>
+          <AppIcon name="list-checks" size={16} color={colors.secondary} />
+          <Text style={styles.sectionTitle}>Acciones ({completedActions}/{actions.length})</Text>
+        </View>
         {actions.map((action) => (
           <TouchableOpacity
             key={action.id}
             style={styles.actionItem}
             onPress={() => handleToggleAction(action.id)}
           >
-            <Text style={styles.actionCheckbox}>{action.isCompleted ? '✅' : '⬜'}</Text>
+            <AppIcon
+              name={action.isCompleted ? 'circle-check' : 'square'}
+              size={18}
+              color={action.isCompleted ? colors.greenEarns : colors.textTertiary}
+              style={styles.actionCheckbox}
+            />
             <Text style={[styles.actionTitle, action.isCompleted && styles.actionCompleted]}>
               {action.title}
             </Text>
@@ -229,7 +250,10 @@ export function GoalDetailScreen() {
 
       {/* Contributions history */}
       <View style={[styles.section, neuSurface(scheme, 'flat')]}>
-        <Text style={styles.sectionTitle}>📊 Historial de aportes</Text>
+        <View style={styles.sectionTitleRow}>
+          <AppIcon name="chart-bar" size={16} color={colors.secondary} />
+          <Text style={styles.sectionTitle}>Historial de aportes</Text>
+        </View>
         {contributions.length === 0 && (
           <Text style={styles.emptyText}>Aún no has hecho aportes a esta meta.</Text>
         )}
@@ -292,6 +316,8 @@ const styles = StyleSheet.create({
 
   chipsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   chip: { flex: 1, borderRadius: 10, padding: 12, alignItems: 'center' },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   chipLabel: { fontSize: 11, color: '#999', marginBottom: 2 },
   chipValue: { fontSize: 13, fontWeight: '600', color: colors.secondary },
 
@@ -310,7 +336,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '600', color: colors.secondary, marginBottom: 12 },
 
   actionItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
-  actionCheckbox: { fontSize: 18, marginRight: 10 },
+  actionCheckbox: { marginRight: 10 },
   actionTitle: { fontSize: 14, color: colors.secondary, flex: 1 },
   actionCompleted: { textDecorationLine: 'line-through', color: '#999' },
 

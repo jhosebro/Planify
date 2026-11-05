@@ -11,6 +11,7 @@ import {
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuInset } from '@/lib/neumorphic';
+import { AppIcon } from '@/components/AppIcon';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -224,7 +225,7 @@ function WheelColumn({ label, prevValue, currentValue, nextValue, onPrev, onNext
           accessibilityLabel={`${label} anterior`}
           accessibilityRole="button"
         >
-          <Text style={styles.arrowText}>▲</Text>
+          <AppIcon name="chevron-up" size={12} color={colors.primary} />
         </TouchableOpacity>
 
         {/* Wheel display */}
@@ -243,7 +244,7 @@ function WheelColumn({ label, prevValue, currentValue, nextValue, onPrev, onNext
           accessibilityLabel={`${label} siguiente`}
           accessibilityRole="button"
         >
-          <Text style={styles.arrowText}>▼</Text>
+          <AppIcon name="chevron-down" size={12} color={colors.primary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -281,10 +282,6 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  arrowText: {
-    fontSize: 12,
-    color: colors.primary,
   },
   wheelSlot: {
     alignItems: 'center',

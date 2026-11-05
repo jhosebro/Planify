@@ -1,6 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Platform,
   StyleSheet,
@@ -10,16 +9,17 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { TrackingService } from '@/services/tracking';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import type { TrackingList } from '@/services/tracking';
 import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon, StoredIcon } from '@/components/AppIcon';
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
@@ -38,22 +38,22 @@ export function TrackingScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '📦',
+      icon: 'package',
       title: 'Seguimiento de productos',
       description: 'Crea listas para rastrear productos y compras recurrentes. Cada lista muestra cuántos productos tiene y cuántos faltan por comprar.',
     },
     {
-      emoji: '📊',
+      icon: 'chart-bar',
       title: 'Resumen general',
       description: 'La tarjeta superior resume tus listas, productos totales y pendientes por comprar, para que sepas de un vistazo cómo va todo.',
     },
     {
-      emoji: '🔗',
+      icon: 'link',
       title: 'Vinculación con presupuesto',
       description: 'Una lista puede vincularse a un presupuesto. Cuando marcas productos como comprados, el gasto se registra en la categoría correspondiente.',
     },
     {
-      emoji: '➕',
+      icon: 'plus',
       title: 'Nueva lista',
       description: 'Presiona "+ Nueva lista" para crear una. Agrega productos, defínelos como comprados o pendientes, y relaciónala con un presupuesto si quieres.',
     },
@@ -61,12 +61,14 @@ export function TrackingScreen() {
 
   const [lists, setLists] = useState<TrackingList[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
 
   const loadLists = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     try {
       const data = await trackingService.getAllLists();
       setLists(data);
+      hasLoaded.current = true;
     } catch (error) {
       console.error('Error loading tracking lists:', error);
     } finally {
@@ -80,11 +82,7 @@ export function TrackingScreen() {
   const totalPending = lists.reduce((sum, l) => sum + l.pendingCount, 0);
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={themeColors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="list" rows={4} />;
   }
 
   return (
@@ -103,7 +101,10 @@ export function TrackingScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>📦 Seguimiento</Text>
+            <View style={styles.headerTitleRow}>
+              <AppIcon name="package" size={20} color={themeColors.textPrimary} />
+              <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Seguimiento</Text>
+            </View>
             <TouchableOpacity
               style={[styles.addButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised')]}
               onPress={() => navigation.navigate('AddTrackingList')}
@@ -144,7 +145,7 @@ export function TrackingScreen() {
       )}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📋</Text>
+          <AppIcon name="clipboard-list" size={48} color={themeColors.textTertiary} style={styles.emptyIcon} />
           <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
             No tienes listas de seguimiento
           </Text>
@@ -172,7 +173,7 @@ function TrackingListCard({ list, onPress, isDesktop }: { list: TrackingList; on
     >
       <View style={styles.listCardHeader}>
         <View style={[styles.listIconContainer, { backgroundColor: list.color + '20' }]}>
-          <Text style={styles.listIcon}>{list.icon}</Text>
+          <StoredIcon value={list.icon} fallback="clipboard-list" size={22} color={list.color} />
         </View>
         <View style={styles.listCardInfo}>
           <Text style={[styles.listName, { color: themeColors.textPrimary }]} numberOfLines={1}>
@@ -184,12 +185,12 @@ function TrackingListCard({ list, onPress, isDesktop }: { list: TrackingList; on
             </Text>
           ) : null}
         </View>
-        <Ionicons name="chevron-forward" size={20} color={themeColors.textTertiary} />
+        <AppIcon name="chevron-right" size={20} color={themeColors.textTertiary} />
       </View>
 
       <View style={[styles.listCardFooter, { borderTopColor: themeColors.borderInset }]}>
         <View style={styles.listStat}>
-          <Ionicons name="cube-outline" size={14} color={themeColors.textSecondary} />
+          <AppIcon name="package" size={14} color={themeColors.textSecondary} />
           <Text style={[styles.listStatText, { color: themeColors.textSecondary }]}>
             {list.itemCount} producto{list.itemCount !== 1 ? 's' : ''}
           </Text>
@@ -197,7 +198,7 @@ function TrackingListCard({ list, onPress, isDesktop }: { list: TrackingList; on
         <View style={styles.listCardBadges}>
           {list.linkedBudgetId && (
             <View style={[styles.budgetBadge, { backgroundColor: themeColors.primary + '15' }]}>
-              <Ionicons name="pie-chart" size={12} color={themeColors.primary} />
+              <AppIcon name="chart-pie" size={12} color={themeColors.primary} />
               <Text style={[styles.budgetBadgeText, { color: themeColors.primary }]}>Presupuesto</Text>
             </View>
           )}
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
   addButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: { alignItems: 'center', paddingVertical: 48 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: { marginBottom: 12 },
   emptyText: { fontSize: 16, marginBottom: 4 },
   emptySubtext: { fontSize: 13, textAlign: 'center', paddingHorizontal: 32 },
 });

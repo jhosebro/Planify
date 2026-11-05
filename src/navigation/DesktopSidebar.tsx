@@ -1,27 +1,26 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuShadow, neuSurface } from '@/lib/neumorphic';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 import type { TabParamList } from './types';
 
 interface SidebarItem {
   key: keyof TabParamList;
   label: string;
-  iconFocused: keyof typeof Ionicons.glyphMap;
-  iconUnfocused: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { key: 'Dashboard', label: 'Inicio', iconFocused: 'home', iconUnfocused: 'home-outline' },
-  { key: 'Transactions', label: 'Movimientos', iconFocused: 'swap-vertical', iconUnfocused: 'swap-vertical-outline' },
-  { key: 'Accounts', label: 'Cuentas', iconFocused: 'wallet', iconUnfocused: 'wallet-outline' },
-  { key: 'Budgets', label: 'Presupuestos', iconFocused: 'pie-chart', iconUnfocused: 'pie-chart-outline' },
-  { key: 'Debts', label: 'Deudas', iconFocused: 'card', iconUnfocused: 'card-outline' },
-  { key: 'Goals', label: 'Metas', iconFocused: 'trophy', iconUnfocused: 'trophy-outline' },
-  { key: 'Tracking', label: 'Seguimiento', iconFocused: 'cube', iconUnfocused: 'cube-outline' },
-  { key: 'Settings', label: 'Ajustes', iconFocused: 'settings', iconUnfocused: 'settings-outline' },
+  { key: 'Dashboard', label: 'Inicio', icon: 'house' },
+  { key: 'Transactions', label: 'Movimientos', icon: 'arrow-left-right' },
+  { key: 'Accounts', label: 'Cuentas', icon: 'wallet' },
+  { key: 'Budgets', label: 'Presupuestos', icon: 'chart-pie' },
+  { key: 'Debts', label: 'Deudas', icon: 'credit-card' },
+  { key: 'Goals', label: 'Metas', icon: 'trophy' },
+  { key: 'Tracking', label: 'Seguimiento', icon: 'package' },
+  { key: 'Settings', label: 'Ajustes', icon: 'settings' },
 ];
 
 interface DesktopSidebarProps {
@@ -51,8 +50,6 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
       <View style={styles.navItems}>
         {SIDEBAR_ITEMS.map((item) => {
           const isActive = currentRoute === item.key;
-          const iconName = isActive ? item.iconFocused : item.iconUnfocused;
-
           const itemStyle = isActive
             ? [
                 styles.navItem,
@@ -70,8 +67,8 @@ export function DesktopSidebar({ currentRoute, onNavigate }: DesktopSidebarProps
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={item.label}
             >
-              <Ionicons
-                name={iconName}
+              <AppIcon
+                name={item.icon}
                 size={22}
                 color={isActive ? colors.textInverse : colors.textSecondary}
               />

@@ -4,8 +4,9 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon, type IconName } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Platform,
@@ -19,7 +20,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { AccountService } from '@/services/accounts/accountService';
 import type { MainStackParamList } from '@/navigation/types';
@@ -33,10 +33,10 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   credit_card: 'Tarjeta de Crédito',
 };
 
-const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
-  cash: '💵',
-  bank: '🏦',
-  credit_card: '💳',
+const ACCOUNT_TYPE_ICONS: Record<AccountType, IconName> = {
+  cash: 'banknote',
+  bank: 'landmark',
+  credit_card: 'credit-card',
 };
 
 function formatAmount(centavos: number): string {
@@ -56,22 +56,22 @@ export function AccountsScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '🏦',
+      icon: 'landmark',
       title: 'Tus cuentas',
       description: 'Aquí gestionas todas tus cuentas financieras: banco, efectivo y tarjetas de crédito. El saldo total se calcula automáticamente.',
     },
     {
-      emoji: '➕',
+      icon: 'plus',
       title: 'Crear cuenta',
       description: 'Toca el botón + para crear una nueva cuenta. Elige el tipo, el nombre y el saldo inicial.',
     },
     {
-      emoji: '↔️',
+      icon: 'arrow-left-right',
       title: 'Transferencias',
       description: 'Usa el botón de transferencia para mover dinero entre tus cuentas. Los saldos se actualizan automáticamente.',
     },
     {
-      emoji: '📋',
+      icon: 'clipboard-list',
       title: 'Detalle de cuenta',
       description: 'Toca cualquier cuenta para ver su historial completo de movimientos y transferir dinero directamente desde ahí.',
     },
@@ -84,12 +84,9 @@ export function AccountsScreen() {
 
   const loadAccounts = useCallback(async () => {
     try {
-      const [allAccounts, total] = await Promise.all([
-        accountService.getActiveAccounts(),
-        accountService.getTotalBalance(),
-      ]);
+      const allAccounts = await accountService.getActiveAccounts();
       setAccounts(allAccounts);
-      setTotalBalance(total);
+      setTotalBalance(allAccounts.reduce((sum, account) => sum + account.balance, 0));
     } catch (error) {
       console.error('Error loading accounts:', error);
     } finally {
@@ -108,12 +105,7 @@ export function AccountsScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando cuentas...</Text>
-      </View>
-    );
+    return <ScreenSkeleton variant="summary" rows={3} />;
   }
 
   return (
@@ -154,7 +146,7 @@ export function AccountsScreen() {
           >
             <View style={styles.accountRow}>
               <View style={[styles.accountIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Text style={styles.accountIconText}>{ACCOUNT_TYPE_ICONS[item.type]}</Text>
+                <AppIcon name={ACCOUNT_TYPE_ICONS[item.type]} size={20} color={colors.primary} />
               </View>
               <View style={styles.accountInfo}>
                 <Text style={[styles.accountName, { color: colors.textPrimary }]}>{item.name}</Text>
@@ -168,7 +160,7 @@ export function AccountsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🏦</Text>
+            <AppIcon name="landmark" size={48} color={colors.textTertiary} style={styles.emptyIcon} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes cuentas registradas.</Text>
             <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea tu primera cuenta para comenzar a registrar tus movimientos.</Text>
             <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]} onPress={() => setShowCreateForm(true)}>
@@ -200,7 +192,7 @@ export function AccountsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Nueva transferencia"
             >
-              <MaterialCommunityIcons name="bank-transfer" size={26} color={colors.primary} />
+              <AppIcon name="arrow-left-right" size={26} color={colors.primary} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -315,7 +307,7 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
               accessibilityRole="button"
               accessibilityState={{ selected: type === t }}
             >
-              <Text style={styles.typeIcon}>{ACCOUNT_TYPE_ICONS[t]}</Text>
+              <AppIcon name={ACCOUNT_TYPE_ICONS[t]} size={18} color={type === t ? colors.textInverse : colors.textSecondary} />
               <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === t && { color: colors.textInverse }]}>
                 {ACCOUNT_TYPE_LABELS[t]}
               </Text>
@@ -423,9 +415,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  accountIconText: {
-    fontSize: 18,
-  },
   accountInfo: {
     flex: 1,
   },
@@ -450,7 +439,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyText: {
@@ -549,9 +537,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-  },
-  typeIcon: {
-    fontSize: 18,
   },
   typeButtonText: {
     fontSize: 11,

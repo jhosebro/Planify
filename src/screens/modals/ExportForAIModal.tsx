@@ -11,11 +11,11 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 import { useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
 import { ExportForAIService, type AIExportData } from '@/services/export/exportForAIService';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 
 /**
  * Modal para exportar datos financieros con prompt integrado para ChatGPT.
@@ -117,7 +117,7 @@ export function ExportForAIModal() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header explanation */}
       <View style={[styles.headerCard, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
-        <Ionicons name="sparkles" size={32} color={colors.primary} />
+        <AppIcon name="sparkles" size={32} color={colors.primary} />
         <Text style={styles.headerTitle}>Exportar para ChatGPT</Text>
         <Text style={styles.headerDescription}>
           Genera un archivo con toda tu información financiera y un prompt especializado.
@@ -129,13 +129,13 @@ export function ExportForAIModal() {
       <View style={[styles.card, neuSurface(scheme, 'raised'), { borderRadius: 12 }]}>
         <Text style={styles.cardTitle}>¿Qué se incluye?</Text>
         <View style={styles.featureList}>
-          <FeatureItem icon="wallet-outline" text="Cuentas y saldos" />
-          <FeatureItem icon="swap-vertical-outline" text="Transacciones (últimos 3 meses)" />
-          <FeatureItem icon="pie-chart-outline" text="Presupuestos y consumo" />
-          <FeatureItem icon="card-outline" text="Deudas, cuotas y cuentas por cobrar" />
-          <FeatureItem icon="trophy-outline" text="Metas de ahorro y progreso" />
-          <FeatureItem icon="alarm-outline" text="Pagos pendientes" />
-          <FeatureItem icon="chatbubble-ellipses-outline" text="Prompt de asesoría incluido" />
+          <FeatureItem icon="wallet" text="Cuentas y saldos" />
+          <FeatureItem icon="arrow-left-right" text="Transacciones (últimos 3 meses)" />
+          <FeatureItem icon="chart-pie" text="Presupuestos y consumo" />
+          <FeatureItem icon="credit-card" text="Deudas, cuotas y cuentas por cobrar" />
+          <FeatureItem icon="trophy" text="Metas de ahorro y progreso" />
+          <FeatureItem icon="bell" text="Pagos pendientes" />
+          <FeatureItem icon="message-circle" text="Prompt de asesoría incluido" />
         </View>
       </View>
 
@@ -152,7 +152,7 @@ export function ExportForAIModal() {
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="download-outline" size={20} color="#fff" />
+              <AppIcon name="download" size={20} color="#fff" />
               <Text style={styles.generateButtonText}>Generar Exportación</Text>
             </>
           )}
@@ -162,7 +162,7 @@ export function ExportForAIModal() {
       {/* Error */}
       {error && (
         <View style={styles.errorCard}>
-          <Ionicons name="alert-circle" size={20} color={colors.redExpenses} />
+          <AppIcon name="circle-exclamation" size={20} color={colors.redExpenses} />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
@@ -196,8 +196,8 @@ export function ExportForAIModal() {
               accessibilityRole="button"
               accessibilityLabel={copied ? 'Copiado' : 'Copiar al portapapeles'}
             >
-              <Ionicons
-                name={copied ? 'checkmark-circle' : 'copy-outline'}
+              <AppIcon
+                name={copied ? 'circle-check' : 'copy'}
                 size={20}
                 color={copied ? colors.greenEarns : '#fff'}
               />
@@ -212,7 +212,7 @@ export function ExportForAIModal() {
               accessibilityRole="button"
               accessibilityLabel="Compartir exportación"
             >
-              <Ionicons name="share-outline" size={20} color="#fff" />
+              <AppIcon name="share" size={20} color="#fff" />
               <Text style={styles.actionButtonText}>Compartir</Text>
             </TouchableOpacity>
           </View>
@@ -225,7 +225,7 @@ export function ExportForAIModal() {
             accessibilityRole="button"
             accessibilityLabel="Regenerar exportación"
           >
-            <Ionicons name="refresh-outline" size={18} color={colors.primary} />
+            <AppIcon name="refresh-cw" size={18} color={colors.primary} />
             <Text style={styles.regenerateText}>Regenerar</Text>
           </TouchableOpacity>
 
@@ -245,10 +245,10 @@ export function ExportForAIModal() {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function FeatureItem({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+function FeatureItem({ icon, text }: { icon: IconName; text: string }) {
   return (
     <View style={styles.featureItem}>
-      <Ionicons name={icon} size={18} color={colors.primary} />
+      <AppIcon name={icon} size={18} color={colors.primary} />
       <Text style={styles.featureText}>{text}</Text>
     </View>
   );

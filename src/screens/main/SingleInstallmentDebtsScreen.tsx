@@ -2,8 +2,9 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface } from '@/lib/neumorphic';
+import { AppIcon } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -85,11 +86,7 @@ export function SingleInstallmentDebtsScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="rows" rows={5} />;
   }
 
   return (
@@ -101,9 +98,10 @@ export function SingleInstallmentDebtsScreen() {
       ]}
     >
       {/* Header */}
-      <Text style={[styles.title, { color: colors.textPrimary }]}>
-        🧾 Gastos individuales
-      </Text>
+      <View style={styles.titleRow}>
+        <AppIcon name="receipt-text" size={22} color={colors.textPrimary} />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Gastos individuales</Text>
+      </View>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         {cardName}
       </Text>
@@ -189,9 +187,10 @@ export function SingleInstallmentDebtsScreen() {
                 accessibilityState={{ checked: debt.isProvisioned }}
                 accessibilityLabel={debt.isProvisioned ? 'Desmarcar dinero separado' : 'Marcar dinero separado'}
               >
-                <Text style={styles.provisionedBtnText}>
-                  {debt.isProvisioned ? '✅ Separado' : '💰 Separar'}
-                </Text>
+                <View style={styles.inlineIconRow}>
+                  <AppIcon name={debt.isProvisioned ? 'circle-check' : 'banknote'} size={14} color="#2EAD5D" />
+                  <Text style={styles.provisionedBtnText}>{debt.isProvisioned ? 'Separado' : 'Separar'}</Text>
+                </View>
               </TouchableOpacity>
             </View>
           );
@@ -203,6 +202,8 @@ export function SingleInstallmentDebtsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   content: { padding: 16, paddingBottom: 40 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

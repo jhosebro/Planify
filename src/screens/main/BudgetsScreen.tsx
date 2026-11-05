@@ -1,11 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon } from '@/components/AppIcon';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Platform,
@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { BudgetService } from '@/services/budgets';
 import { ReminderService } from '@/services/reminders';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import type { BudgetConsumption, Reminder, ReminderFrequency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 import { RemindersList } from '@/components/RemindersList';
@@ -47,22 +48,22 @@ export function BudgetsScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '💰',
+      icon: 'wallet',
       title: 'Presupuesto General',
       description: 'La tarjeta superior muestra tu gasto total vs el presupuesto combinado de todas tus categorías activas en el mes.',
     },
     {
-      emoji: '📊',
+      icon: 'chart-bar',
       title: 'Presupuestos por categoría',
       description: 'Cada tarjeta muestra el progreso de gasto de una categoría. Se vuelve naranja al acercarse al límite y rojo al excederlo.',
     },
     {
-      emoji: '✏️',
+      icon: 'pencil',
       title: 'Registrar gasto manual',
       description: 'Usa el botón "+ Gasto" para registrar un gasto que no creó un movimiento en tus cuentas (como gastos en efectivo sin registrar).',
     },
     {
-      emoji: '🔔',
+      icon: 'bell',
       title: 'Recordatorios',
       description: 'En la parte inferior gestiona pagos recurrentes: servicios, suscripciones y deudas. Marca como pagado cuando los realices.',
     },
@@ -72,9 +73,10 @@ export function BudgetsScreen() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     setLoadError(null);
     try {
       const [budgetData, reminderData] = await Promise.all([
@@ -83,6 +85,7 @@ export function BudgetsScreen() {
       ]);
       setConsumptions(budgetData);
       setReminders(reminderData);
+      hasLoaded.current = true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('Error loading budgets data:', msg);
@@ -150,12 +153,7 @@ export function BudgetsScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando presupuestos...</Text>
-      </View>
-    );
+    return <ScreenSkeleton variant="list" rows={4} />;
   }
 
   if (loadError) {
@@ -329,7 +327,10 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
 
   return (
     <View style={[styles.generalCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
-      <Text style={styles.generalTitle}>💰 Presupuesto General</Text>
+      <View style={styles.generalTitleRow}>
+        <AppIcon name="wallet" size={18} color="#fff" />
+        <Text style={styles.generalTitle}>Presupuesto General</Text>
+      </View>
       <View style={styles.generalAmounts}>
         <View style={styles.generalAmountItem}>
           <Text style={styles.generalAmountLabel}>Gastado</Text>
@@ -554,6 +555,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
   },
+  generalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   generalTitle: {
     fontSize: 16,
     fontWeight: '700',

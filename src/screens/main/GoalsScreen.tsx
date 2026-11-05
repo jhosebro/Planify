@@ -1,9 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import {
-  ActivityIndicator,
   FlatList,
   Platform,
   ScrollView,
@@ -16,10 +15,12 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { GoalService } from '@/services/goals';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import type { Goal } from '@/services/goals';
 import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon } from '@/components/AppIcon';
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
@@ -44,8 +45,8 @@ type GoalSortKey = 'date_asc' | 'date_desc' | 'progress_asc' | 'progress_desc' |
 
 const FILTER_TYPE_OPTIONS: { key: GoalFilterType; label: string }[] = [
   { key: 'all', label: 'Todas' },
-  { key: 'personal', label: '👤 Personal' },
-  { key: 'couple', label: '👥 Pareja' },
+  { key: 'personal', label: 'Personal' },
+  { key: 'couple', label: 'Pareja' },
 ];
 
 const FILTER_PRIORITY_OPTIONS: { key: GoalFilterPriority; label: string; color?: string }[] = [
@@ -101,22 +102,22 @@ export function GoalsScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '🏆',
+      icon: 'trophy',
       title: 'Metas de ahorro',
       description: 'Crea metas financieras con un monto objetivo y una fecha límite. Planify calcula cuánto debes ahorrar por mes para llegar a tiempo.',
     },
     {
-      emoji: '📈',
+      icon: 'trending-up',
       title: 'Seguimiento de progreso',
       description: 'Cada meta muestra una barra de progreso con el monto acumulado vs el objetivo. Al tocarla ves el detalle y puedes registrar abonos.',
     },
     {
-      emoji: '🔽',
+      icon: 'trending-down',
       title: 'Filtros y orden',
       description: 'Filtra por tipo (personal o pareja) y prioridad. Ordena por fecha, progreso o monto para enfocarte en lo más urgente.',
     },
     {
-      emoji: '➕',
+      icon: 'plus',
       title: 'Nueva meta',
       description: 'Presiona "+ Nueva Meta" para crearla. Define nombre, monto objetivo, fecha límite, prioridad y si es personal o compartida.',
     },
@@ -124,6 +125,7 @@ export function GoalsScreen() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
 
   // Filter & sort state
   const [filterType, setFilterType] = useState<GoalFilterType>('all');
@@ -132,10 +134,11 @@ export function GoalsScreen() {
   const [showFilters, setShowFilters] = useState(false);
 
   const loadGoals = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     try {
       const data = await goalService.getAll();
       setGoals(data);
+      hasLoaded.current = true;
     } catch (error) {
       console.error('Error loading goals:', error);
     } finally {
@@ -165,11 +168,7 @@ export function GoalsScreen() {
   const hasActiveFilters = filterType !== 'all' || filterPriority !== 'all' || sortKey !== 'date_asc';
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="list" rows={4} />;
   }
 
   return (
@@ -188,7 +187,10 @@ export function GoalsScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>🎯 Mis Metas</Text>
+            <View style={styles.headerTitleRow}>
+              <AppIcon name="target" size={20} color={colors.textPrimary} />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Mis Metas</Text>
+            </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={[neuSurface(scheme, 'flat'), styles.filterToggle, hasActiveFilters && { borderColor: colors.primary, borderWidth: 2 }]}
@@ -196,9 +198,10 @@ export function GoalsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Mostrar filtros y ordenamiento"
               >
-                <Text style={[styles.filterToggleText, { color: colors.textSecondary }, hasActiveFilters && styles.filterToggleTextActive]}>
-                  {showFilters ? '✕' : '⚙️'} Filtros
-                </Text>
+                <View style={styles.inlineIconRow}>
+                  <AppIcon name={showFilters ? 'x' : 'settings'} size={13} color={colors.textSecondary} />
+                  <Text style={[styles.filterToggleText, { color: colors.textSecondary }, hasActiveFilters && styles.filterToggleTextActive]}>Filtros</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
@@ -321,7 +324,7 @@ export function GoalsScreen() {
       )}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🎯</Text>
+          <AppIcon name="target" size={48} color={colors.textTertiary} style={styles.emptyIcon} />
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes metas activas</Text>
           <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Crea una meta para empezar a materializar tus objetivos.</Text>
         </View>
@@ -331,7 +334,10 @@ export function GoalsScreen() {
           {/* Paused Goals */}
           {pausedGoals.length > 0 && (
             <View style={styles.pausedSection}>
-              <Text style={styles.pausedTitle}>⏸️ Pausadas ({pausedGoals.length})</Text>
+              <View style={styles.sectionTitleRow}>
+                <AppIcon name="pause" size={16} color={colors.textPrimary} />
+                <Text style={styles.pausedTitle}>Pausadas ({pausedGoals.length})</Text>
+              </View>
               {pausedGoals.map((g) => (
                 <TouchableOpacity
                   key={g.id}
@@ -342,7 +348,7 @@ export function GoalsScreen() {
                     <Text style={styles.pausedName}>{g.name}</Text>
                     <Text style={[styles.pausedProgress, { color: colors.textTertiary }]}>{g.progress.toFixed(0)}% • {formatAmount(g.savedAmount)} / {formatAmount(g.targetAmount)}</Text>
                   </View>
-                  <Text style={[styles.pausedArrow, { color: colors.textTertiary }]}>›</Text>
+                  <AppIcon name="chevron-right" size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -351,7 +357,10 @@ export function GoalsScreen() {
           {/* Completed Goals */}
           {completedGoals.length > 0 && (
             <View style={styles.completedSection}>
-              <Text style={[styles.completedTitle, { color: colors.textSecondary }]}>✅ Completadas ({completedGoals.length})</Text>
+              <View style={styles.sectionTitleRow}>
+                <AppIcon name="circle-check" size={16} color={colors.textSecondary} />
+                <Text style={[styles.completedTitle, { color: colors.textSecondary }]}>Completadas ({completedGoals.length})</Text>
+              </View>
               {completedGoals.map((g) => (
                 <View key={g.id} style={[styles.completedItem, { borderBottomColor: colors.borderInset }]}>
                   <Text style={[styles.completedName, { color: colors.textTertiary }]}>{g.name}</Text>
@@ -402,10 +411,18 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
       </View>
 
       <View style={styles.goalMeta}>
-        <Text style={styles.goalInstallment}>
-          💡 Ahorra {formatAmount(goal.suggestedInstallment)} / {goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'quincena' : 'semana'}
-        </Text>
-        {goal.type === 'couple' && <Text style={[styles.goalTypeBadge, { color: colors.textSecondary }]}>👥 Pareja</Text>}
+        <View style={styles.goalMetaItem}>
+          <AppIcon name="lightbulb" size={12} color={colors.textSecondary} />
+          <Text style={styles.goalInstallment}>
+            Ahorra {formatAmount(goal.suggestedInstallment)} / {goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'quincena' : 'semana'}
+          </Text>
+        </View>
+        {goal.type === 'couple' && (
+          <View style={styles.goalMetaItem}>
+            <AppIcon name="users" size={12} color={colors.textSecondary} />
+            <Text style={[styles.goalTypeBadge, { color: colors.textSecondary }]}>Pareja</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -418,6 +435,10 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  goalMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.secondary },
   addButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
@@ -469,7 +490,7 @@ const styles = StyleSheet.create({
   goalTypeBadge: { fontSize: 12, color: '#666' },
 
   emptyContainer: { alignItems: 'center', paddingVertical: 48 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: { marginBottom: 12 },
   emptyText: { fontSize: 16, color: '#666', marginBottom: 4 },
   emptySubtext: { fontSize: 13, color: '#999', textAlign: 'center' },
 

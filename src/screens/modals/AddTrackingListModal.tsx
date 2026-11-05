@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -14,15 +15,15 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { TrackingService } from '@/services/tracking';
 import type { MainStackParamList } from '@/navigation/types';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { AppIcon, resolveIconName, type IconName } from '@/components/AppIcon';
 
-const ICON_OPTIONS = ['📋', '🛒', '🏠', '🧴', '🍎', '💊', '🐶', '👶', '🧹', '🔧', '💻', '📱'];
+const ICON_OPTIONS: IconName[] = ['clipboard-list', 'shopping-cart', 'house', 'droplet', 'apple', 'pill', 'dog', 'baby', 'broom', 'wrench', 'laptop', 'smartphone'];
 const COLOR_OPTIONS = ['#007DC3', '#2EAD5D', '#F1632A', '#9B59B6', '#E74C3C', '#1ABC9C', '#F39C12', '#34495E'];
 
 interface BudgetOption {
@@ -48,7 +49,7 @@ export function AddTrackingListModal() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('📋');
+  const [selectedIcon, setSelectedIcon] = useState<IconName>('clipboard-list');
   const [selectedColor, setSelectedColor] = useState('#007DC3');
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [budgetOptions, setBudgetOptions] = useState<BudgetOption[]>([]);
@@ -96,7 +97,7 @@ export function AddTrackingListModal() {
         if (existing) {
           setName(existing.name);
           setDescription(existing.description ?? '');
-          setSelectedIcon(existing.icon);
+          setSelectedIcon(resolveIconName(existing.icon, 'clipboard-list'));
           setSelectedColor(existing.color);
           setSelectedBudgetId(existing.linkedBudgetId ?? null);
         }
@@ -152,11 +153,7 @@ export function AddTrackingListModal() {
   };
 
   if (loadingList) {
-    return (
-      <View style={[styles.container, { backgroundColor: themeColors.backgroundPrimary, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={themeColors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="list" rows={3} />;
   }
 
   return (
@@ -201,7 +198,7 @@ export function AddTrackingListModal() {
           <ActivityIndicator size="small" color={themeColors.primary} style={{ marginVertical: 12 }} />
         ) : budgetOptions.length === 0 ? (
           <View style={[styles.noBudgetsCard, neuSurface(scheme, 'flat')]}>
-            <Ionicons name="information-circle-outline" size={18} color={themeColors.textTertiary} />
+            <AppIcon name="info" size={18} color={themeColors.textTertiary} />
             <Text style={[styles.noBudgetsText, { color: themeColors.textTertiary }]}>
               No tienes presupuestos activos. Crea uno primero desde la sección de Presupuestos.
             </Text>
@@ -217,8 +214,8 @@ export function AddTrackingListModal() {
               ]}
               onPress={() => setSelectedBudgetId(null)}
             >
-              <Ionicons
-                name={selectedBudgetId === null ? 'radio-button-on' : 'radio-button-off'}
+              <AppIcon
+                name={selectedBudgetId === null ? 'circle-dot' : 'circle'}
                 size={20}
                 color={selectedBudgetId === null ? themeColors.primary : themeColors.textTertiary}
               />
@@ -237,8 +234,8 @@ export function AddTrackingListModal() {
                 ]}
                 onPress={() => setSelectedBudgetId(budget.id)}
               >
-                <Ionicons
-                  name={selectedBudgetId === budget.id ? 'radio-button-on' : 'radio-button-off'}
+                <AppIcon
+                  name={selectedBudgetId === budget.id ? 'circle-dot' : 'circle'}
                   size={20}
                   color={selectedBudgetId === budget.id ? themeColors.primary : themeColors.textTertiary}
                 />
@@ -250,7 +247,7 @@ export function AddTrackingListModal() {
                     Límite: {formatAmount(budget.monthlyLimit)}/mes
                   </Text>
                 </View>
-                <Ionicons name="pie-chart-outline" size={16} color={themeColors.primary} />
+                <AppIcon name="chart-pie" size={16} color={themeColors.primary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -269,7 +266,7 @@ export function AddTrackingListModal() {
               ]}
               onPress={() => setSelectedIcon(icon)}
             >
-              <Text style={styles.iconOptionText}>{icon}</Text>
+              <AppIcon name={icon} size={22} color={selectedIcon === icon ? selectedColor : themeColors.textSecondary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -288,7 +285,7 @@ export function AddTrackingListModal() {
               onPress={() => setSelectedColor(color)}
             >
               {selectedColor === color && (
-                <Text style={styles.colorCheck}>✓</Text>
+                <AppIcon name="check" size={18} color="#fff" />
               )}
             </TouchableOpacity>
           ))}
@@ -299,16 +296,17 @@ export function AddTrackingListModal() {
           <Text style={[styles.previewLabel, { color: themeColors.textTertiary }]}>Vista previa</Text>
           <View style={styles.previewContent}>
             <View style={[styles.previewIcon, { backgroundColor: selectedColor + '20' }]}>
-              <Text style={styles.previewIconText}>{selectedIcon}</Text>
+              <AppIcon name={selectedIcon} size={22} color={selectedColor} />
             </View>
             <View>
               <Text style={[styles.previewName, { color: themeColors.textPrimary }]}>
                 {name || 'Mi lista'}
               </Text>
               {selectedBudgetId && (
-                <Text style={[styles.previewBudget, { color: themeColors.primary }]}>
-                  📊 Presupuesto vinculado
-                </Text>
+                <View style={styles.previewBudgetRow}>
+                  <AppIcon name="chart-pie" size={12} color={themeColors.primary} />
+                  <Text style={[styles.previewBudget, { color: themeColors.primary }]}>Presupuesto vinculado</Text>
+                </View>
               )}
             </View>
           </View>
@@ -349,18 +347,19 @@ const styles = StyleSheet.create({
 
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   iconOption: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  iconOptionText: { fontSize: 22 },
-  colorOption: { width: 40, height: 40, borderRadius: 20 },
+
+  colorOption: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   colorOptionSelected: { borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 4 },
-  colorCheck: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', lineHeight: 34 },
+
 
   previewCard: { marginTop: 24, borderRadius: 12, padding: 16 },
   previewLabel: { fontSize: 12, marginBottom: 10 },
   previewContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   previewIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  previewIconText: { fontSize: 22 },
+
   previewName: { fontSize: 16, fontWeight: '600' },
-  previewBudget: { fontSize: 12, marginTop: 2 },
+  previewBudgetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  previewBudget: { fontSize: 12 },
 
   saveButton: { marginTop: 28, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },

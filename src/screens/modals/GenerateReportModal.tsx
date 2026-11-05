@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ReportService } from '@/services/reports/reportService';
+import { AppIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
 import type { ReportFormat, GeneratedReport } from '@/types/reports';
 
@@ -162,7 +163,7 @@ export function GenerateReportModal() {
           <Text style={styles.title}>Reporte Generado</Text>
 
           <View style={styles.successCard}>
-            <Text style={styles.successIcon}>✓</Text>
+            <AppIcon name="circle-check" size={32} color={colors.greenEarns} style={styles.successIcon} />
             <Text style={styles.successTitle}>¡Reporte listo!</Text>
             <Text style={styles.successDetail}>
               {generatedReport.format.toUpperCase()} • {generatedReport.fileName}
@@ -178,7 +179,7 @@ export function GenerateReportModal() {
             accessibilityRole="button"
             accessibilityLabel="Enviar por email"
           >
-            <Text style={styles.shareOptionIcon}>✉</Text>
+            <AppIcon name="mail" size={24} color={colors.primary} style={styles.shareOptionIcon} />
             <View style={styles.shareOptionContent}>
               <Text style={styles.shareOptionTitle}>Enviar por email</Text>
               <Text style={styles.shareOptionDescription}>
@@ -194,7 +195,7 @@ export function GenerateReportModal() {
             accessibilityRole="button"
             accessibilityLabel="Guardar en dispositivo"
           >
-            <Text style={styles.shareOptionIcon}>💾</Text>
+            <AppIcon name="save" size={24} color={colors.primary} style={styles.shareOptionIcon} />
             <View style={styles.shareOptionContent}>
               <Text style={styles.shareOptionTitle}>Guardar en dispositivo</Text>
               <Text style={styles.shareOptionDescription}>
@@ -210,7 +211,7 @@ export function GenerateReportModal() {
             accessibilityRole="button"
             accessibilityLabel="Compartir con otras apps"
           >
-            <Text style={styles.shareOptionIcon}>↗</Text>
+            <AppIcon name="external-link" size={24} color={colors.primary} style={styles.shareOptionIcon} />
             <View style={styles.shareOptionContent}>
               <Text style={styles.shareOptionTitle}>Compartir</Text>
               <Text style={styles.shareOptionDescription}>
@@ -533,8 +534,6 @@ const styles = StyleSheet.create({
     borderColor: colors.greenEarns,
   },
   successIcon: {
-    fontSize: 32,
-    color: colors.greenEarns,
     marginBottom: 8,
   },
   successTitle: {
@@ -557,7 +556,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   shareOptionIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   shareOptionContent: {

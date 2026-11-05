@@ -2,8 +2,9 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
+import { AppIcon, type IconName } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
@@ -34,9 +35,15 @@ function formatDate(date: Date): string {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  credit_card: '💳 Tarjeta de Crédito',
-  installment: '📋 Deuda en Cuotas',
-  personal: '🤝 Cuenta Personal',
+  credit_card: 'Tarjeta de Crédito',
+  installment: 'Deuda en Cuotas',
+  personal: 'Cuenta Personal',
+};
+
+const CATEGORY_ICONS: Record<string, IconName> = {
+  credit_card: 'credit-card',
+  installment: 'clipboard-list',
+  personal: 'handshake',
 };
 
 export function DebtDetailScreen() {
@@ -226,11 +233,7 @@ export function DebtDetailScreen() {
   };
 
   if (loading || !debt) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="summary" rows={4} />;
   }
 
   const remaining = debt.totalAmount - debt.paidAmount;
@@ -249,12 +252,18 @@ export function DebtDetailScreen() {
       {/* Header info */}
       <View style={[styles.headerCard, { backgroundColor: colors.cardBackground, ...neuSurface(scheme, 'flat') }]}>
         <View style={styles.headerCardTop}>
-          <Text style={[styles.categoryLabel, { color: colors.textTertiary }]}>
-            {CATEGORY_LABELS[debt.category]}
-          </Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name={CATEGORY_ICONS[debt.category] ?? 'credit-card'} size={13} color={colors.textTertiary} />
+            <Text style={[styles.categoryLabel, { color: colors.textTertiary }]}>
+              {CATEGORY_LABELS[debt.category]}
+            </Text>
+          </View>
           {!isPaidOff && !editing && (
             <TouchableOpacity onPress={startEditing} accessibilityRole="button" accessibilityLabel="Editar deuda">
-              <Text style={[styles.editLink, { color: colors.primary }]}>✏️ Editar</Text>
+              <View style={styles.inlineIconRow}>
+                <AppIcon name="pencil" size={13} color={colors.primary} />
+                <Text style={[styles.editLink, { color: colors.primary }]}>Editar</Text>
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -264,9 +273,12 @@ export function DebtDetailScreen() {
         )}
 
         <View style={styles.directionBadge}>
-          <Text style={[styles.directionText, { color: isReceivable ? colors.greenEarns : colors.redExpenses }]}>
-            {isReceivable ? '↙️ Me deben' : '↗️ Yo debo'}
-          </Text>
+          <View style={styles.inlineIconRow}>
+            <AppIcon name={isReceivable ? 'arrow-down-left' : 'arrow-up-right'} size={13} color={isReceivable ? colors.greenEarns : colors.redExpenses} />
+            <Text style={[styles.directionText, { color: isReceivable ? colors.greenEarns : colors.redExpenses }]}>
+              {isReceivable ? 'Me deben' : 'Yo debo'}
+            </Text>
+          </View>
           {debt.counterparty && (
             <Text style={[styles.counterpartyText, { color: colors.textSecondary }]}>
               {' '}• {debt.counterparty}
@@ -277,7 +289,10 @@ export function DebtDetailScreen() {
         {/* Provisioned badge */}
         {debt.isProvisioned && (
           <View style={[styles.provisionedBanner, { backgroundColor: '#2EAD5D15' }]}>
-            <Text style={styles.provisionedBannerText}>✅ Dinero ya separado</Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="circle-check" size={14} color="#2EAD5D" />
+              <Text style={styles.provisionedBannerText}>Dinero ya separado</Text>
+            </View>
           </View>
         )}
       </View>
@@ -414,13 +429,19 @@ export function DebtDetailScreen() {
 
         {debt.totalInstallments && (
           <View style={[styles.installmentInfo, { borderTopColor: colors.borderInset }]}>
-            <Text style={[styles.installmentText, { color: colors.textSecondary }]}>
-              📅 Cuota {debt.paidInstallments ?? 0} de {debt.totalInstallments}
-            </Text>
-            {debt.installmentAmount && (
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="calendar" size={14} color={colors.textSecondary} />
               <Text style={[styles.installmentText, { color: colors.textSecondary }]}>
-                💰 {formatAmount(debt.installmentAmount)} / cuota
+                Cuota {debt.paidInstallments ?? 0} de {debt.totalInstallments}
               </Text>
+            </View>
+            {debt.installmentAmount && (
+              <View style={styles.inlineIconRow}>
+                <AppIcon name="banknote" size={14} color={colors.textSecondary} />
+                <Text style={[styles.installmentText, { color: colors.textSecondary }]}>
+                  {formatAmount(debt.installmentAmount)} / cuota
+                </Text>
+              </View>
             )}
           </View>
         )}
@@ -446,7 +467,7 @@ export function DebtDetailScreen() {
           accessibilityState={{ checked: debt.isProvisioned }}
           accessibilityLabel="Marcar dinero como separado"
         >
-          <Text style={styles.provisionedToggleIcon}>{debt.isProvisioned ? '✅' : '💰'}</Text>
+          <AppIcon name={debt.isProvisioned ? 'circle-check' : 'banknote'} size={20} color="#2EAD5D" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.provisionedToggleLabel, { color: colors.textPrimary }]}>
               {debt.isProvisioned ? 'Dinero ya separado' : 'Marcar dinero como separado'}
@@ -469,9 +490,10 @@ export function DebtDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Registrar pago"
           >
-            <Text style={styles.actionButtonText}>
-              {showPaymentForm ? 'Cancelar' : '💰 Registrar Pago'}
-            </Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name={showPaymentForm ? 'x' : 'banknote'} size={16} color="#fff" />
+              <Text style={styles.actionButtonText}>{showPaymentForm ? 'Cancelar' : 'Registrar Pago'}</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButtonSecondary, { borderColor: colors.greenEarns, ...neuSurface(scheme, 'flat') }]}
@@ -479,7 +501,10 @@ export function DebtDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Marcar como pagada"
           >
-            <Text style={[styles.actionButtonSecondaryText, { color: colors.greenEarns }]}>✅ Pagada</Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="circle-check" size={16} color={colors.greenEarns} />
+              <Text style={[styles.actionButtonSecondaryText, { color: colors.greenEarns }]}>Pagada</Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -549,7 +574,10 @@ export function DebtDetailScreen() {
         accessibilityRole="button"
         accessibilityLabel="Eliminar deuda"
       >
-        <Text style={styles.deleteButtonText}>🗑️ Eliminar Deuda</Text>
+        <View style={styles.inlineIconRow}>
+          <AppIcon name="trash" size={16} color={colors.redExpenses} />
+          <Text style={styles.deleteButtonText}>Eliminar Deuda</Text>
+        </View>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -557,6 +585,7 @@ export function DebtDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   content: { padding: 16, paddingBottom: 40 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

@@ -127,10 +127,12 @@ export class BudgetService {
     const consumptions: (BudgetConsumption & { categoryName: string })[] = [];
     if ((data ?? []).length === 0) return consumptions;
 
+    const categoryIds = [...new Set((data ?? []).map((row) => row.category_id))];
+    const spendingByCategory = await this.getSpendingByCategory(categoryIds);
     const staleBudgetIds: string[] = [];
 
     for (const row of data ?? []) {
-      const transactionSpent = await this.getCategorySpent(row.category_id);
+      const transactionSpent = spendingByCategory.get(row.category_id) ?? 0;
       let manualSpent = 0;
       if (row.manual_spent) {
         if (isWithinCurrentMonth(row.updated_at)) {
@@ -246,76 +248,61 @@ export class BudgetService {
   }
 
   private async getCategorySpent(categoryId: string): Promise<number> {
+    const spending = await this.getSpendingByCategory([categoryId]);
+    return spending.get(categoryId) ?? 0;
+  }
+
+  private async getSpendingByCategory(categoryIds: string[]): Promise<Map<string, number>> {
+    const spending = new Map<string, number>();
+    if (categoryIds.length === 0) return spending;
+
     const userId = getUserId();
     const { start, end } = getCurrentMonthRange();
 
-    // Get all expense transactions for this category in the current month
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, amount, linked_reminder_id, description')
+      .select('id, category_id, amount, linked_reminder_id, description')
       .eq('user_id', userId)
-      .eq('category_id', categoryId)
+      .in('category_id', categoryIds)
       .eq('type', 'expense')
       .is('linked_transfer_id', null)
       .gte('date', start)
       .lte('date', end);
 
-    if (error) return 0;
+    if (error || !data?.length) return spending;
 
-    // Exclude transactions that come from yearly or one-time reminders
-    // Only monthly/biweekly/weekly recurring expenses count toward budget
-    const transactions = data ?? [];
-    if (transactions.length === 0) return 0;
-
-    // Strategy 1: Exclude by linked_reminder_id (new transactions)
-    const reminderIds = transactions
+    const reminderIds = data
       .map((t) => t.linked_reminder_id)
       .filter((id): id is string => !!id);
 
-    let excludedReminderIds: Set<string> = new Set();
-    if (reminderIds.length > 0) {
-      const { data: reminders } = await supabase
-        .from('reminders')
-        .select('id')
-        .in('id', reminderIds)
-        .in('frequency', ['yearly', 'once']);
-
-      if (reminders) {
-        excludedReminderIds = new Set(reminders.map((r) => r.id));
-      }
-    }
-
-    // Strategy 2: For transactions without linked_reminder_id,
-    // check if they match a yearly/once reminder by description + amount
-    // (covers transactions created before the migration)
     const { data: yearlyOnceReminders } = await supabase
       .from('reminders')
-      .select('description, amount')
+      .select('id, description, amount')
       .eq('user_id', userId)
       .in('frequency', ['yearly', 'once']);
 
+    const reminders = yearlyOnceReminders ?? [];
+    const excludedReminderIds = new Set(
+      reminderIds.filter((id) => reminders.some((r) => r.id === id))
+    );
+
     const excludedByMatch = new Set<string>();
-    if (yearlyOnceReminders && yearlyOnceReminders.length > 0) {
-      for (const t of transactions) {
-        if (t.linked_reminder_id) continue; // already handled
-        if (!t.description) continue;
-        const match = yearlyOnceReminders.find(
-          (r) => r.description.trim().toLowerCase() === t.description.trim().toLowerCase() && r.amount === t.amount
-        );
-        if (match) {
-          excludedByMatch.add(t.id);
-        }
-      }
+    for (const t of data) {
+      if (t.linked_reminder_id) continue;
+      if (!t.description) continue;
+      const match = reminders.find(
+        (r) => r.description.trim().toLowerCase() === t.description.trim().toLowerCase() && r.amount === t.amount
+      );
+      if (match) excludedByMatch.add(t.id);
     }
 
-    // Sum amounts excluding yearly/once reminder transactions
-    return transactions
-      .filter((t) => {
-        if (t.linked_reminder_id && excludedReminderIds.has(t.linked_reminder_id)) return false;
-        if (excludedByMatch.has(t.id)) return false;
-        return true;
-      })
-      .reduce((sum, row) => sum + row.amount, 0);
+    for (const t of data) {
+      if (t.linked_reminder_id && excludedReminderIds.has(t.linked_reminder_id)) continue;
+      if (excludedByMatch.has(t.id)) continue;
+      spending.set(t.category_id, (spending.get(t.category_id) ?? 0) + t.amount);
+    }
+
+    return spending;
   }
 
   private mapRow(row: any, currentSpent: number): Budget {

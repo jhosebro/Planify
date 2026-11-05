@@ -5,7 +5,6 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuShadow, neuSurface } from '@/lib/neumorphic';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DesktopSidebar } from './DesktopSidebar';
 import { DashboardScreen } from '@/screens/main/DashboardScreen';
@@ -18,6 +17,7 @@ import { TrackingScreen } from '@/screens/main/TrackingScreen';
 import { SettingsScreen } from '@/screens/main/SettingsScreen';
 import { MoreScreen } from '@/screens/main/MoreScreen';
 import { TourHeaderButton } from '@/components/TourHeaderButton';
+import { AppIcon, type IconName } from '@/components/AppIcon';
 import { useTourStore } from '@/store/tourStore';
 import type { TabParamList } from './types';
 
@@ -37,21 +37,21 @@ function BackToMore() {
       onPress={() => navigation.navigate('More')}
       accessibilityLabel="Volver a Más"
     >
-      <Ionicons name="chevron-back" size={22} color={themeColors.primary} />
+      <AppIcon name="arrow-left" size={22} color={themeColors.primary} />
     </TouchableOpacity>
   );
 }
 
-const TAB_ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.glyphMap; unfocused: keyof typeof Ionicons.glyphMap }> = {
-  Dashboard: { focused: 'home', unfocused: 'home-outline' },
-  Transactions: { focused: 'swap-vertical', unfocused: 'swap-vertical-outline' },
-  Accounts: { focused: 'wallet', unfocused: 'wallet-outline' },
-  Budgets: { focused: 'pie-chart', unfocused: 'pie-chart-outline' },
-  More: { focused: 'ellipsis-horizontal', unfocused: 'ellipsis-horizontal-outline' },
-  Debts: { focused: 'card', unfocused: 'card-outline' },
-  Goals: { focused: 'trophy', unfocused: 'trophy-outline' },
-  Tracking: { focused: 'cube', unfocused: 'cube-outline' },
-  Settings: { focused: 'settings', unfocused: 'settings-outline' },
+const TAB_ICONS: Record<keyof TabParamList, IconName> = {
+  Dashboard: 'house',
+  Transactions: 'arrow-left-right',
+  Accounts: 'wallet',
+  Budgets: 'chart-pie',
+  More: 'ellipsis',
+  Debts: 'credit-card',
+  Goals: 'trophy',
+  Tracking: 'package',
+  Settings: 'settings',
 };
 
 const SCREENS: Record<keyof TabParamList, React.ComponentType> = {
@@ -153,10 +153,8 @@ function MobileTabLayout() {
           borderTopWidth: 0,
           ...neuShadow(scheme, 'raised'),
         },
-        tabBarIcon: ({ focused, color }) => {
-          const icons = TAB_ICONS[route.name];
-          const iconName = focused ? icons.focused : icons.unfocused;
-          return <Ionicons name={iconName} size={24} color={color} />;
+        tabBarIcon: ({ color }) => {
+          return <AppIcon name={TAB_ICONS[route.name]} size={24} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.quaternary,

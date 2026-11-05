@@ -20,6 +20,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ReminderService } from '@/services/reminders';
 import { CategorySelector } from '@/components/CategorySelector';
 import { CyclicDatePicker } from '@/components/CyclicDatePicker';
+import { AppIcon } from '@/components/AppIcon';
 import type { ReminderFrequency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -197,7 +198,7 @@ export function AddReminderModal() {
           accessibilityRole="button"
         >
           <Text style={styles.dateButtonText}>{formattedDate}</Text>
-          <Text style={styles.dateButtonIcon}>{showDatePicker ? '▲' : '▼'}</Text>
+          <AppIcon name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={12} color="#999" />
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -320,10 +321,6 @@ const styles = StyleSheet.create({
   dateButtonText: {
     fontSize: 16,
     color: colors.secondary,
-  },
-  dateButtonIcon: {
-    fontSize: 12,
-    color: '#999',
   },
   datePickerContainer: {
     backgroundColor: '#fff',

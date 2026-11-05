@@ -1,9 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import {
-  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,11 +13,13 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { DebtService } from '@/services/debts';
+import { DebtService, summarizeDebts } from '@/services/debts';
 import type { Debt, DebtCategory, DebtSummary } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
+import { AppIcon, type IconName } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 
 type DebtsNavProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -27,10 +28,22 @@ function formatAmount(centavos: number): string {
   return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-const CATEGORY_CONFIG: Record<DebtCategory, { label: string; icon: string; color: string }> = {
-  credit_card: { label: 'Tarjetas de Crédito', icon: '💳', color: '#007DC3' },
-  installment: { label: 'Deudas en Cuotas', icon: '📋', color: '#F1632A' },
-  personal: { label: 'Cuentas Personales', icon: '🤝', color: '#2EAD5D' },
+const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function formatDate(date: Date): string {
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+const CATEGORY_SINGULAR: Record<DebtCategory, string> = {
+  credit_card: 'Tarjeta de crédito',
+  installment: 'Deuda en cuotas',
+  personal: 'Cuenta personal',
+};
+
+const CATEGORY_CONFIG: Record<DebtCategory, { label: string; icon: IconName; color: string }> = {
+  credit_card: { label: 'Tarjetas de Crédito', icon: 'credit-card', color: '#007DC3' },
+  installment: { label: 'Deudas en Cuotas', icon: 'clipboard-list', color: '#F1632A' },
+  personal: { label: 'Cuentas Personales', icon: 'handshake', color: '#2EAD5D' },
 };
 
 export function DebtsScreen() {
@@ -45,22 +58,22 @@ export function DebtsScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '💳',
+      icon: 'credit-card',
       title: 'Control de deudas',
       description: 'Gestiona tus tarjetas de crédito, deudas en cuotas y cuentas personales (lo que debes y lo que te deben) en un solo lugar.',
     },
     {
-      emoji: '📋',
+      icon: 'clipboard-list',
       title: 'Tipos de deuda',
       description: 'Tarjetas de crédito registran tus compras y cuotas pendientes. Deudas en cuotas rastrean pagos mensuales. Cuentas personales llevan el saldo entre personas.',
     },
     {
-      emoji: '📊',
+      icon: 'chart-bar',
       title: 'Resumen total',
       description: 'La tarjeta superior muestra el total que debes y el total que te deben, para tener siempre clara tu posición financiera neta.',
     },
     {
-      emoji: '➕',
+      icon: 'plus',
       title: 'Agregar deuda',
       description: 'Presiona "+ Nueva Deuda" para registrar una tarjeta, una compra en cuotas o una cuenta personal. Puedes editar y eliminar en cualquier momento.',
     },
@@ -69,21 +82,21 @@ export function DebtsScreen() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [summary, setSummary] = useState<DebtSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
   const [expandedSections, setExpandedSections] = useState<Record<DebtCategory, boolean>>({
     credit_card: true,
     installment: true,
     personal: true,
   });
+  const [showPaid, setShowPaid] = useState(false);
 
   const loadDebts = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     try {
-      const [allDebts, debtSummary] = await Promise.all([
-        debtService.getAll(),
-        debtService.getSummary(),
-      ]);
+      const allDebts = await debtService.getAll();
       setDebts(allDebts);
-      setSummary(debtSummary);
+      setSummary(summarizeDebts(allDebts));
+      hasLoaded.current = true;
     } catch (error) {
       console.error('Error loading debts:', error);
     } finally {
@@ -94,7 +107,14 @@ export function DebtsScreen() {
   useFocusEffect(useCallback(() => { loadDebts(); }, [loadDebts]));
 
   const activeDebts = useMemo(() => debts.filter((d) => d.status === 'active'), [debts]);
-  const paidDebts = useMemo(() => debts.filter((d) => d.status === 'paid_off'), [debts]);
+  const paidDebts = useMemo(
+    () =>
+      debts
+        .filter((d) => d.status === 'paid_off')
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
+    [debts]
+  );
+  const paidTotal = useMemo(() => paidDebts.reduce((sum, debt) => sum + debt.totalAmount, 0), [paidDebts]);
 
   const debtsByCategory = useMemo(() => {
     const grouped: Record<DebtCategory, Debt[]> = { credit_card: [], installment: [], personal: [] };
@@ -109,11 +129,7 @@ export function DebtsScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ScreenSkeleton variant="summary" rows={3} />;
   }
 
   return (
@@ -127,7 +143,10 @@ export function DebtsScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>📊 Mis Deudas</Text>
+        <View style={styles.headerTitleRow}>
+          <AppIcon name="chart-bar" size={20} color={colors.textPrimary} />
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Mis Deudas</Text>
+        </View>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
           onPress={() => navigation.navigate('AddDebt')}
@@ -153,9 +172,18 @@ export function DebtsScreen() {
             </View>
           </View>
           <View style={styles.summaryBreakdown}>
-            <Text style={styles.summaryBreakdownText}>
-              💳 {formatAmount(summary.creditCardDebt)}  •  📋 {formatAmount(summary.installmentDebt)}  •  🤝 {formatAmount(summary.personalDebt)}
-            </Text>
+            <View style={styles.summaryBreakdownItem}>
+              <AppIcon name="credit-card" size={12} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.creditCardDebt)}</Text>
+            </View>
+            <View style={styles.summaryBreakdownItem}>
+              <AppIcon name="clipboard-list" size={12} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.installmentDebt)}</Text>
+            </View>
+            <View style={styles.summaryBreakdownItem}>
+              <AppIcon name="handshake" size={12} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.personalDebt)}</Text>
+            </View>
           </View>
         </View>
       )}
@@ -186,13 +214,13 @@ export function DebtsScreen() {
               accessibilityLabel={`${isExpanded ? 'Colapsar' : 'Expandir'} sección ${config.label}`}
             >
               <View style={styles.sectionHeaderLeft}>
-                <Text style={styles.sectionIcon}>{config.icon}</Text>
+                <AppIcon name={config.icon} size={18} color={config.color} />
                 <Text style={[styles.sectionName, { color: colors.textPrimary }]}>{config.label}</Text>
                 <View style={[styles.countBadge, { backgroundColor: config.color + '20' }]}>
                   <Text style={[styles.countText, { color: config.color }]}>{categoryDebts.length}</Text>
                 </View>
               </View>
-              <Text style={[styles.chevron, { color: colors.textTertiary }]}>{isExpanded ? '▾' : '▸'}</Text>
+              <AppIcon name={isExpanded ? 'chevron-down' : 'chevron-right'} size={16} color={colors.textTertiary} />
             </TouchableOpacity>
 
             {isExpanded && (
@@ -236,9 +264,10 @@ export function DebtsScreen() {
                           >
                             <View style={styles.singleInstCardHeader}>
                               <View style={{ flex: 1 }}>
-                                <Text style={[styles.singleInstCardTitle, { color: colors.textPrimary }]}>
-                                  🧾 Gastos individuales
-                                </Text>
+                                <View style={styles.inlineIconRow}>
+                                  <AppIcon name="receipt-text" size={14} color={colors.textPrimary} />
+                                  <Text style={[styles.singleInstCardTitle, { color: colors.textPrimary }]}>Gastos individuales</Text>
+                                </View>
                                 <Text style={[styles.singleInstCardCount, { color: colors.textTertiary }]}>
                                   {singleInstallmentDebts.length} {singleInstallmentDebts.length === 1 ? 'gasto' : 'gastos'}
                                   {singleInstallmentDebts.filter((d) => d.isProvisioned).length > 0 &&
@@ -249,7 +278,7 @@ export function DebtsScreen() {
                                 <Text style={[styles.singleInstCardAmount, { color: colors.redExpenses }]}>
                                   {formatAmount(singleInstallmentDebts.reduce((sum, d) => sum + (d.totalAmount - d.paidAmount), 0))}
                                 </Text>
-                                <Text style={[styles.singleInstCardChevron, { color: colors.textTertiary }]}>▸</Text>
+                                <AppIcon name="chevron-right" size={16} color={colors.textTertiary} />
                               </View>
                             </View>
                           </TouchableOpacity>
@@ -283,15 +312,59 @@ export function DebtsScreen() {
       {/* Paid off section */}
       {paidDebts.length > 0 && (
         <View style={styles.paidSection}>
-          <Text style={[styles.paidTitle, { color: colors.textSecondary }]}>
-            ✅ Pagadas ({paidDebts.length})
-          </Text>
-          {paidDebts.map((debt) => (
-            <View key={debt.id} style={[styles.paidItem, { borderBottomColor: colors.borderInset }]}>
-              <Text style={[styles.paidName, { color: colors.textTertiary }]}>{debt.name}</Text>
-              <Text style={[styles.paidAmount, { color: colors.textTertiary }]}>{formatAmount(debt.totalAmount)}</Text>
+          <TouchableOpacity
+            style={[neuSurface(scheme, 'flat'), styles.paidHeader]}
+            onPress={() => setShowPaid((value) => !value)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showPaid }}
+            accessibilityLabel={`${showPaid ? 'Ocultar' : 'Mostrar'} ${paidDebts.length} deudas pagadas`}
+          >
+            <View style={styles.paidHeaderLeft}>
+              <View style={[styles.paidHeaderIcon, { backgroundColor: colors.greenEarns + '18' }]}>
+                <AppIcon name="circle-check" size={18} color={colors.greenEarns} />
+              </View>
+              <View style={styles.paidHeaderText}>
+                <Text style={[styles.paidTitle, { color: colors.textPrimary }]}>Pagadas</Text>
+                <Text style={[styles.paidSubtitle, { color: colors.textTertiary }]}>
+                  {paidDebts.length} {paidDebts.length === 1 ? 'deuda cerrada' : 'deudas cerradas'} · {formatAmount(paidTotal)}
+                </Text>
+              </View>
             </View>
-          ))}
+            <AppIcon name={showPaid ? 'chevron-down' : 'chevron-right'} size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+
+          {showPaid && (
+            <View style={styles.paidList}>
+              {paidDebts.map((debt) => {
+                const isReceivable = debt.direction === 'they_owe_me';
+                return (
+                  <TouchableOpacity
+                    key={debt.id}
+                    style={[neuSurface(scheme, 'flat'), styles.paidItem]}
+                    onPress={() => navigation.navigate('DebtDetail', { debtId: debt.id })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${debt.name}, ${isReceivable ? 'cobrada' : 'pagada'}, ${formatAmount(debt.totalAmount)}`}
+                  >
+                    <View style={[styles.paidCheck, { backgroundColor: colors.greenEarns + '14' }]}>
+                      <AppIcon name="check" size={14} color={colors.greenEarns} />
+                    </View>
+                    <View style={styles.paidItemContent}>
+                      <Text numberOfLines={1} style={[styles.paidName, { color: colors.textPrimary }]}>
+                        {debt.name}
+                      </Text>
+                      <Text numberOfLines={1} style={[styles.paidMeta, { color: colors.textTertiary }]}>
+                        {CATEGORY_SINGULAR[debt.category]} · {isReceivable ? 'Cobrada' : 'Pagada'} el {formatDate(debt.updatedAt)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.paidAmount, { color: colors.textSecondary }]}>
+                      {formatAmount(debt.totalAmount)}
+                    </Text>
+                    <AppIcon name="chevron-right" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       )}
     </ScrollView>
@@ -324,7 +397,10 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
             </Text>
             {showProvisioned && debt.isProvisioned && (
               <View style={[styles.provisionedBadge, { backgroundColor: '#2EAD5D20' }]}>
-                <Text style={styles.provisionedBadgeText}>✅ Separado</Text>
+                <View style={styles.inlineIconRow}>
+                  <AppIcon name="circle-check" size={11} color="#2EAD5D" />
+                  <Text style={styles.provisionedBadgeText}>Separado</Text>
+                </View>
               </View>
             )}
           </View>
@@ -366,9 +442,10 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
             {progress.toFixed(0)}% pagado
           </Text>
         )}
-        <Text style={[styles.debtDirection, { color: colors.textTertiary }]}>
-          {isReceivable ? '↙️ Me deben' : '↗️ Yo debo'}
-        </Text>
+        <View style={styles.inlineIconRow}>
+          <AppIcon name={isReceivable ? 'arrow-down-left' : 'arrow-up-right'} size={11} color={colors.textTertiary} />
+          <Text style={[styles.debtDirection, { color: colors.textTertiary }]}>{isReceivable ? 'Me deben' : 'Yo debo'}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -393,7 +470,8 @@ const styles = StyleSheet.create({
   summaryDivider: { width: 1, height: 40 },
   summaryLabel: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 },
   summaryAmount: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  summaryBreakdown: { marginTop: 16, alignItems: 'center' },
+  summaryBreakdown: { marginTop: 16, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14 },
+  summaryBreakdownItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   summaryBreakdownText: { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
 
   // Sections
@@ -407,11 +485,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionIcon: { fontSize: 18 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sectionName: { fontSize: 16, fontWeight: '600' },
   countBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   countText: { fontSize: 12, fontWeight: '600' },
-  chevron: { fontSize: 16 },
   sectionBody: { paddingTop: 8 },
   emptySection: { fontSize: 13, textAlign: 'center', paddingVertical: 16 },
 
@@ -428,7 +506,6 @@ const styles = StyleSheet.create({
   singleInstCardCount: { fontSize: 12, marginTop: 2 },
   singleInstCardRight: { alignItems: 'flex-end', flexDirection: 'row', gap: 8 },
   singleInstCardAmount: { fontSize: 15, fontWeight: '700' },
-  singleInstCardChevron: { fontSize: 14 },
 
   // Debt Card
   debtCard: {
@@ -460,9 +537,25 @@ const styles = StyleSheet.create({
   debtDirection: { fontSize: 11 },
 
   // Paid section
-  paidSection: { marginTop: 24 },
-  paidTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  paidItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1 },
-  paidName: { fontSize: 14, textDecorationLine: 'line-through' },
-  paidAmount: { fontSize: 14 },
+  paidSection: { marginTop: 8, gap: 8 },
+  paidHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  paidHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  paidHeaderIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  paidHeaderText: { flex: 1 },
+  paidTitle: { fontSize: 15, fontWeight: '600' },
+  paidSubtitle: { fontSize: 12, marginTop: 2 },
+  paidList: { paddingTop: 8, gap: 8 },
+  paidItem: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
+  paidCheck: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  paidItemContent: { flex: 1 },
+  paidName: { fontSize: 14, fontWeight: '500' },
+  paidMeta: { fontSize: 11, marginTop: 2 },
+  paidAmount: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
 });

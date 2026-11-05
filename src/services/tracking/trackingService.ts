@@ -96,7 +96,7 @@ export class TrackingService {
         name: input.name,
         description: input.description ?? null,
         color: input.color ?? '#007DC3',
-        icon: input.icon ?? '📋',
+        icon: input.icon ?? 'clipboard-list',
         linked_budget_id: input.linkedBudgetId ?? null,
       })
       .select()

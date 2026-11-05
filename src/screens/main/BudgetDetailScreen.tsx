@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { colors } from '@/theme';
 import { useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset, neuProgress } from '@/lib/neumorphic';
+import { AppIcon } from '@/components/AppIcon';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import {
-  ActivityIndicator,
   Alert,
   StyleSheet,
   Switch,
@@ -142,12 +143,7 @@ export function BudgetDetailScreen() {
   }, [budgetService, budgetId, editLimit, editThreshold, editIncludeInGeneral, loadFullBudget]);
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Cargando detalles...</Text>
-      </View>
-    );
+    return <ScreenSkeleton variant="summary" rows={3} />;
   }
 
   if (!consumption) {
@@ -195,14 +191,18 @@ export function BudgetDetailScreen() {
         </View>
         {consumption.isOverBudget && (
           <View style={styles.alertBanner}>
-            <Text style={styles.alertText}>⚠️ Has excedido tu presupuesto</Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="triangle-exclamation" size={14} color={colors.redExpenses} />
+              <Text style={styles.alertText}>Has excedido tu presupuesto</Text>
+            </View>
           </View>
         )}
         {!consumption.isOverBudget && consumption.isAtThreshold && (
           <View style={[styles.alertBanner, styles.warningBanner]}>
-            <Text style={[styles.alertText, styles.warningText]}>
-              📊 Has alcanzado el umbral de alerta ({alertThreshold}%)
-            </Text>
+            <View style={styles.inlineIconRow}>
+              <AppIcon name="chart-bar" size={14} color={colors.tertiary} />
+              <Text style={[styles.alertText, styles.warningText]}>Has alcanzado el umbral de alerta ({alertThreshold}%)</Text>
+            </View>
           </View>
         )}
       </View>
@@ -423,6 +423,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
+  inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   alertBanner: {
     backgroundColor: '#FDEDEC',
     borderRadius: 8,

@@ -1,11 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuProgress } from '@/lib/neumorphic';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Platform,
@@ -20,6 +19,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useResponsiveLayout, type ResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { SimpleLineChart } from '@/components/SimpleLineChart';
 import { ModernDonutChart } from '@/components/ModernDonutChart';
+import { ScreenSkeleton } from '@/components/Skeleton';
 import { DashboardService } from '@/services/dashboard';
 import type { DashboardData, CategoryDistribution, MonthlyTrend } from '@/types/dashboard';
 import type { BudgetConsumption, Transaction } from '@/types';
@@ -107,22 +107,22 @@ export function DashboardScreen() {
 
   const TOUR_SLIDES: TourSlide[] = [
     {
-      emoji: '📊',
+      icon: 'chart-bar',
       title: 'Tu resumen financiero',
       description: 'El Dashboard muestra un resumen completo de tu situación financiera: saldo total, gastos por categoría y tendencias mensuales.',
     },
     {
-      emoji: '🎯',
+      icon: 'target',
       title: 'Filtros de tiempo',
       description: 'Usa los botones "Este mes", "3 meses" y "6 meses" para ver cómo evolucionaron tus finanzas en diferentes períodos.',
     },
     {
-      emoji: '🍩',
+      icon: 'chart-pie',
       title: 'Distribución de gastos',
       description: 'El gráfico de dona muestra en qué categorías gastas más. Toca cada categoría de la leyenda para resaltarla.',
     },
     {
-      emoji: '📈',
+      icon: 'trending-up',
       title: 'Tendencias y presupuestos',
       description: 'Debajo de los gráficos verás el estado de tus presupuestos activos y tus últimos movimientos registrados.',
     },
@@ -131,13 +131,18 @@ export function DashboardScreen() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<DateRangeOption>('this_month');
+  const hasLoaded = useRef(false);
+  const loadedRange = useRef<DateRangeOption | null>(null);
 
   const loadDashboardData = useCallback(async () => {
-    setLoading(true);
+    const rangeChanged = loadedRange.current !== null && loadedRange.current !== selectedRange;
+    if (!hasLoaded.current || rangeChanged) setLoading(true);
     try {
       const dateRange = getDateRange(selectedRange);
       const dashboardData = await dashboardService.getDashboardData(dateRange);
       setData(dashboardData);
+      loadedRange.current = selectedRange;
+      hasLoaded.current = true;
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -152,12 +157,7 @@ export function DashboardScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundPrimary }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando datos...</Text>
-      </View>
-    );
+    return <ScreenSkeleton variant="dashboard" />;
   }
 
   if (!data) {

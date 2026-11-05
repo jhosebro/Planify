@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { TransferService } from '@/services/transfers/transferService';
 import { AccountService } from '@/services/accounts/accountService';
+import { AppIcon } from '@/components/AppIcon';
 import { useAccountStore } from '@/store/accountStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account } from '@/types';
@@ -290,7 +291,7 @@ export function AddTransferModal() {
         {/* Insufficient Balance Warning */}
         {showInsufficientWarning && (
           <View style={styles.warningContainer}>
-            <Text style={styles.warningIcon}>⚠️</Text>
+            <AppIcon name="triangle-exclamation" size={20} color="#F39C12" style={styles.warningIcon} />
             <View style={styles.warningTextContainer}>
               <Text style={styles.warningTitle}>Saldo Insuficiente</Text>
               <Text style={styles.warningMessage}>
@@ -403,7 +404,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   warningIcon: {
-    fontSize: 20,
     marginRight: 10,
   },
   warningTextContainer: {

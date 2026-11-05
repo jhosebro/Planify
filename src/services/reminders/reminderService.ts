@@ -110,7 +110,7 @@ export class ReminderService {
       } else {
         const { data: newCat, error: catErr } = await supabase
           .from('categories')
-          .insert({ user_id: userId, name: 'Recordatorio', icon: '🔔', color: '#FF9800', is_default: true })
+          .insert({ user_id: userId, name: 'Recordatorio', icon: 'bell', color: '#FF9800', is_default: true })
           .select('id')
           .single();
 

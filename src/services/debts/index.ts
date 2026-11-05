@@ -1,4 +1,4 @@
-export { DebtService } from './debtService';
+export { DebtService, summarizeDebts } from './debtService';
 export type {
   Debt,
   DebtPayment,

@@ -15,6 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ReminderService } from '@/services/reminders';
 import { AccountService } from '@/services/accounts';
 import { BottomModal } from '@/components/BottomModal';
+import { AppIcon } from '@/components/AppIcon';
 import type { Account, Reminder } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -178,7 +179,10 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {/* Overdue reminders */}
       {overdueReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>⚠️ Vencidos</Text>
+          <View style={styles.groupTitleRow}>
+            <AppIcon name="triangle-exclamation" size={14} color={colors.textSecondary} />
+            <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>Vencidos</Text>
+          </View>
           {overdueReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -195,7 +199,10 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {/* Current month reminders */}
       {currentMonthReminders.length > 0 && (
         <View style={styles.groupContainer}>
-          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>📅 Este mes</Text>
+          <View style={styles.groupTitleRow}>
+            <AppIcon name="calendar" size={14} color={colors.textSecondary} />
+            <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>Este mes</Text>
+          </View>
           {currentMonthReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -213,7 +220,10 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
       {upcomingReminders.length > 0 && (
         <View style={styles.groupContainer}>
           <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>📋 Próximos meses</Text>
+          <View style={styles.groupTitleRow}>
+            <AppIcon name="clipboard-list" size={14} color={colors.textSecondary} />
+            <Text style={[styles.groupTitle, { color: colors.textSecondary }]}>Próximos meses</Text>
+          </View>
           {upcomingReminders.map((reminder) => (
             <ReminderItem
               key={reminder.id}
@@ -286,7 +296,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${reminder.description}`}
         >
-          <Text style={styles.deleteReminderBtnText}>🗑️</Text>
+          <AppIcon name="trash" size={14} color="#E74C3C" />
         </TouchableOpacity>
         <TouchableOpacity
           style={[neuSurface(scheme, 'flat'), styles.editButton]}
@@ -294,7 +304,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
           accessibilityRole="button"
           accessibilityLabel={`Editar ${reminder.description}`}
         >
-          <Text style={styles.editButtonText}>✏️</Text>
+          <AppIcon name="pencil" size={14} color={colors.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.paidButton, neuShadow(scheme, 'raised'), isOverdue && styles.overduePaidButton]}
@@ -323,10 +333,10 @@ const styles = StyleSheet.create({
   groupContainer: {
     marginBottom: 16,
   },
+  groupTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   groupTitle: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
   },
   separatorLine: {
     height: 1,
@@ -399,18 +409,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editButtonText: {
-    fontSize: 14,
-  },
   deleteReminderBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deleteReminderBtnText: {
-    fontSize: 14,
   },
   pickerOption: {
     flexDirection: 'row',
