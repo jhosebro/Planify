@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
@@ -105,6 +105,12 @@ function DesktopTabLayout() {
     }
   }, []);
 
+  // El layout de escritorio no usa el navigator para las pestañas: el título va en las opciones de la ruta 'Tabs'
+  const stackNavigation = useNavigation<any>();
+  useEffect(() => {
+    stackNavigation.setOptions({ title: SCREEN_TITLES[currentRoute] });
+  }, [currentRoute, stackNavigation]);
+
   const ActiveScreen = SCREENS[currentRoute];
 
   return (
@@ -114,7 +120,7 @@ function DesktopTabLayout() {
         <View
           style={[
             desktopStyles.header,
-            { backgroundColor: colors.surface, ...neuShadow(scheme, 'flat') },
+            { backgroundColor: colors.backgroundPrimary, borderBottomColor: colors.border },
           ]}
         >
           <Text style={[desktopStyles.headerTitle, { color: colors.textPrimary }]}>{SCREEN_TITLES[currentRoute]}</Text>
@@ -258,17 +264,17 @@ const desktopStyles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
   },
   header: {
-    height: 60,
-    backgroundColor: colors.surface,
+    height: 68,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     justifyContent: 'space-between',
     alignItems: 'center',
     flexDirection: 'row',
     paddingHorizontal: 32,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.secondary,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   screenContainer: {
     flex: 1,

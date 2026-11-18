@@ -101,10 +101,6 @@ export function TrackingScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <View style={styles.headerTitleRow}>
-              <AppIcon name="package" size={20} color={themeColors.textPrimary} />
-              <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Seguimiento</Text>
-            </View>
             <TouchableOpacity
               style={[styles.addButton, { backgroundColor: themeColors.primary }, neuShadow(scheme, 'raised')]}
               onPress={() => navigation.navigate('AddTrackingList')}
@@ -222,7 +218,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
   addButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },

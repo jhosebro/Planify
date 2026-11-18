@@ -187,10 +187,6 @@ export function GoalsScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <View style={styles.headerTitleRow}>
-              <AppIcon name="target" size={20} color={colors.textPrimary} />
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Mis Metas</Text>
-            </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={[neuSurface(scheme, 'flat'), styles.filterToggle, hasActiveFilters && { borderColor: colors.primary, borderWidth: 2 }]}
@@ -434,7 +430,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.backgroundPrimary },
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
