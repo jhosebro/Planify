@@ -4,6 +4,7 @@
 - **Nombre (30 máx.):** Planify: finanzas personales
 - **Categoría:** Finanzas
 - **Política de privacidad:** `https://<tu-sitio-netlify>/privacidad.html`
+- **URL para eliminar la cuenta:** `https://<tu-sitio-netlify>/eliminar-cuenta.html`
 - **Contenido con anuncios:** No
 - **Compras en la app:** No
 
@@ -29,7 +30,7 @@ Planify no se conecta a tu banco ni muestra publicidad. Tus datos son tuyos.
 |---|---|
 | ¿Recoge o comparte datos? | Recoge: sí. Comparte con terceros: no |
 | ¿Cifrado en tránsito? | Sí (HTTPS) |
-| ¿El usuario puede pedir que se borren sus datos? | Sí (ver política) |
+| ¿El usuario puede pedir que se borren sus datos? | Sí: en la app (Ajustes → Eliminar cuenta) y en la URL de eliminación |
 | Información personal | Nombre, correo electrónico — funcionalidad de la app, gestión de cuenta |
 | Información financiera | "Otra información financiera" (saldos, movimientos, deudas introducidos a mano) — funcionalidad de la app |
 | Fotos | Foto de perfil (opcional) — funcionalidad de la app |

@@ -136,6 +136,26 @@ export const authService = {
   },
 
   /**
+   * Elimina la cuenta y todos sus datos (cascada desde auth.users) y cierra la sesión local.
+   */
+  async deleteAccount(): Promise<void> {
+    const userId = useAuthStore.getState().userId;
+    // Avatares primero: tras borrar el usuario ya no hay permiso sobre su carpeta. Best-effort.
+    if (userId) {
+      try {
+        const { data: files } = await supabase.storage.from('avatars').list(userId);
+        if (files?.length) {
+          await supabase.storage.from('avatars').remove(files.map((f) => `${userId}/${f.name}`));
+        }
+      } catch {}
+    }
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) throw new Error(error.message);
+    await supabase.auth.signOut({ scope: 'local' });
+    useAuthStore.getState().clearAuth();
+  },
+
+  /**
    * Refreshes the current session.
    */
   async refreshSession(refreshToken: string): Promise<AuthResult> {
