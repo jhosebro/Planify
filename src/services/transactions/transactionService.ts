@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Transaction, TransactionType } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { adjustAccountBalance } from '@/services/accounts/accountService';
 
 export interface CreateTransactionInput {
   accountId: string;
@@ -48,28 +49,8 @@ export class TransactionService {
 
     if (txnError) throw new Error(txnError.message);
 
-    // Update account balance
     const delta = input.type === 'income' ? input.amount : -input.amount;
-    const { error: balError } = await supabase.rpc('update_account_balance', {
-      p_account_id: input.accountId,
-      p_delta: delta,
-    });
-
-    // Fallback if RPC doesn't exist yet — do it manually
-    if (balError) {
-      const { data: acc } = await supabase
-        .from('accounts')
-        .select('balance')
-        .eq('id', input.accountId)
-        .single();
-
-      if (acc) {
-        await supabase
-          .from('accounts')
-          .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
-          .eq('id', input.accountId);
-      }
-    }
+    await adjustAccountBalance(input.accountId, delta);
 
     return this.mapRow(txn);
   }
@@ -108,10 +89,10 @@ export class TransactionService {
     const newDelta = newType === 'income' ? newAmount : -newAmount;
 
     if (newAccountId !== existing.accountId) {
-      await this.adjustBalance(existing.accountId, -oldDelta);
-      await this.adjustBalance(newAccountId, newDelta);
+      await adjustAccountBalance(existing.accountId, -oldDelta);
+      await adjustAccountBalance(newAccountId, newDelta);
     } else {
-      await this.adjustBalance(existing.accountId, newDelta - oldDelta);
+      await adjustAccountBalance(existing.accountId, newDelta - oldDelta);
     }
 
     return this.mapRow(data);
@@ -137,7 +118,7 @@ export class TransactionService {
 
     // Revert balance: devolver el valor a la cuenta correspondiente
     const delta = existing.type === 'income' ? existing.amount : -existing.amount;
-    await this.adjustBalance(existing.accountId, -delta);
+    await adjustAccountBalance(existing.accountId, -delta);
   }
 
   /** Deletes a full transfer: both transactions and the transfers record, reverting both balances. */
@@ -158,26 +139,29 @@ export class TransactionService {
       .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
 
     // Unlink transactions from the transfer (so FK is clear before deleting transfers row)
-    await supabase
+    const { error: unlinkErr } = await supabase
       .from('transactions')
       .update({ linked_transfer_id: null })
       .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
+    if (unlinkErr) throw new Error(unlinkErr.message);
 
     // Delete the transfers record first (it references the transactions)
-    await supabase.from('transfers').delete().eq('id', transferId);
+    const { error: transferDelErr } = await supabase.from('transfers').delete().eq('id', transferId);
+    if (transferDelErr) throw new Error(transferDelErr.message);
 
     // Delete both transactions
-    await supabase
+    const { error: txnDelErr } = await supabase
       .from('transactions')
       .delete()
       .in('id', [transfer.source_transaction_id, transfer.destination_transaction_id]);
+    if (txnDelErr) throw new Error(txnDelErr.message);
 
     // Revert balances for both accounts
     if (txns) {
       for (const txn of txns) {
         // source was expense (deducted), destination was income (added) — revert both
         const delta = txn.type === 'income' ? -txn.amount : txn.amount;
-        await this.adjustBalance(txn.account_id, delta);
+        await adjustAccountBalance(txn.account_id, delta);
       }
     }
   }
@@ -233,26 +217,5 @@ export class TransactionService {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
-  }
-
-  /**
-   * Ajusta el saldo de una cuenta sumando el delta (en centavos).
-   * Sigue siendo consistente aunque el delta sea 0 (no hace nada).
-   */
-  private async adjustBalance(accountId: string, delta: number): Promise<void> {
-    if (delta === 0) return;
-
-    const { data: acc } = await supabase
-      .from('accounts')
-      .select('balance')
-      .eq('id', accountId)
-      .single();
-
-    if (acc) {
-      await supabase
-        .from('accounts')
-        .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
-        .eq('id', accountId);
-    }
   }
 }

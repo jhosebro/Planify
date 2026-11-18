@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Transfer } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { adjustAccountBalance } from '@/services/accounts/accountService';
 
 export const TRANSFER_CATEGORY_ID = 'system-transfer';
 
@@ -128,19 +129,8 @@ export class TransferService {
       throw new Error(destErr.message);
     }
 
-    // Update source account balance
-    const srcBalance = srcAccResult.data?.balance ?? 0;
-    await supabase
-      .from('accounts')
-      .update({ balance: srcBalance - input.amount, updated_at: new Date().toISOString() })
-      .eq('id', input.sourceAccountId);
-
-    // Update destination account balance
-    const destBalance = destAccResult.data?.balance ?? 0;
-    await supabase
-      .from('accounts')
-      .update({ balance: destBalance + input.amount, updated_at: new Date().toISOString() })
-      .eq('id', input.destinationAccountId);
+    await adjustAccountBalance(input.sourceAccountId, -input.amount);
+    await adjustAccountBalance(input.destinationAccountId, input.amount);
 
     // Create transfer record
     const { data: transferData, error: tErr } = await supabase

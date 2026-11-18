@@ -30,6 +30,24 @@ function formatAmount(centavos: number): string {
   return `$${amount.toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// Mismo formato que AddDebtModal: pesos enteros con '.' como separador de miles
+function formatWithThousands(value: string): string {
+  return value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function pesosToCentavos(display: string): number {
+  return (parseInt(display.replace(/\./g, ''), 10) || 0) * 100;
+}
+
+function centavosToDisplay(centavos: number): string {
+  return formatWithThousands(String(Math.round(centavos / 100)));
+}
+
+function showError(msg: string) {
+  if (Platform.OS === 'web') window.alert(msg);
+  else Alert.alert('Error', msg);
+}
+
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
 }
@@ -98,10 +116,10 @@ export function DebtDetailScreen() {
     if (!debt) return;
     setEditName(debt.name);
     setEditDescription(debt.description ?? '');
-    setEditTotalAmount((debt.totalAmount / 100).toString());
+    setEditTotalAmount(centavosToDisplay(debt.totalAmount));
     setEditCounterparty(debt.counterparty ?? '');
     setEditTotalInstallments(debt.totalInstallments?.toString() ?? '');
-    setEditInstallmentAmount(debt.installmentAmount ? (debt.installmentAmount / 100).toString() : '');
+    setEditInstallmentAmount(debt.installmentAmount ? centavosToDisplay(debt.installmentAmount) : '');
     setEditDirection(debt.direction);
     setEditing(true);
   };
@@ -116,21 +134,24 @@ export function DebtDetailScreen() {
       return;
     }
 
+    const totalAmount = pesosToCentavos(editTotalAmount);
+    if (totalAmount <= 0) {
+      showError('El monto total debe ser mayor a cero');
+      return;
+    }
+
     setEditSaving(true);
     try {
-      const totalAmountNum = parseFloat(editTotalAmount.replace(/,/g, '') || '0');
-      const installments = editTotalInstallments ? parseInt(editTotalInstallments, 10) : undefined;
-      const instAmount = editInstallmentAmount
-        ? Math.round(parseFloat(editInstallmentAmount.replace(/,/g, '')) * 100)
-        : undefined;
+      const installments = parseInt(editTotalInstallments, 10) || null;
+      const instAmount = pesosToCentavos(editInstallmentAmount) || null;
 
       await debtService.update(route.params.debtId, {
         name: editName.trim(),
         description: editDescription.trim() || undefined,
-        totalAmount: Math.round(totalAmountNum * 100),
+        totalAmount,
         counterparty: editCounterparty.trim() || undefined,
-        totalInstallments: installments,
-        installmentAmount: instAmount,
+        // null = el usuario vació el campo; solo aplica a deudas en cuotas
+        ...(debt?.category === 'installment' && { totalInstallments: installments, installmentAmount: instAmount }),
         direction: editDirection,
       });
 
@@ -149,19 +170,14 @@ export function DebtDetailScreen() {
   };
 
   const handleAddPayment = async () => {
-    const amountNum = parseFloat(paymentAmount.replace(/,/g, ''));
-    if (!amountNum || amountNum <= 0) {
-      if (Platform.OS === 'web') {
-        window.alert('Ingresa un monto válido');
-      } else {
-        Alert.alert('Error', 'Ingresa un monto válido');
-      }
+    const amountCentavos = pesosToCentavos(paymentAmount);
+    if (amountCentavos <= 0) {
+      showError('Ingresa un monto válido');
       return;
     }
 
     setSaving(true);
     try {
-      const amountCentavos = Math.round(amountNum * 100);
       await debtService.addPayment(
         route.params.debtId,
         amountCentavos,
@@ -183,12 +199,19 @@ export function DebtDetailScreen() {
     }
   };
 
+  const runAndGoBack = async (action: () => Promise<void>) => {
+    try {
+      await action();
+      navigation.goBack();
+    } catch (error: any) {
+      showError(error?.message ?? 'No se pudo completar la acción');
+    }
+  };
+
   const handleMarkPaidOff = () => {
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('¿Estás seguro de que esta deuda ha sido completamente pagada?');
-      if (confirmed) {
-        debtService.markAsPaidOff(route.params.debtId).then(() => navigation.goBack());
-      }
+      if (confirmed) runAndGoBack(() => debtService.markAsPaidOff(route.params.debtId));
     } else {
       Alert.alert(
         'Marcar como pagada',
@@ -197,10 +220,7 @@ export function DebtDetailScreen() {
           { text: 'Cancelar', style: 'cancel' },
           {
             text: 'Sí, pagada',
-            onPress: async () => {
-              await debtService.markAsPaidOff(route.params.debtId);
-              navigation.goBack();
-            },
+            onPress: () => runAndGoBack(() => debtService.markAsPaidOff(route.params.debtId)),
           },
         ]
       );
@@ -210,9 +230,7 @@ export function DebtDetailScreen() {
   const handleDelete = () => {
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('¿Estás seguro? Esta acción no se puede deshacer.');
-      if (confirmed) {
-        debtService.deleteDebt(route.params.debtId).then(() => navigation.goBack());
-      }
+      if (confirmed) runAndGoBack(() => debtService.deleteDebt(route.params.debtId));
     } else {
       Alert.alert(
         'Eliminar deuda',
@@ -222,10 +240,7 @@ export function DebtDetailScreen() {
           {
             text: 'Eliminar',
             style: 'destructive',
-            onPress: async () => {
-              await debtService.deleteDebt(route.params.debtId);
-              navigation.goBack();
-            },
+            onPress: () => runAndGoBack(() => debtService.deleteDebt(route.params.debtId)),
           },
         ]
       );
@@ -324,10 +339,10 @@ export function DebtDetailScreen() {
           <TextInput
             style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={editTotalAmount}
-            onChangeText={setEditTotalAmount}
-            placeholder="0.00"
+            onChangeText={(t) => setEditTotalAmount(formatWithThousands(t))}
+            placeholder="0"
             placeholderTextColor={colors.textTertiary}
-            keyboardType="decimal-pad"
+            keyboardType="number-pad"
           />
 
           <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Dirección</Text>
@@ -371,10 +386,10 @@ export function DebtDetailScreen() {
               <TextInput
                 style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
                 value={editInstallmentAmount}
-                onChangeText={setEditInstallmentAmount}
-                placeholder="0.00"
+                onChangeText={(t) => setEditInstallmentAmount(formatWithThousands(t))}
+                placeholder="0"
                 placeholderTextColor={colors.textTertiary}
-                keyboardType="decimal-pad"
+                keyboardType="number-pad"
               />
             </>
           )}
@@ -516,10 +531,10 @@ export function DebtDetailScreen() {
           <TextInput
             style={[styles.input, { ...neuInset(scheme), color: colors.textPrimary }]}
             value={paymentAmount}
-            onChangeText={setPaymentAmount}
-            placeholder={debt.installmentAmount ? `Sugerido: ${(debt.installmentAmount / 100).toFixed(2)}` : '0.00'}
+            onChangeText={(t) => setPaymentAmount(formatWithThousands(t))}
+            placeholder={`${debt.installmentAmount ? `Sugerido: ${centavosToDisplay(debt.installmentAmount)} · ` : ''}Máx: ${centavosToDisplay(debt.totalAmount - debt.paidAmount)}`}
             placeholderTextColor={colors.textTertiary}
-            keyboardType="decimal-pad"
+            keyboardType="number-pad"
             autoFocus
           />
           <TextInput

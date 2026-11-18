@@ -14,6 +14,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DebtService, summarizeDebts } from '@/services/debts';
+import { AccountService } from '@/services/accounts/accountService';
 import type { Debt, DebtCategory, DebtSummary } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
@@ -53,6 +54,7 @@ export function DebtsScreen() {
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
   const debtService = useMemo(() => new DebtService(), []);
+  const accountService = useMemo(() => new AccountService(), []);
 
   const { visible: tourVisible, closeTour } = useScreenTour('debts');
 
@@ -80,6 +82,7 @@ export function DebtsScreen() {
   ];
 
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<DebtSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const hasLoaded = useRef(false);
@@ -93,8 +96,13 @@ export function DebtsScreen() {
   const loadDebts = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const allDebts = await debtService.getAll();
+      // getAll incluye archivadas para que tarjetas viejas sigan mostrando su nombre
+      const [allDebts, accounts] = await Promise.all([
+        debtService.getAll(),
+        accountService.getAll().catch(() => []),
+      ]);
       setDebts(allDebts);
+      setAccountNames(Object.fromEntries(accounts.map((a) => [a.id, a.name])));
       setSummary(summarizeDebts(allDebts));
       hasLoaded.current = true;
     } catch (error) {
@@ -102,7 +110,7 @@ export function DebtsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [debtService]);
+  }, [debtService, accountService]);
 
   useFocusEffect(useCallback(() => { loadDebts(); }, [loadDebts]));
 
@@ -143,10 +151,6 @@ export function DebtsScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <View style={styles.headerTitleRow}>
-          <AppIcon name="chart-bar" size={20} color={colors.textPrimary} />
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Mis Deudas</Text>
-        </View>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}
           onPress={() => navigation.navigate('AddDebt')}
@@ -238,21 +242,20 @@ export function DebtsScreen() {
                     const singleInstallmentDebts = debtsGroup.filter((d) => d.totalInstallments === 1);
                     // multiInstallmentDebts = real installment purchases (2+ cuotas)
                     const multiInstallmentDebts = debtsGroup.filter((d) => !!d.totalInstallments && d.totalInstallments > 1);
-                    const cardName = mainDebt?.name || multiInstallmentDebts[0]?.name?.split(' (')[0] || singleInstallmentDebts[0]?.name?.split(' (')[0] || 'Tarjeta';
+                    const cardName = accountNames[accountId] || mainDebt?.name || multiInstallmentDebts[0]?.name?.split(' (')[0] || singleInstallmentDebts[0]?.name?.split(' (')[0] || 'Tarjeta';
 
                     return (
                       <View key={accountId} style={[styles.ccGroup, { borderLeftColor: config.color }]}>
-                        {/* Card header / main debt (the overall card balance) */}
-                        {mainDebt ? (
+                        <Text style={[styles.ccGroupTitle, { color: colors.textPrimary }]}>
+                          {cardName}
+                        </Text>
+                        {/* Main debt (the overall card balance) */}
+                        {mainDebt && (
                           <DebtCard
                             key={mainDebt.id}
                             debt={mainDebt}
                             onPress={() => navigation.navigate('DebtDetail', { debtId: mainDebt.id })}
                           />
-                        ) : (
-                          <Text style={[styles.ccGroupTitle, { color: colors.textPrimary }]}>
-                            {cardName}
-                          </Text>
                         )}
                         {/* Single-installment purchases - show as compact summary card */}
                         {singleInstallmentDebts.length > 0 && (
@@ -458,7 +461,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
   addButton: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
   addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },

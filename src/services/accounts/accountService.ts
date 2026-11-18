@@ -14,6 +14,32 @@ function getUserId(): string {
   return userId;
 }
 
+/** Suma `delta` (en centavos) al saldo de la cuenta. Lanza si no se pudo aplicar. */
+export async function adjustAccountBalance(accountId: string, delta: number): Promise<void> {
+  if (delta === 0) return;
+
+  // Atómico en el servidor (migración 20261117_update_account_balance.sql)
+  const { error: rpcError } = await supabase.rpc('update_account_balance', {
+    p_account_id: accountId,
+    p_delta: delta,
+  });
+  if (!rpcError) return;
+
+  // shortcut: leer-y-escribir no es atómico; desaparece cuando la migración esté aplicada en todos los entornos
+  const { data: acc, error: readError } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', accountId)
+    .single();
+  if (readError || !acc) throw new Error(`No se pudo leer el saldo de la cuenta: ${readError?.message ?? accountId}`);
+
+  const { error: writeError } = await supabase
+    .from('accounts')
+    .update({ balance: acc.balance + delta, updated_at: new Date().toISOString() })
+    .eq('id', accountId);
+  if (writeError) throw new Error(`No se pudo actualizar el saldo: ${writeError.message}`);
+}
+
 export class AccountService {
   async create(input: CreateAccountInput): Promise<Account> {
     const userId = getUserId();

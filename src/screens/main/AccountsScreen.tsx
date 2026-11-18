@@ -248,8 +248,6 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
   };
 
   const handleSubmit = async () => {
-    console.log('[AccountsScreen] handleSubmit called', { name, type, initialBalance });
-
     if (!name.trim()) {
       showAlert('Error', 'El nombre de la cuenta es obligatorio.');
       return;
