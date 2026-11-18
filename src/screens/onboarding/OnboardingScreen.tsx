@@ -3,8 +3,8 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Platform,
   StyleSheet,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -170,7 +170,7 @@ export function OnboardingScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       {/* Skip button */}
       {!isLast && (
@@ -197,6 +197,7 @@ export function OnboardingScreen() {
         getItemLayout={getItemLayout}
         onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
         style={[styles.flatList, { width: slideWidth }]}
         renderItem={({ item }) => (
           <SlideItem
@@ -285,7 +286,13 @@ function SlideItem({
   const colors = useThemeColors();
 
   return (
-    <View style={[styles.slide, { width }]}>
+    // Scroll vertical: con el teclado abierto en Android el formulario no cabe
+    <ScrollView
+      style={{ width }}
+      contentContainerStyle={styles.slide}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.slideInner}>
         <View style={[styles.preview, neuSurface(scheme, 'raised'), { backgroundColor: colors.surface }]}>
           <SlidePreview id={slide.id} displayName={displayName} currency={currency} />
@@ -344,7 +351,7 @@ function SlideItem({
           </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -457,7 +464,7 @@ const styles = StyleSheet.create({
 
   // Slide
   slide: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
