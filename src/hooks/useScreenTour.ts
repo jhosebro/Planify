@@ -40,7 +40,10 @@ export function useScreenTour(screenKey: string) {
   useFocusEffect(
     useCallback(() => {
       registerTour(openTour);
-      return () => unregisterTour();
+      // El blur de la pantalla anterior puede llegar después del focus de la nueva: no borrar el registro ajeno
+      return () => {
+        if (useTourStore.getState().openCurrentTour === openTour) unregisterTour();
+      };
     }, [openTour, registerTour, unregisterTour])
   );
 
