@@ -52,6 +52,21 @@ export default function App() {
     }
   };
 
+  // Web: barras de scroll finas y del color del tema en lugar de las grises del navegador
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const id = 'planify-scrollbars';
+    const el = document.getElementById(id) ?? document.head.appendChild(Object.assign(document.createElement('style'), { id }));
+    const thumb = resolvedTheme === 'dark' ? '#3A424F' : '#B4BECC';
+    el.textContent = `
+      * { scrollbar-width: thin; scrollbar-color: ${thumb} transparent; }
+      @supports not (scrollbar-color: auto) {
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${thumb}; border-radius: 4px; }
+      }`;
+  }, [resolvedTheme]);
+
   useEffect(() => {
     // Load persisted theme preference
     loadPersistedTheme();
