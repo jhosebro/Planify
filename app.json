@@ -33,7 +33,15 @@
           "defaultChannel": "default"
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/android-icon-foreground.png",
+          "imageWidth": 200,
+          "backgroundColor": "#007DC3"
+        }
+      ]
     ]
   }
 }

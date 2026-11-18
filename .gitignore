@@ -49,3 +49,6 @@ yarn-error.*
 # Código nativo generado por expo prebuild / expo run
 /android
 /ios
+
+# Clave de la cuenta de servicio de Google Play (eas submit)
+google-service-account.json
