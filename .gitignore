@@ -52,3 +52,6 @@ yarn-error.*
 
 # Clave de la cuenta de servicio de Google Play (eas submit)
 google-service-account.json
+
+# Detalle de hardening con debilidades abiertas (repo público): solo local
+docs/security/
