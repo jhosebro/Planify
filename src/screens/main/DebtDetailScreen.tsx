@@ -27,7 +27,7 @@ type DetailRouteProp = RouteProp<MainStackParamList, 'DebtDetail'>;
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Mismo formato que AddDebtModal: pesos enteros con '.' como separador de miles

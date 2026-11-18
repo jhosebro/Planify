@@ -46,7 +46,7 @@ function parseFormattedAmount(display: string): number {
 
 function formatAccountBalance(centavos: number): string {
   const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function getDaysInMonth(year: number, month: number): number {

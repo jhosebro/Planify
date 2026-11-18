@@ -30,7 +30,7 @@ import { BottomModal } from '@/components/BottomModal';
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -334,7 +334,7 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
       <View style={styles.generalAmounts}>
         <View style={styles.generalAmountItem}>
           <Text style={styles.generalAmountLabel}>Gastado</Text>
-          <Text style={[styles.generalAmountValue, { color: barColor }]}>
+          <Text style={styles.generalAmountValue}>
             {formatAmount(totalSpent)}
           </Text>
         </View>

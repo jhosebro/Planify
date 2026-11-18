@@ -51,7 +51,7 @@ const MONTHS_SHORT = [
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDate(date: Date): string {
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   sectionHeader: {
     flexDirection: 'row',

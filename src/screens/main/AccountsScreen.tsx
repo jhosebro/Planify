@@ -41,7 +41,7 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, IconName> = {
 
 function formatAmount(centavos: number): string {
   const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function AccountsScreen() {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingTop: 8,
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   accountCard: {
     borderRadius: 12,

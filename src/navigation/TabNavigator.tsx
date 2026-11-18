@@ -164,7 +164,7 @@ function MobileTabLayout() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.quaternary,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
       })}
     >
       {/* ─── Visible tabs (5) ─── */}
