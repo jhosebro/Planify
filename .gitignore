@@ -45,3 +45,7 @@ yarn-error.*
 
 # Kiro
 .kiro/
+
+# Código nativo generado por expo prebuild / expo run
+/android
+/ios
