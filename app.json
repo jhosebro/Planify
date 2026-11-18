@@ -41,6 +41,12 @@
           "backgroundColor": "#007DC3"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c016e165-2ce4-4e1b-883f-a479f48de4e6"
+      }
+    },
+    "owner": "jhosebro"
   }
 }
