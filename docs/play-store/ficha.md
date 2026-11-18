@@ -3,8 +3,8 @@
 ## Datos básicos
 - **Nombre (30 máx.):** Planify: finanzas personales
 - **Categoría:** Finanzas
-- **Política de privacidad:** `https://<tu-sitio-netlify>/privacidad.html`
-- **URL para eliminar la cuenta:** `https://<tu-sitio-netlify>/eliminar-cuenta.html`
+- **Política de privacidad:** `https://planifymobile.netlify.app/privacidad.html`
+- **URL para eliminar la cuenta:** `https://planifymobile.netlify.app/eliminar-cuenta.html`
 - **Contenido con anuncios:** No
 - **Compras en la app:** No
 
