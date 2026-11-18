@@ -27,7 +27,8 @@ export interface TourSlide {
 interface ScreenTourModalProps {
   visible: boolean;
   slides: TourSlide[];
-  onClose: () => void;
+  /** disableAll: el usuario marcó "No volver a mostrar guías" */
+  onClose: (disableAll: boolean) => void;
 }
 
 // ─── ScreenTourModal ──────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
   const { width: windowWidth } = useWindowDimensions();
   const flatListRef = useRef<FlatList<TourSlide>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const isLast = activeIndex === slides.length - 1;
   const isDesktopWeb = Platform.OS === 'web' && windowWidth >= 1024;
@@ -80,7 +82,7 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
     // Reset to first slide for next open
     setActiveIndex(0);
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
-    onClose();
+    onClose(dontShowAgain);
   };
 
   return (
@@ -150,6 +152,26 @@ export function ScreenTourModal({ visible, slides, onClose }: ScreenTourModalPro
               ))}
             </View>
           )}
+
+          <Pressable
+            style={styles.checkRow}
+            onPress={() => setDontShowAgain((v) => !v)}
+            accessibilityRole="checkbox"
+            aria-checked={dontShowAgain}
+          >
+            <View
+              style={[
+                styles.checkBox,
+                { borderColor: dontShowAgain ? colors.primary : colors.border },
+                dontShowAgain && { backgroundColor: colors.primary },
+              ]}
+            >
+              {dontShowAgain && <AppIcon name="check" size={14} color="#fff" strokeWidth={3} />}
+            </View>
+            <Text style={[styles.checkText, { color: colors.textSecondary }]}>
+              No volver a mostrar guías
+            </Text>
+          </Pressable>
 
           {/* Actions */}
           <View style={[styles.actions, { paddingBottom: isDesktopWeb ? 0 : insets.bottom }]}>
@@ -340,6 +362,28 @@ const styles = StyleSheet.create({
   dotActive: {
     width: 22,
     borderRadius: 4,
+  },
+
+  // "No volver a mostrar"
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 6,
+  },
+  checkBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 
   // Actions
