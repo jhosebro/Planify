@@ -26,6 +26,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, Transaction } from '@/types';
+import { formatMoney } from '@/utils/money';
 
 type TransactionsNavProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -49,10 +50,6 @@ const MONTHS_SHORT = [
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
 ];
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function formatDate(date: Date): string {
   const day = date.getDate().toString().padStart(2, '0');
@@ -554,13 +551,13 @@ function TransactionItem({ transaction, accounts, categoryNames, onDelete, onEdi
   const handleLongPress = () => {
     const typeLabel = isTransfer ? 'transferencia' : isExpense ? 'gasto' : 'ingreso';
     if (Platform.OS === 'web') {
-      if (window.confirm(`¿Eliminar este ${typeLabel} de ${formatAmount(transaction.amount)}?`)) {
+      if (window.confirm(`¿Eliminar este ${typeLabel} de ${formatMoney(transaction.amount)}?`)) {
         onDelete(transaction.id);
       }
     } else {
       Alert.alert(
         'Opciones',
-        `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} de ${formatAmount(transaction.amount)}`,
+        `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} de ${formatMoney(transaction.amount)}`,
         [
           ...(!isTransfer ? [{ text: 'Editar', onPress: () => onEdit(transaction.id) }] : []),
           { text: 'Eliminar', style: 'destructive' as const, onPress: () => onDelete(transaction.id) },
@@ -601,7 +598,7 @@ function TransactionItem({ transaction, accounts, categoryNames, onDelete, onEdi
         </Text>
       </View>
       <Text style={[styles.transactionAmount, { color: amountColor }]}>
-        {sign}{formatAmount(transaction.amount)}
+        {sign}{formatMoney(transaction.amount)}
       </Text>
       {Platform.OS === 'web' && (
         <TouchableOpacity
@@ -712,7 +709,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   sectionHeader: {
     flexDirection: 'row',

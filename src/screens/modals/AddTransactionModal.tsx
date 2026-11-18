@@ -23,6 +23,7 @@ import { CyclicDatePicker } from '@/components/CyclicDatePicker';
 import { AppIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, TransactionType } from '@/types';
+import { formatMoney, formatPesos } from '@/utils/money';
 
 type AddTransactionNavProp = NativeStackNavigationProp<MainStackParamList, 'AddTransaction'>;
 
@@ -44,10 +45,6 @@ function parseFormattedAmount(display: string): number {
   return parseInt(display.replace(/\./g, ''), 10) || 0;
 }
 
-function formatAccountBalance(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -302,7 +299,7 @@ export function AddTransactionModal() {
                 {acc.name}
               </Text>
               <Text style={[styles.selectorChipBalance, { color: selectedAccountId === acc.id ? themeColors.textInverse : themeColors.textTertiary }]}>
-                {formatAccountBalance(acc.balance)}
+                {formatMoney(acc.balance)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -355,7 +352,7 @@ export function AddTransactionModal() {
                   <View style={styles.inlineIconRow}>
                     <AppIcon name="lightbulb" size={13} color={themeColors.textTertiary} />
                     <Text style={[styles.installmentHint, { color: themeColors.textTertiary }]}>
-                      Cuota de ~${(parseFormattedAmount(displayAmount) / parseInt(installmentCount || '1', 10)).toLocaleString('es')} cada una
+                      Cuota de ~${formatPesos(parseFormattedAmount(displayAmount) / parseInt(installmentCount || '1', 10))} cada una
                     </Text>
                   </View>
                 )}

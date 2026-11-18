@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Reminder, ReminderFrequency, Transaction } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { adjustAccountBalance } from '@/services/accounts/accountService';
 
 export const REMINDER_CATEGORY_ID = 'system-reminder';
 
@@ -145,19 +146,7 @@ export class ReminderService {
 
     if (txnErr) throw new Error(txnErr.message);
 
-    // Update account balance
-    const { data: acc } = await supabase
-      .from('accounts')
-      .select('balance')
-      .eq('id', accountId)
-      .single();
-
-    if (acc) {
-      await supabase
-        .from('accounts')
-        .update({ balance: acc.balance - reminder.amount, updated_at: new Date().toISOString() })
-        .eq('id', accountId);
-    }
+    await adjustAccountBalance(accountId, -reminder.amount);
 
     // Generate next recurrence if not 'once'
     if (reminder.frequency !== 'once') {

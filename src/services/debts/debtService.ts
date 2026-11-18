@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { formatMoney } from '@/utils/money';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,12 @@ export interface CreateDebtInput {
   linkedAccountId?: string;
   isProvisioned?: boolean;
 }
+
+/** null en cuotas/monto por cuota = borrar el valor */
+export type UpdateDebtInput = Partial<Omit<CreateDebtInput, 'totalInstallments' | 'installmentAmount'>> & {
+  totalInstallments?: number | null;
+  installmentAmount?: number | null;
+};
 
 export interface DebtSummary {
   totalIOwe: number;
@@ -168,8 +175,21 @@ export class DebtService {
 
   async addPayment(debtId: string, amount: number, note?: string): Promise<DebtPayment> {
     const userId = getUserId();
+    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
 
-    // Insert payment
+    const { data: debt, error: readErr } = await supabase
+      .from('debts')
+      .select('paid_amount, total_amount, paid_installments, total_installments, installment_amount, status')
+      .eq('id', debtId)
+      .single();
+    if (readErr || !debt) throw new Error(`No se pudo leer la deuda: ${readErr?.message ?? debtId}`);
+
+    if (debt.status === 'paid_off') throw new Error('Esta deuda ya está pagada');
+    const remaining = debt.total_amount - debt.paid_amount;
+    if (amount > remaining) {
+      throw new Error(`El pago supera el saldo pendiente (${formatMoney(remaining)})`);
+    }
+
     const { data: payment, error: payErr } = await supabase
       .from('debt_payments')
       .insert({
@@ -183,31 +203,22 @@ export class DebtService {
 
     if (payErr) throw new Error(payErr.message);
 
-    // Update debt paid_amount and optionally paid_installments
-    const { data: debt } = await supabase
-      .from('debts')
-      .select('paid_amount, total_amount, paid_installments, total_installments, installment_amount')
-      .eq('id', debtId)
-      .single();
+    const newPaid = debt.paid_amount + amount;
+    const updates: any = {
+      paid_amount: newPaid,
+      updated_at: new Date().toISOString(),
+    };
+    if (debt.total_installments && debt.installment_amount) {
+      updates.paid_installments = (debt.paid_installments ?? 0) + 1;
+    }
+    if (newPaid >= debt.total_amount) updates.status = 'paid_off';
 
-    if (debt) {
-      const newPaid = debt.paid_amount + amount;
-      const updates: any = {
-        paid_amount: newPaid,
-        updated_at: new Date().toISOString(),
-      };
-
-      // If has installments, increment paid_installments
-      if (debt.total_installments && debt.installment_amount) {
-        updates.paid_installments = (debt.paid_installments ?? 0) + 1;
-      }
-
-      // Auto mark as paid_off if fully paid
-      if (newPaid >= debt.total_amount) {
-        updates.status = 'paid_off';
-      }
-
-      await supabase.from('debts').update(updates).eq('id', debtId);
+    // shortcut: pago + actualización no son atómicos (dos pagos simultáneos pueden pisarse); pasar a RPC si hay uso multi-dispositivo
+    const { error: updErr } = await supabase.from('debts').update(updates).eq('id', debtId);
+    if (updErr) {
+      // Revertir el pago para que el historial no quede desfasado de paid_amount
+      await supabase.from('debt_payments').delete().eq('id', payment.id);
+      throw new Error(`No se pudo registrar el pago: ${updErr.message}`);
     }
 
     return {
@@ -242,8 +253,23 @@ export class DebtService {
     return summarizeDebts(await this.getAll());
   }
 
-  async update(id: string, input: Partial<CreateDebtInput>): Promise<Debt> {
+  async update(id: string, input: UpdateDebtInput): Promise<Debt> {
     const updates: any = { updated_at: new Date().toISOString() };
+
+    if (input.totalAmount !== undefined) {
+      if (input.totalAmount <= 0) throw new Error('El monto total debe ser mayor a cero');
+      const { data: current, error: readErr } = await supabase
+        .from('debts')
+        .select('paid_amount, total_amount')
+        .eq('id', id)
+        .single();
+      if (readErr || !current) throw new Error(`No se pudo leer la deuda: ${readErr?.message ?? id}`);
+      // Solo recalcular si cambia el total, para no reactivar deudas marcadas como pagadas a mano
+      if (input.totalAmount !== current.total_amount) {
+        updates.status = current.paid_amount >= input.totalAmount ? 'paid_off' : 'active';
+      }
+    }
+
     if (input.name !== undefined) updates.name = input.name;
     if (input.description !== undefined) updates.description = input.description || null;
     if (input.totalAmount !== undefined) updates.total_amount = input.totalAmount;

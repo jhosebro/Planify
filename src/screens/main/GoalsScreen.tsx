@@ -21,11 +21,8 @@ import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import { AppIcon } from '@/components/AppIcon';
+import { formatMoney } from '@/utils/money';
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -187,10 +184,6 @@ export function GoalsScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.headerRow}>
-            <View style={styles.headerTitleRow}>
-              <AppIcon name="target" size={20} color={colors.textPrimary} />
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Mis Metas</Text>
-            </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={[neuSurface(scheme, 'flat'), styles.filterToggle, hasActiveFilters && { borderColor: colors.primary, borderWidth: 2 }]}
@@ -305,9 +298,9 @@ export function GoalsScreen() {
             <View style={[styles.summaryCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
               <Text style={styles.summaryLabel}>Progreso total</Text>
               <Text style={styles.summaryValue}>
-                {formatAmount(activeGoals.reduce((s, g) => s + g.savedAmount, 0))}
+                {formatMoney(activeGoals.reduce((s, g) => s + g.savedAmount, 0))}
                 {' / '}
-                {formatAmount(activeGoals.reduce((s, g) => s + g.targetAmount, 0))}
+                {formatMoney(activeGoals.reduce((s, g) => s + g.targetAmount, 0))}
               </Text>
               <View style={styles.summaryBarBg}>
                 <View style={[styles.summaryBarFill, {
@@ -346,7 +339,7 @@ export function GoalsScreen() {
                 >
                   <View>
                     <Text style={styles.pausedName}>{g.name}</Text>
-                    <Text style={[styles.pausedProgress, { color: colors.textTertiary }]}>{g.progress.toFixed(0)}% • {formatAmount(g.savedAmount)} / {formatAmount(g.targetAmount)}</Text>
+                    <Text style={[styles.pausedProgress, { color: colors.textTertiary }]}>{g.progress.toFixed(0)}% • {formatMoney(g.savedAmount)} / {formatMoney(g.targetAmount)}</Text>
                   </View>
                   <AppIcon name="chevron-right" size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
@@ -364,7 +357,7 @@ export function GoalsScreen() {
               {completedGoals.map((g) => (
                 <View key={g.id} style={[styles.completedItem, { borderBottomColor: colors.borderInset }]}>
                   <Text style={[styles.completedName, { color: colors.textTertiary }]}>{g.name}</Text>
-                  <Text style={[styles.completedAmount, { color: colors.textTertiary }]}>{formatAmount(g.targetAmount)}</Text>
+                  <Text style={[styles.completedAmount, { color: colors.textTertiary }]}>{formatMoney(g.targetAmount)}</Text>
                 </View>
               ))}
             </View>
@@ -403,7 +396,7 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
 
       <View style={styles.goalFooter}>
         <Text style={[styles.goalAmount, { color: colors.textSecondary }]}>
-          {formatAmount(goal.savedAmount)} / {formatAmount(goal.targetAmount)}
+          {formatMoney(goal.savedAmount)} / {formatMoney(goal.targetAmount)}
         </Text>
         <Text style={[styles.goalDate, { color: colors.textTertiary }]}>
           {daysLeft > 0 ? `${daysLeft} días` : 'Vencida'}
@@ -414,7 +407,7 @@ function GoalCard({ goal, onPress, isDesktop }: { goal: Goal; onPress: () => voi
         <View style={styles.goalMetaItem}>
           <AppIcon name="lightbulb" size={12} color={colors.textSecondary} />
           <Text style={styles.goalInstallment}>
-            Ahorra {formatAmount(goal.suggestedInstallment)} / {goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'quincena' : 'semana'}
+            Ahorra {formatMoney(goal.suggestedInstallment)} / {goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'quincena' : 'semana'}
           </Text>
         </View>
         {goal.type === 'couple' && (
@@ -434,7 +427,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.backgroundPrimary },
   content: { padding: 16, paddingBottom: 32 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inlineIconRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -1,9 +1,12 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 /**
  * Tipos de navegación para React Navigation v7.
  * Define los param lists para cada navigator del árbol de navegación.
  */
 
 export type AuthStackParamList = {
+  Landing: undefined;
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
@@ -47,7 +50,7 @@ export type MainStackParamList = {
 };
 
 export type RootStackParamList = {
-  Auth: undefined;
+  Auth: NavigatorScreenParams<AuthStackParamList> | undefined;
   Onboarding: undefined;
   Main: undefined;
 };

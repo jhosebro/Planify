@@ -19,6 +19,7 @@ import { TransactionService } from '@/services/transactions/transactionService';
 import { useAccountStore } from '@/store/accountStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, AccountType, Transaction } from '@/types';
+import { formatMoney } from '@/utils/money';
 
 type AccountDetailNavProp = NativeStackNavigationProp<MainStackParamList, 'AccountDetail'>;
 type AccountDetailRouteProp = RouteProp<MainStackParamList, 'AccountDetail'>;
@@ -29,10 +30,6 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   credit_card: 'Tarjeta de Crédito',
 };
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function formatDate(date: Date): string {
   const day = date.getDate().toString().padStart(2, '0');
@@ -101,7 +98,7 @@ export function AccountDetailScreen() {
         <Text style={styles.accountName}>{account.name}</Text>
         <Text style={styles.accountType}>{ACCOUNT_TYPE_LABELS[account.type]}</Text>
         <Text style={[styles.accountBalance, account.balance < 0 && styles.negativeBalance]}>
-          {formatAmount(account.balance)}
+          {formatMoney(account.balance)}
         </Text>
         {hasOtherAccounts && (
           <TouchableOpacity
@@ -170,7 +167,7 @@ function TransactionItem({ transaction }: TransactionItemProps) {
         <Text style={styles.transactionDate}>{formatDate(transaction.date)}</Text>
       </View>
       <Text style={[styles.transactionAmount, { color: amountColor }]}>
-        {sign}{formatAmount(transaction.amount)}
+        {sign}{formatMoney(transaction.amount)}
       </Text>
     </View>
   );

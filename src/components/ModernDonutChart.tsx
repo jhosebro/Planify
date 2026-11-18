@@ -3,6 +3,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { FONT_FAMILY } from '@/theme';
+import { formatPesos } from '@/utils/money';
 
 export interface DonutSlice {
   label: string;
@@ -69,7 +70,7 @@ export function ModernDonutChart({ slices, size = 200, thickness = 26 }: ModernD
       });
   }, [slices, total, thickness, r]);
 
-  const formatValue = (v: number) => `$${v.toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
+  const formatValue = formatPesos;
 
   const webHandlers = Platform.OS === 'web' ? { onMouseLeave: () => setActive(null) } : {};
 

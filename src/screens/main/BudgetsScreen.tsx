@@ -25,13 +25,10 @@ import type { BudgetConsumption, Reminder, ReminderFrequency } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
 import { RemindersList } from '@/components/RemindersList';
 import { BottomModal } from '@/components/BottomModal';
+import { formatMoney } from '@/utils/money';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -334,14 +331,14 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
       <View style={styles.generalAmounts}>
         <View style={styles.generalAmountItem}>
           <Text style={styles.generalAmountLabel}>Gastado</Text>
-          <Text style={[styles.generalAmountValue, { color: barColor }]}>
-            {formatAmount(totalSpent)}
+          <Text style={styles.generalAmountValue}>
+            {formatMoney(totalSpent)}
           </Text>
         </View>
         <View style={styles.generalAmountItem}>
           <Text style={styles.generalAmountLabel}>Presupuestado</Text>
           <Text style={styles.generalAmountValue}>
-            {formatAmount(totalLimit)}
+            {formatMoney(totalLimit)}
           </Text>
         </View>
       </View>
@@ -356,7 +353,7 @@ function GeneralBudgetCard({ consumptions, reminders }: GeneralBudgetCardProps) 
       <View style={styles.generalFooter}>
         <Text style={styles.generalPercentage}>{percentage.toFixed(1)}% usado</Text>
         <Text style={styles.generalRemaining}>
-          Disponible: {formatAmount(Math.max(0, totalLimit - totalSpent))}
+          Disponible: {formatMoney(Math.max(0, totalLimit - totalSpent))}
         </Text>
       </View>
     </View>
@@ -405,7 +402,7 @@ function BudgetProgressItem({ consumption, onPress, onAddSpent }: BudgetProgress
       </TouchableOpacity>
       <View style={styles.budgetFooter}>
         <Text style={[styles.budgetAmountText, { color: colors.textSecondary }]}>
-          {formatAmount(consumption.spent)} / {formatAmount(consumption.limit)}
+          {formatMoney(consumption.spent)} / {formatMoney(consumption.limit)}
         </Text>
         <TouchableOpacity
           style={[styles.addSpentButton, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}

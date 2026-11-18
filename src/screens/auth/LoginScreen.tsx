@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { colors } from '@/theme';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface } from '@/lib/neumorphic';
+import { BrandLogo } from '@/components/BrandLogo';
 import { ClayButton, ClayInput } from '@/components/clay';
 import {
   View,
@@ -90,11 +91,17 @@ export function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {!isDesktopWeb && (
-          <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
+          <>
+            <View style={styles.brandLogo}><BrandLogo size={56} /></View>
+            <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
+          </>
         )}
         <View style={[styles.desktopCard, neuSurface(scheme, 'raised')]}>
           {isDesktopWeb && (
-            <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
+            <>
+              <View style={styles.brandLogo}><BrandLogo size={56} /></View>
+              <Text style={[styles.brandText, { color: colors.primary }]}>Planify</Text>
+            </>
           )}
           <Text style={[styles.title, { color: colors.textPrimary }]}>Iniciar Sesión</Text>
 
@@ -192,6 +199,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
   },
+  brandLogo: { alignItems: 'center', marginBottom: 12 },
   brandText: {
     fontSize: 28,
     fontWeight: '700',

@@ -24,6 +24,7 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { AccountService } from '@/services/accounts/accountService';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account, AccountType } from '@/types';
+import { formatMoney } from '@/utils/money';
 
 type AccountsNavProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -39,10 +40,6 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, IconName> = {
   credit_card: 'credit-card',
 };
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export function AccountsScreen() {
   const colors = useThemeColors();
@@ -119,7 +116,7 @@ export function AccountsScreen() {
       ]}>
         <Text style={styles.balanceLabel}>Saldo Total</Text>
         <Text style={[styles.balanceAmount, totalBalance < 0 && styles.negativeAmount]}>
-          {formatAmount(totalBalance)}
+          {formatMoney(totalBalance)}
         </Text>
         <Text style={styles.balanceSubtext}>
           {accounts.length} cuenta{accounts.length !== 1 ? 's' : ''} activa{accounts.length !== 1 ? 's' : ''}
@@ -142,7 +139,7 @@ export function AccountsScreen() {
             style={[neuSurface(scheme, 'raised'), styles.accountCard, isDesktop && { flex: 1 }]}
             onPress={() => handleAccountPress(item.id)}
             accessibilityRole="button"
-            accessibilityLabel={`Cuenta ${item.name}, saldo ${formatAmount(item.balance)}`}
+            accessibilityLabel={`Cuenta ${item.name}, saldo ${formatMoney(item.balance)}`}
           >
             <View style={styles.accountRow}>
               <View style={[styles.accountIcon, { backgroundColor: colors.primary + '15' }]}>
@@ -154,7 +151,7 @@ export function AccountsScreen() {
               </View>
             </View>
             <Text style={[styles.accountBalance, { color: colors.textPrimary }, item.balance < 0 && { color: colors.redExpenses }]}>
-              {formatAmount(item.balance)}
+              {formatMoney(item.balance)}
             </Text>
           </TouchableOpacity>
         )}
@@ -248,8 +245,6 @@ function CreateAccountForm({ accountService, onCreated, onCancel }: CreateAccoun
   };
 
   const handleSubmit = async () => {
-    console.log('[AccountsScreen] handleSubmit called', { name, type, initialBalance });
-
     if (!name.trim()) {
       showAlert('Error', 'El nombre de la cuenta es obligatorio.');
       return;
@@ -392,7 +387,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingTop: 8,
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   accountCard: {
     borderRadius: 12,

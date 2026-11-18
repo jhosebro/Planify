@@ -29,11 +29,8 @@ import { useAuthStore } from '@/store/authStore';
 import { BottomModal } from '@/components/BottomModal';
 import { AppIcon, StoredIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -295,7 +292,7 @@ export function TrackingListDetailScreen() {
                   <>
                     <Text style={styles.listHeaderStatDivider}>•</Text>
                     <Text style={styles.listHeaderStat}>
-                      ~{formatAmount(totalEstimate)}
+                      ~{formatMoney(totalEstimate)}
                     </Text>
                   </>
                 )}
@@ -430,7 +427,7 @@ function PurchaseConfirmModal({
     <BottomModal
       visible={visible}
       title="Registrar compra"
-      subtitle={`${item.name} — ${formatAmount(item.price)}`}
+      subtitle={`${item.name} — ${formatMoney(item.price)}`}
       onClose={onCancel}
     >
       <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
@@ -455,7 +452,7 @@ function PurchaseConfirmModal({
               <View style={styles.modalOptionInfo}>
                 <Text style={[styles.modalOptionName, { color: themeColors.textPrimary }]}>{acc.name}</Text>
                 <Text style={[styles.modalOptionMeta, { color: themeColors.textTertiary }]}>
-                  {formatAmount(acc.balance)}
+                  {formatMoney(acc.balance)}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -562,19 +559,19 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
         <View style={styles.budgetStatItem}>
           <Text style={[styles.budgetStatLabel, { color: themeColors.textTertiary }]}>Gastado</Text>
           <Text style={[styles.budgetStatValue, { color: themeColors.textPrimary }]}>
-            {formatAmount(budgetInfo.spent)}
+            {formatMoney(budgetInfo.spent)}
           </Text>
         </View>
         <View style={styles.budgetStatItem}>
           <Text style={[styles.budgetStatLabel, { color: themeColors.textTertiary }]}>Límite</Text>
           <Text style={[styles.budgetStatValue, { color: themeColors.textPrimary }]}>
-            {formatAmount(budgetInfo.monthlyLimit)}
+            {formatMoney(budgetInfo.monthlyLimit)}
           </Text>
         </View>
         <View style={styles.budgetStatItem}>
           <Text style={[styles.budgetStatLabel, { color: themeColors.textTertiary }]}>Disponible</Text>
           <Text style={[styles.budgetStatValue, { color: remaining >= 0 ? themeColors.greenEarns : themeColors.redExpenses }]}>
-            {formatAmount(Math.max(0, remaining))}
+            {formatMoney(Math.max(0, remaining))}
           </Text>
         </View>
       </View>
@@ -595,12 +592,12 @@ function BudgetInfoCard({ budgetInfo, monthlyEstimate }: { budgetInfo: LinkedBud
               styles.budgetWarningText,
               { color: estimateFits ? themeColors.greenEarns : themeColors.redExpenses },
             ]}>
-              Gasto mensual estimado: {formatAmount(monthlyEstimateRounded)}
+              Gasto mensual estimado: {formatMoney(monthlyEstimateRounded)}
             </Text>
             <Text style={[styles.budgetWarningSubtext, { color: themeColors.textTertiary }]}>
               {estimateFits
                 ? `Cabe en tu presupuesto (${estimateVsLimit.toFixed(0)}% del límite)`
-                : `Excede tu presupuesto por ${formatAmount(monthlyEstimateRounded - budgetInfo.monthlyLimit)}`}
+                : `Excede tu presupuesto por ${formatMoney(monthlyEstimateRounded - budgetInfo.monthlyLimit)}`}
             </Text>
           </View>
         </View>
@@ -662,7 +659,7 @@ function TrackingItemCard({
           </Text>
           <View style={styles.itemMeta}>
             <Text style={[styles.itemPrice, { color: themeColors.primary }]}>
-              {formatAmount(item.price)}
+              {formatMoney(item.price)}
             </Text>
             {item.lastPurchaseDate && (
               <Text style={[styles.itemDate, { color: themeColors.textTertiary }]}>

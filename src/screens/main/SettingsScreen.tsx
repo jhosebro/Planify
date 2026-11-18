@@ -1,38 +1,21 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { colors } from '@/theme';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow } from '@/lib/neumorphic';
-import { useSyncStore } from '@/store/syncStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useThemeStore, type ThemeMode } from '@/store/themeStore';
 import { authService } from '@/services/auth';
 import { ProfileService } from '@/services/profile';
 import type { MainStackParamList } from '@/navigation/types';
-import type { SyncStatus } from '@/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import { AppIcon, type IconName } from '@/components/AppIcon';
 
 type SettingsNavProp = NativeStackNavigationProp<MainStackParamList, 'Tabs'>;
-
-// ─── Sync Status Config ──────────────────────────────────────────────────────
-
-interface SyncStatusConfig {
-  label: string;
-  color: string;
-}
-
-const SYNC_STATUS_MAP: Record<SyncStatus, SyncStatusConfig> = {
-  synced: { label: 'Sincronizado', color: colors.greenEarns },
-  syncing: { label: 'Sincronizando', color: colors.tertiary },
-  pending: { label: 'Pendiente', color: colors.redExpenses },
-  conflict: { label: 'Conflicto', color: '#8E44AD' },
-};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -48,13 +31,11 @@ export function SettingsScreen() {
   const scheme = useIsDarkTheme() ? 'dark' : 'light';
   const layout = useResponsiveLayout();
   const isDesktop = Platform.OS === 'web' && layout.isDesktop;
-  const { status, lastSyncAt, pendingCount } = useSyncStore();
   const { userId, clearAuth } = useAuthStore();
   const { profile, setProfile, setLoading } = useProfileStore();
   const { mode, setMode } = useThemeStore();
 
   const profileService = useMemo(() => new ProfileService(), []);
-  const syncConfig = SYNC_STATUS_MAP[status] ?? SYNC_STATUS_MAP.pending;
 
   const { visible: tourVisible, openTour, closeTour } = useScreenTour('settings');
 
@@ -65,19 +46,14 @@ export function SettingsScreen() {
       description: 'La tarjeta superior muestra tu nombre, correo, moneda y antigüedad. Toca "Editar Perfil" para actualizar tus datos.',
     },
     {
-      icon: 'refresh-cw',
-      title: 'Sincronización',
-      description: 'Revisa el estado de sincronización de tu información. Te indica si hay cambios pendientes por subir a la nube.',
-    },
-    {
       icon: 'palette',
       title: 'Apariencia',
       description: 'Cambia el tema de la aplicación: claro, oscuro o que siga la configuración de tu dispositivo.',
     },
     {
       icon: 'upload',
-      title: 'Exportar y cerrar sesión',
-      description: 'Genera reportes en PDF o CSV, exporta tus datos con un prompt para asesoría con IA, o cierra sesión cuando lo necesites.',
+      title: 'Exportar, cerrar sesión o eliminar cuenta',
+      description: 'Genera reportes en PDF o CSV, exporta tus datos con un prompt para asesoría con IA, cierra sesión, o elimina tu cuenta y todos tus datos de forma permanente.',
     },
   ];
 
@@ -124,6 +100,31 @@ export function SettingsScreen() {
           { text: 'Cerrar sesión', style: 'destructive', onPress: doLogout },
         ]
       );
+    }
+  };
+
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = () => {
+    const doDelete = async () => {
+      setDeleting(true);
+      try {
+        await authService.deleteAccount();
+      } catch (err) {
+        setDeleting(false);
+        const msg = 'No se pudo eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Error', msg);
+        console.error('[Settings] delete account error:', err);
+      }
+    };
+    const msg = 'Se borrarán tu cuenta y TODOS tus datos (cuentas, movimientos, presupuestos, deudas, metas). Esta acción no se puede deshacer.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) doDelete();
+    } else {
+      Alert.alert('Eliminar cuenta', msg, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+      ]);
     }
   };
 
@@ -192,18 +193,6 @@ export function SettingsScreen() {
         >
           <Text style={[styles.editProfileBtnText, { color: themeColors.primary }]}>Editar Perfil</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Sync Status Section */}
-      <View style={[neuSurface(scheme, 'raised'), styles.sectionCard]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Estado de Sincronización</Text>
-        <SyncStatusIndicator
-          status={status}
-          label={syncConfig.label}
-          color={syncConfig.color}
-          lastSyncAt={lastSyncAt}
-          pendingCount={pendingCount}
-        />
       </View>
 
       {/* Theme Section */}
@@ -279,6 +268,17 @@ export function SettingsScreen() {
         >
           <Text style={[styles.logoutButtonText, { color: themeColors.redExpenses }]}>Cerrar Sesión</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteAccountButton}
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+          accessibilityRole="button"
+          accessibilityLabel="Eliminar cuenta"
+        >
+          <Text style={[styles.deleteAccountText, { color: themeColors.textTertiary }]}>
+            {deleting ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
     <ScreenTourModal visible={tourVisible} slides={TOUR_SLIDES} onClose={closeTour} />
@@ -312,45 +312,6 @@ function getInitials(name: string): string {
   if (parts.length === 0 || !parts[0]) return '';
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-// ─── Sync Status Indicator ───────────────────────────────────────────────────
-
-interface SyncStatusIndicatorProps {
-  status: SyncStatus;
-  label: string;
-  color: string;
-  lastSyncAt: Date | null;
-  pendingCount: number;
-}
-
-function SyncStatusIndicator({ status, label, color, lastSyncAt, pendingCount }: SyncStatusIndicatorProps) {
-  const themeColors = useThemeColors();
-
-  return (
-    <View style={styles.syncContainer}>
-      <View style={styles.syncStatusRow}>
-        <View style={[styles.syncDot, { backgroundColor: color }]} />
-        <Text style={[styles.syncLabel, { color }]}>{label}</Text>
-      </View>
-
-      {lastSyncAt && (
-        <Text style={[styles.syncDetail, { color: themeColors.textTertiary }]}>
-          Última sincronización: {formatSyncTime(lastSyncAt)}
-        </Text>
-      )}
-
-      {!lastSyncAt && (
-        <Text style={[styles.syncDetail, { color: themeColors.textTertiary }]}>Sin sincronizar aún</Text>
-      )}
-
-      {pendingCount > 0 && (
-        <Text style={[styles.syncPending, { color: themeColors.redExpenses }]}>
-          {pendingCount} {pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'}
-        </Text>
-      )}
-    </View>
-  );
 }
 
 // ─── Theme Option ────────────────────────────────────────────────────────────
@@ -389,28 +350,6 @@ function ThemeOption({ label, icon, isActive, onPress, themeColors }: ThemeOptio
       </View>
     </TouchableOpacity>
   );
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatSyncTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-  if (diffMinutes < 1) return 'Justo ahora';
-  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `Hace ${diffHours}h`;
-
-  return date.toLocaleDateString('es', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -507,34 +446,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Sync Indicator
-  syncContainer: {
-    gap: 8,
-  },
-  syncStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  syncDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  syncLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  syncDetail: {
-    fontSize: 13,
-    marginLeft: 20,
-  },
-  syncPending: {
-    fontSize: 13,
-    marginLeft: 20,
-    fontWeight: '500',
-  },
-
   // Action Button
   actionButton: {
     paddingVertical: 12,
@@ -577,5 +488,14 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  deleteAccountButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  deleteAccountText: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 });

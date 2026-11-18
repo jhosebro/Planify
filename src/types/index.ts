@@ -125,16 +125,3 @@ export interface Profile {
   updatedAt: Date;
 }
 
-// === Sincronización ===
-
-export type SyncStatus = 'synced' | 'syncing' | 'pending' | 'conflict';
-
-export interface SyncEntry {
-  id: string;
-  entityType: 'transaction' | 'account' | 'budget' | 'reminder';
-  entityId: string;
-  operation: 'create' | 'update' | 'delete';
-  payload: Record<string, unknown>;
-  timestamp: Date;
-  isSynced: boolean;
-}

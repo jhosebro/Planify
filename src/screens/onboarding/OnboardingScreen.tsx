@@ -1,10 +1,10 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Platform,
   StyleSheet,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,55 +17,46 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { useAuthStore } from '@/store/authStore';
 import { ProfileService } from '@/services/profile/profileService';
-import { AppIcon, type IconName } from '@/components/AppIcon';
+import { supabase } from '@/lib/supabase';
+import { AppIcon } from '@/components/AppIcon';
+import { BrandLogo } from '@/components/BrandLogo';
+import { formatPesos } from '@/utils/money';
 import type { Currency } from '@/types';
 
 const SLIDE_WIDTH = 480;
 
 interface Slide {
-  id: string;
-  icon: IconName;
+  id: 'welcome' | 'accounts' | 'transactions' | 'budgets' | 'profile';
   title: string;
   description: string;
-  isProfile?: boolean;
 }
 
 const SLIDES: Slide[] = [
   {
     id: 'welcome',
-    icon: 'sparkles',
-    title: '¡Bienvenido a Planify!',
+    title: 'Tu dinero, claro y en un solo lugar',
     description:
-      'Tu compañero financiero personal. Controla tus ingresos, gastos, presupuestos y metas desde un solo lugar.',
+      'Planify junta tus cuentas, gastos, presupuestos y metas para que sepas cuánto tienes y a dónde se va.',
   },
   {
     id: 'accounts',
-    icon: 'landmark',
-    title: 'Organiza tus cuentas',
-    description:
-      'Registra todas tus cuentas — banco, efectivo y tarjetas de crédito — y ten siempre a la vista tu saldo total actualizado.',
+    title: 'Todas tus cuentas, un solo saldo',
+    description: 'Agrega banco, efectivo y tarjetas. El total se actualiza con cada movimiento.',
   },
   {
     id: 'transactions',
-    icon: 'chart-bar',
-    title: 'Registra tus movimientos',
-    description:
-      'Anota ingresos y gastos por categoría, filtra por fecha o cuenta y visualiza tendencias con gráficas claras.',
+    title: 'Anota lo que entra y lo que sale',
+    description: 'Registra ingresos y gastos por categoría y mira en qué se te va el dinero cada mes.',
   },
   {
     id: 'budgets',
-    icon: 'target',
-    title: 'Presupuestos y metas',
-    description:
-      'Crea presupuestos por categoría con alertas de límite. Establece metas de ahorro y haz seguimiento de tu progreso mes a mes.',
+    title: 'Ponle límite a cada categoría',
+    description: 'Crea presupuestos mensuales y metas de ahorro, y sigue cuánto te queda.',
   },
   {
     id: 'profile',
-    icon: 'sparkles',
-    title: 'Personaliza tu experiencia',
-    description:
-      'Dinos cómo llamarte y cuál es tu moneda principal para adaptar Planify a tu día a día.',
-    isProfile: true,
+    title: '¿Cómo te llamamos?',
+    description: 'Tu nombre y tu moneda principal. Puedes cambiarlos después en Ajustes.',
   },
 ];
 
@@ -124,10 +115,13 @@ export function OnboardingScreen() {
     [slideWidth]
   );
 
+  // El índice se fija aquí además de en onViewableItemsChanged, que no siempre dispara tras scrollToIndex
+  const goTo = (index: number) => {
+    setActiveIndex(index);
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+  };
   const goToNext = () => {
-    if (activeIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
-    }
+    if (activeIndex < SLIDES.length - 1) goTo(activeIndex + 1);
   };
 
   const handleFinish = async () => {
@@ -150,10 +144,33 @@ export function OnboardingScreen() {
     await completeOnboarding();
   };
 
+  // El flag de onboarding vive en el dispositivo: en una instalación nueva, un usuario ya configurado lo salta
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  useEffect(() => {
+    const userId = useAuthStore.getState().userId;
+    Promise.all([
+      new ProfileService().get(),
+      supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    ])
+      .then(([profile, { count }]) => {
+        if (profile.displayName || (count ?? 0) > 0) return completeOnboarding();
+        setCheckingExisting(false);
+      })
+      .catch(() => setCheckingExisting(false));
+  }, [completeOnboarding]);
+
+  if (checkingExisting) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.backgroundPrimary, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       {/* Skip button */}
       {!isLast && (
@@ -180,6 +197,7 @@ export function OnboardingScreen() {
         getItemLayout={getItemLayout}
         onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
         style={[styles.flatList, { width: slideWidth }]}
         renderItem={({ item }) => (
           <SlideItem
@@ -201,9 +219,10 @@ export function OnboardingScreen() {
           {SLIDES.map((_, i) => (
             <TouchableOpacity
               key={i}
-              onPress={() => flatListRef.current?.scrollToIndex({ index: i, animated: true })}
+              onPress={() => goTo(i)}
+              hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel={`Ir al slide ${i + 1}`}
+              accessibilityLabel={`Ir al paso ${i + 1} de ${SLIDES.length}`}
             >
               <View
                 style={[
@@ -227,13 +246,13 @@ export function OnboardingScreen() {
           onPress={isLast ? handleFinish : goToNext}
           disabled={saving}
           accessibilityRole="button"
-          accessibilityLabel={isLast ? 'Comenzar a usar Planify' : 'Siguiente slide'}
+          accessibilityLabel={isLast ? 'Empezar a usar Planify' : 'Siguiente'}
         >
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <View style={styles.actionButtonContent}>
-              <Text style={styles.actionButtonText}>{isLast ? 'Comenzar' : 'Siguiente'}</Text>
+              <Text style={styles.actionButtonText}>{isLast ? 'Empezar' : 'Siguiente'}</Text>
               {!isLast && <AppIcon name="arrow-right" size={18} color="#fff" />}
             </View>
           )}
@@ -267,11 +286,16 @@ function SlideItem({
   const colors = useThemeColors();
 
   return (
-    <View style={[styles.slide, { width }]}>
-      <View style={[styles.slideInner, neuSurface(scheme, 'raised'), { backgroundColor: colors.surface }]}>
-        {/* Emoji illustration */}
-        <View style={[styles.emojiContainer, { backgroundColor: colors.primary + '18' }]}>
-          <AppIcon name={slide.icon} size={44} color={colors.primary} strokeWidth={1.75} />
+    // Scroll vertical: con el teclado abierto en Android el formulario no cabe
+    <ScrollView
+      style={{ width }}
+      contentContainerStyle={styles.slide}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.slideInner}>
+        <View style={[styles.preview, neuSurface(scheme, 'raised'), { backgroundColor: colors.surface }]}>
+          <SlidePreview id={slide.id} displayName={displayName} currency={currency} />
         </View>
 
         <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>{slide.title}</Text>
@@ -279,12 +303,9 @@ function SlideItem({
           {slide.description}
         </Text>
 
-        {/* Profile form — last slide only */}
-        {slide.isProfile && (
+        {slide.id === 'profile' && (
           <View style={styles.profileForm}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              ¿Cómo te llamamos?
-            </Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre o apodo</Text>
             <TextInput
               style={[neuInset(scheme), styles.textInput, { color: colors.textPrimary }]}
               value={displayName}
@@ -330,8 +351,93 @@ function SlideItem({
           </View>
         )}
       </View>
+    </ScrollView>
+  );
+}
+
+// ─── Previews: una muestra de cómo se ve cada función, con datos de ejemplo ───
+
+function Row({ label, amount, color }: { label: string; amount: number; color?: string }) {
+  const colors = useThemeColors();
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.rowAmount, { color: color ?? colors.textPrimary }]}>{formatPesos(amount)}</Text>
     </View>
   );
+}
+
+function Bar({ label, spent, limit }: { label: string; spent: number; limit: number }) {
+  const colors = useThemeColors();
+  const ratio = spent / limit;
+  return (
+    <View style={styles.barBlock}>
+      <View style={styles.row}>
+        <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{label}</Text>
+        <Text style={[styles.barCaption, { color: colors.textTertiary }]}>
+          {formatPesos(spent)} de {formatPesos(limit)}
+        </Text>
+      </View>
+      <View style={[styles.barTrack, { backgroundColor: colors.border }]}>
+        <View
+          style={[
+            styles.barFill,
+            { width: `${Math.round(ratio * 100)}%`, backgroundColor: ratio > 0.85 ? colors.tertiary : colors.primary },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+function SlidePreview({ id, displayName, currency }: { id: Slide['id']; displayName: string; currency: Currency }) {
+  const colors = useThemeColors();
+  switch (id) {
+    case 'welcome':
+      return (
+        <View style={styles.welcome}>
+          <BrandLogo size={64} />
+          <Text style={[styles.wordmark, { color: colors.textPrimary }]}>Planify</Text>
+        </View>
+      );
+    case 'accounts':
+      return (
+        <View>
+          <Row label="Banco" amount={2450000} />
+          <Row label="Efectivo" amount={180000} />
+          <Row label="Tarjeta de crédito" amount={-320000} color={colors.redExpenses} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <Row label="Saldo total" amount={2310000} color={colors.primary} />
+        </View>
+      );
+    case 'transactions':
+      return (
+        <View>
+          <Row label="Salario" amount={3200000} color={colors.greenEarns} />
+          <Row label="Mercado" amount={-185400} color={colors.redExpenses} />
+          <Row label="Transporte" amount={-42000} color={colors.redExpenses} />
+          <Row label="Restaurante" amount={-68000} color={colors.redExpenses} />
+        </View>
+      );
+    case 'budgets':
+      return (
+        <View>
+          <Bar label="Comida" spent={340000} limit={500000} />
+          <Bar label="Ocio" spent={184000} limit={200000} />
+        </View>
+      );
+    case 'profile':
+      return (
+        <View>
+          <Text style={[styles.greeting, { color: colors.textPrimary }]} numberOfLines={1}>
+            Hola, {displayName.trim() || 'tú'}
+          </Text>
+          <Text style={[styles.barCaption, { color: colors.textTertiary }]}>
+            Verás tus montos en {currency}
+          </Text>
+        </View>
+      );
+  }
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -358,39 +464,48 @@ const styles = StyleSheet.create({
 
   // Slide
   slide: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 80,
+    paddingHorizontal: 28,
+    paddingTop: 72,
+    paddingBottom: 24,
   },
   slideInner: {
     width: '100%',
     maxWidth: 440,
-    padding: 28,
-    alignItems: 'center',
   },
-  emojiContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
+  preview: {
+    padding: 20,
+    marginBottom: 36,
+    minHeight: 168,
     justifyContent: 'center',
-    marginBottom: 28,
   },
 
   slideTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 14,
-    lineHeight: 32,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 12,
+    lineHeight: 34,
+    letterSpacing: -0.4,
   },
   slideDescription: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 24,
   },
+
+  // Previews
+  welcome: { alignItems: 'center', gap: 12 },
+  wordmark: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 6 },
+  rowLabel: { fontSize: 14 },
+  rowAmount: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
+  barBlock: { paddingVertical: 6 },
+  barCaption: { fontSize: 12, fontVariant: ['tabular-nums'] },
+  barTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 4 },
+  barFill: { height: '100%', borderRadius: 4 },
+  greeting: { fontSize: 24, fontWeight: '800', marginBottom: 4 },
 
   // Profile form
   profileForm: {

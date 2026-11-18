@@ -19,14 +19,11 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DebtService } from '@/services/debts';
 import type { Debt } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
 type NavProp = NativeStackNavigationProp<MainStackParamList>;
 type RoutePropType = RouteProp<MainStackParamList, 'SingleInstallmentDebts'>;
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 export function SingleInstallmentDebtsScreen() {
   const colors = useThemeColors();
@@ -112,21 +109,21 @@ export function SingleInstallmentDebtsScreen() {
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Total pendiente</Text>
             <Text style={[styles.summaryValue, { color: colors.redExpenses }]}>
-              {formatAmount(totalAmount)}
+              {formatMoney(totalAmount)}
             </Text>
           </View>
           <View style={[styles.summaryDivider, { backgroundColor: colors.borderInset }]} />
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Sin separar</Text>
             <Text style={[styles.summaryValue, { color: colors.redExpenses }]}>
-              {formatAmount(unprovisionedAmount)}
+              {formatMoney(unprovisionedAmount)}
             </Text>
           </View>
           <View style={[styles.summaryDivider, { backgroundColor: colors.borderInset }]} />
           <View style={styles.summaryCol}>
             <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Ya separado</Text>
             <Text style={[styles.summaryValue, { color: '#2EAD5D' }]}>
-              {formatAmount(provisionedAmount)}
+              {formatMoney(provisionedAmount)}
             </Text>
           </View>
         </View>
@@ -171,7 +168,7 @@ export function SingleInstallmentDebtsScreen() {
                   )}
                 </View>
                 <Text style={[styles.debtAmount, { color: debt.isProvisioned ? '#2EAD5D' : colors.redExpenses }]}>
-                  {formatAmount(remaining)}
+                  {formatMoney(remaining)}
                 </Text>
               </TouchableOpacity>
 

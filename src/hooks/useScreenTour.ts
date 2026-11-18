@@ -4,6 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTourStore } from '@/store/tourStore';
 
 const PREFIX = 'planify_tour_seen_';
+/** Apaga la apertura automática de todas las guías; el botón ? sigue funcionando. */
+const ALL_DISABLED_KEY = 'planify_tours_disabled';
 
 /**
  * Manages the "have I seen this screen's tour?" state.
@@ -20,15 +22,16 @@ export function useScreenTour(screenKey: string) {
 
   const openTour = useCallback(() => setVisible(true), []);
 
-  const closeTour = useCallback(() => {
+  const closeTour = useCallback((disableAll = false) => {
     setVisible(false);
     AsyncStorage.setItem(storageKey, 'true').catch(() => {});
+    if (disableAll) AsyncStorage.setItem(ALL_DISABLED_KEY, 'true').catch(() => {});
   }, [storageKey]);
 
   // Auto-open on first visit
   useEffect(() => {
-    AsyncStorage.getItem(storageKey).then((value) => {
-      if (value !== 'true') setVisible(true);
+    Promise.all([AsyncStorage.getItem(storageKey), AsyncStorage.getItem(ALL_DISABLED_KEY)]).then(([seen, allDisabled]) => {
+      if (seen !== 'true' && allDisabled !== 'true') setVisible(true);
     }).catch(() => {});
   }, [storageKey]);
 
@@ -37,7 +40,10 @@ export function useScreenTour(screenKey: string) {
   useFocusEffect(
     useCallback(() => {
       registerTour(openTour);
-      return () => unregisterTour();
+      // El blur de la pantalla anterior puede llegar después del focus de la nueva: no borrar el registro ajeno
+      return () => {
+        if (useTourStore.getState().openCurrentTour === openTour) unregisterTour();
+      };
     }, [openTour, registerTour, unregisterTour])
   );
 

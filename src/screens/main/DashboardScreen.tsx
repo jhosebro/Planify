@@ -23,6 +23,7 @@ import { ScreenSkeleton } from '@/components/Skeleton';
 import { DashboardService } from '@/services/dashboard';
 import type { DashboardData, CategoryDistribution, MonthlyTrend } from '@/types/dashboard';
 import type { BudgetConsumption, Transaction } from '@/types';
+import { formatMoney } from '@/utils/money';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -50,10 +51,6 @@ const CATEGORY_COLORS = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function getDateRange(option: DateRangeOption): DateRange {
   const now = new Date();
@@ -285,7 +282,7 @@ function TotalBalanceCard({ balance }: TotalBalanceCardProps) {
     <View style={[styles.balanceCard, { backgroundColor: colors.primary }, neuShadow(scheme, 'raised')]}>
       <Text style={styles.balanceLabel}>Saldo Total</Text>
       <Text style={[styles.balanceAmount, { color: '#FFFFFF' }, balance < 0 && styles.negativeAmount]}>
-        {formatAmount(balance)}
+        {formatMoney(balance)}
       </Text>
     </View>
   );
@@ -343,7 +340,7 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
             <View style={[styles.donutLegendDot, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]} />
             <Text style={[styles.donutLegendLabel, { color: colors.textSecondary }]}>{item.categoryName}</Text>
             <Text style={[styles.donutLegendValue, { color: colors.textPrimary }]}>
-              {formatAmount(item.amount)} · {item.percentage.toFixed(1)}%
+              {formatMoney(item.amount)} · {item.percentage.toFixed(1)}%
             </Text>
           </TouchableOpacity>
         ))}
@@ -352,7 +349,7 @@ function CategoryDistributionChart({ distribution, layout }: CategoryDistributio
       {highlighted && (
         <View style={[styles.donutHighlight, { backgroundColor: colors.primary + '12' }]}>
           <Text style={[styles.donutHighlightText, { color: colors.primary }]}>
-            {highlighted.categoryName}: {formatAmount(highlighted.amount)}
+            {highlighted.categoryName}: {formatMoney(highlighted.amount)}
           </Text>
         </View>
       )}
@@ -522,7 +519,7 @@ function BudgetProgressBar({ budget }: BudgetProgressBarProps) {
       <View style={styles.budgetHeader}>
         <Text style={[styles.budgetCategory, { color: colors.textPrimary }]}>{(budget as any).categoryName ?? budget.categoryId}</Text>
         <Text style={[styles.budgetAmount, { color: colors.textSecondary }]}>
-          {formatAmount(budget.spent)} / {formatAmount(budget.limit)}
+          {formatMoney(budget.spent)} / {formatMoney(budget.limit)}
         </Text>
       </View>
       <View style={[neuProgress(scheme), styles.progressBarBackground]}>
@@ -593,7 +590,7 @@ function TransactionRow({ transaction }: TransactionRowProps) {
         <Text style={[styles.transactionDate, { color: colors.textTertiary }]}>{formatDate(transaction.date)}</Text>
       </View>
       <Text style={[styles.transactionAmount, { color }]}>
-        {sign}{formatAmount(transaction.amount)}
+        {sign}{formatMoney(transaction.amount)}
       </Text>
     </View>
   );

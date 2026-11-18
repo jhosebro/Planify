@@ -41,7 +41,7 @@ function computeLayout(width: number, height: number): ResponsiveLayout {
   let contentPadding: number;
 
   if (isWideDesktop) {
-    contentMaxWidth = 1200;
+    contentMaxWidth = 1080;
     gridColumns = 3;
     contentPadding = 32;
   } else if (isDesktop) {

@@ -20,13 +20,10 @@ import type { RouteProp } from '@react-navigation/native';
 import { BudgetService } from '@/services/budgets';
 import type { BudgetConsumption } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -186,8 +183,8 @@ export function BudgetDetailScreen() {
           />
         </View>
         <View style={styles.amountsRow}>
-          <Text style={styles.spentText}>Gastado: {formatAmount(consumption.spent)}</Text>
-          <Text style={styles.limitText}>Límite: {formatAmount(consumption.limit)}</Text>
+          <Text style={styles.spentText}>Gastado: {formatMoney(consumption.spent)}</Text>
+          <Text style={styles.limitText}>Límite: {formatMoney(consumption.limit)}</Text>
         </View>
         {consumption.isOverBudget && (
           <View style={styles.alertBanner}>
@@ -290,7 +287,7 @@ export function BudgetDetailScreen() {
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Límite mensual</Text>
-              <Text style={styles.detailValue}>{formatAmount(consumption.limit)}</Text>
+              <Text style={styles.detailValue}>{formatMoney(consumption.limit)}</Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Umbral de alerta</Text>
@@ -299,7 +296,7 @@ export function BudgetDetailScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Gasto actual</Text>
               <Text style={[styles.detailValue, { color: barColor }]}>
-                {formatAmount(consumption.spent)}
+                {formatMoney(consumption.spent)}
               </Text>
             </View>
             <View style={styles.detailRow}>
