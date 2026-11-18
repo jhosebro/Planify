@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,6 +17,7 @@ import { useThemeColors, useIsDarkTheme } from '@/hooks/useThemeColors';
 import { neuSurface, neuShadow, neuInset } from '@/lib/neumorphic';
 import { useAuthStore } from '@/store/authStore';
 import { ProfileService } from '@/services/profile/profileService';
+import { supabase } from '@/lib/supabase';
 import { AppIcon, type IconName } from '@/components/AppIcon';
 import type { Currency } from '@/types';
 
@@ -149,6 +150,29 @@ export function OnboardingScreen() {
   const handleSkip = async () => {
     await completeOnboarding();
   };
+
+  // El flag de onboarding vive en el dispositivo: en una instalación nueva, un usuario ya configurado lo salta
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  useEffect(() => {
+    const userId = useAuthStore.getState().userId;
+    Promise.all([
+      new ProfileService().get(),
+      supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    ])
+      .then(([profile, { count }]) => {
+        if (profile.displayName || (count ?? 0) > 0) return completeOnboarding();
+        setCheckingExisting(false);
+      })
+      .catch(() => setCheckingExisting(false));
+  }, [completeOnboarding]);
+
+  if (checkingExisting) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.backgroundPrimary, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
