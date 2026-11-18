@@ -21,13 +21,10 @@ import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import { AppIcon, type IconName } from '@/components/AppIcon';
 import { ScreenSkeleton } from '@/components/Skeleton';
+import { formatMoney } from '@/utils/money';
 
 type DebtsNavProp = NativeStackNavigationProp<MainStackParamList>;
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -167,26 +164,26 @@ export function DebtsScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryCol}>
               <Text style={styles.summaryLabel}>Yo debo</Text>
-              <Text style={styles.summaryAmount}>{formatAmount(summary.totalIOwe)}</Text>
+              <Text style={styles.summaryAmount}>{formatMoney(summary.totalIOwe)}</Text>
             </View>
             <View style={[styles.summaryDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
             <View style={styles.summaryCol}>
               <Text style={styles.summaryLabel}>Me deben</Text>
-              <Text style={[styles.summaryAmount, { color: '#A8F0C0' }]}>{formatAmount(summary.totalTheyOweMe)}</Text>
+              <Text style={[styles.summaryAmount, { color: '#A8F0C0' }]}>{formatMoney(summary.totalTheyOweMe)}</Text>
             </View>
           </View>
           <View style={styles.summaryBreakdown}>
             <View style={styles.summaryBreakdownItem}>
               <AppIcon name="credit-card" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.creditCardDebt)}</Text>
+              <Text style={styles.summaryBreakdownText}>{formatMoney(summary.creditCardDebt)}</Text>
             </View>
             <View style={styles.summaryBreakdownItem}>
               <AppIcon name="clipboard-list" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.installmentDebt)}</Text>
+              <Text style={styles.summaryBreakdownText}>{formatMoney(summary.installmentDebt)}</Text>
             </View>
             <View style={styles.summaryBreakdownItem}>
               <AppIcon name="handshake" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryBreakdownText}>{formatAmount(summary.personalDebt)}</Text>
+              <Text style={styles.summaryBreakdownText}>{formatMoney(summary.personalDebt)}</Text>
             </View>
           </View>
         </View>
@@ -279,7 +276,7 @@ export function DebtsScreen() {
                               </View>
                               <View style={styles.singleInstCardRight}>
                                 <Text style={[styles.singleInstCardAmount, { color: colors.redExpenses }]}>
-                                  {formatAmount(singleInstallmentDebts.reduce((sum, d) => sum + (d.totalAmount - d.paidAmount), 0))}
+                                  {formatMoney(singleInstallmentDebts.reduce((sum, d) => sum + (d.totalAmount - d.paidAmount), 0))}
                                 </Text>
                                 <AppIcon name="chevron-right" size={16} color={colors.textTertiary} />
                               </View>
@@ -329,7 +326,7 @@ export function DebtsScreen() {
               <View style={styles.paidHeaderText}>
                 <Text style={[styles.paidTitle, { color: colors.textPrimary }]}>Pagadas</Text>
                 <Text style={[styles.paidSubtitle, { color: colors.textTertiary }]}>
-                  {paidDebts.length} {paidDebts.length === 1 ? 'deuda cerrada' : 'deudas cerradas'} · {formatAmount(paidTotal)}
+                  {paidDebts.length} {paidDebts.length === 1 ? 'deuda cerrada' : 'deudas cerradas'} · {formatMoney(paidTotal)}
                 </Text>
               </View>
             </View>
@@ -346,7 +343,7 @@ export function DebtsScreen() {
                     style={[neuSurface(scheme, 'flat'), styles.paidItem]}
                     onPress={() => navigation.navigate('DebtDetail', { debtId: debt.id })}
                     accessibilityRole="button"
-                    accessibilityLabel={`${debt.name}, ${isReceivable ? 'cobrada' : 'pagada'}, ${formatAmount(debt.totalAmount)}`}
+                    accessibilityLabel={`${debt.name}, ${isReceivable ? 'cobrada' : 'pagada'}, ${formatMoney(debt.totalAmount)}`}
                   >
                     <View style={[styles.paidCheck, { backgroundColor: colors.greenEarns + '14' }]}>
                       <AppIcon name="check" size={14} color={colors.greenEarns} />
@@ -360,7 +357,7 @@ export function DebtsScreen() {
                       </Text>
                     </View>
                     <Text style={[styles.paidAmount, { color: colors.textSecondary }]}>
-                      {formatAmount(debt.totalAmount)}
+                      {formatMoney(debt.totalAmount)}
                     </Text>
                     <AppIcon name="chevron-right" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
@@ -390,7 +387,7 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
       style={[neuSurface(scheme, 'raised'), styles.debtCard, debt.isProvisioned && styles.debtCardProvisioned]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Deuda ${debt.name}, pendiente ${formatAmount(remaining)}`}
+      accessibilityLabel={`Deuda ${debt.name}, pendiente ${formatMoney(remaining)}`}
     >
       <View style={styles.debtCardHeader}>
         <View style={{ flex: 1 }}>
@@ -415,10 +412,10 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
         </View>
         <View style={styles.debtAmountCol}>
           <Text style={[styles.debtRemaining, { color: isReceivable ? colors.greenEarns : colors.redExpenses }]}>
-            {isReceivable ? '+' : '-'}{formatAmount(remaining)}
+            {isReceivable ? '+' : '-'}{formatMoney(remaining)}
           </Text>
           <Text style={[styles.debtTotal, { color: colors.textTertiary }]}>
-            de {formatAmount(debt.totalAmount)}
+            de {formatMoney(debt.totalAmount)}
           </Text>
         </View>
       </View>
@@ -438,7 +435,7 @@ function DebtCard({ debt, onPress, showProvisioned }: { debt: Debt; onPress: () 
         {debt.totalInstallments ? (
           <Text style={[styles.debtMeta, { color: colors.textSecondary }]}>
             Cuota {debt.paidInstallments ?? 0}/{debt.totalInstallments}
-            {debt.installmentAmount ? ` • ${formatAmount(debt.installmentAmount)}/cuota` : ''}
+            {debt.installmentAmount ? ` • ${formatMoney(debt.installmentAmount)}/cuota` : ''}
           </Text>
         ) : (
           <Text style={[styles.debtMeta, { color: colors.textSecondary }]}>

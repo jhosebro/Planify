@@ -13,6 +13,7 @@ import Svg, {
 } from 'react-native-svg';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { FONT_FAMILY } from '@/theme';
+import { formatPesos } from '@/utils/money';
 
 interface Dataset {
   data: number[];
@@ -82,7 +83,7 @@ export function SimpleLineChart({
   };
 
   const formatTooltip = (value: number): string => {
-    return `$${value.toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
+    return formatPesos(value);
   };
 
   const buildSmoothPath = (points: Point[]): string => {

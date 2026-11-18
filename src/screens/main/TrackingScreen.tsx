@@ -20,11 +20,8 @@ import type { MainStackParamList } from '@/navigation/types';
 import { ScreenTourModal, type TourSlide } from '@/components/ScreenTourModal';
 import { useScreenTour } from '@/hooks/useScreenTour';
 import { AppIcon, StoredIcon } from '@/components/AppIcon';
+import { formatMoney } from '@/utils/money';
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 export function TrackingScreen() {
   const themeColors = useThemeColors();

@@ -18,13 +18,10 @@ import { BottomModal } from '@/components/BottomModal';
 import { AppIcon } from '@/components/AppIcon';
 import type { Account, Reminder } from '@/types';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function formatDate(date: Date): string {
   const day = date.getDate().toString().padStart(2, '0');
@@ -242,7 +239,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
         <BottomModal
           visible={!!payingReminder}
           title="Seleccionar cuenta"
-          subtitle={`Se registrará un gasto de ${formatAmount(payingReminder.amount)} por "${payingReminder.description}"`}
+          subtitle={`Se registrará un gasto de ${formatMoney(payingReminder.amount)} por "${payingReminder.description}"`}
           onClose={() => setPayingReminder(null)}
         >
           {availableAccounts.map((account) => (
@@ -253,7 +250,7 @@ export function RemindersList({ reminders, onRefresh }: RemindersListProps) {
               disabled={paying}
             >
               <Text style={[styles.pickerOptionName, { color: colors.textPrimary }]}>{account.name}</Text>
-              <Text style={[styles.pickerOptionBalance, { color: colors.textSecondary }]}>{formatAmount(account.balance)}</Text>
+              <Text style={[styles.pickerOptionBalance, { color: colors.textSecondary }]}>{formatMoney(account.balance)}</Text>
             </TouchableOpacity>
           ))}
         </BottomModal>
@@ -282,7 +279,7 @@ function ReminderItem({ reminder, isOverdue, onMarkAsPaid, onEdit, onDelete }: R
       <TouchableOpacity style={styles.reminderInfo} onPress={onEdit} accessibilityLabel={`Editar ${reminder.description}`}>
         <Text style={[styles.reminderDescription, { color: colors.textPrimary }]}>{reminder.description}</Text>
         <View style={styles.reminderDetails}>
-          <Text style={[styles.reminderAmount, { color: colors.primary }]}>{formatAmount(reminder.amount)}</Text>
+          <Text style={[styles.reminderAmount, { color: colors.primary }]}>{formatMoney(reminder.amount)}</Text>
           <Text style={[styles.reminderDot, { color: colors.textTertiary }]}>•</Text>
           <Text style={[styles.reminderDate, { color: colors.textSecondary }]}>{formatDate(reminder.dueDate)}</Text>
           <Text style={[styles.reminderDot, { color: colors.textTertiary }]}>•</Text>

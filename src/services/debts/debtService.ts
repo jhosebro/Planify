@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { formatMoney } from '@/utils/money';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -186,7 +187,7 @@ export class DebtService {
     if (debt.status === 'paid_off') throw new Error('Esta deuda ya está pagada');
     const remaining = debt.total_amount - debt.paid_amount;
     if (amount > remaining) {
-      throw new Error(`El pago supera el saldo pendiente ($${(remaining / 100).toLocaleString('es')})`);
+      throw new Error(`El pago supera el saldo pendiente (${formatMoney(remaining)})`);
     }
 
     const { data: payment, error: payErr } = await supabase

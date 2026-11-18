@@ -22,14 +22,11 @@ import { AppIcon } from '@/components/AppIcon';
 import { useAccountStore } from '@/store/accountStore';
 import type { MainStackParamList } from '@/navigation/types';
 import type { Account } from '@/types';
+import { formatMoney } from '@/utils/money';
 
 type AddTransferNavProp = NativeStackNavigationProp<MainStackParamList, 'AddTransfer'>;
 type AddTransferRouteProp = RouteProp<MainStackParamList, 'AddTransfer'>;
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export function AddTransferModal() {
   const navigation = useNavigation<AddTransferNavProp>();
@@ -214,7 +211,7 @@ export function AddTransferModal() {
                   sourceAccountId === acc.id && { color: themeColors.textInverse },
                 ]}
               >
-                {formatAmount(acc.balance)}
+                {formatMoney(acc.balance)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -258,7 +255,7 @@ export function AddTransferModal() {
                   destinationAccountId === acc.id && { color: themeColors.textInverse },
                 ]}
               >
-                {formatAmount(acc.balance)}
+                {formatMoney(acc.balance)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -295,7 +292,7 @@ export function AddTransferModal() {
             <View style={styles.warningTextContainer}>
               <Text style={styles.warningTitle}>Saldo Insuficiente</Text>
               <Text style={styles.warningMessage}>
-                {sourceAccount?.name} tiene {formatAmount(sourceAccount?.balance ?? 0)}, menor al monto de la transferencia.
+                {sourceAccount?.name} tiene {formatMoney(sourceAccount?.balance ?? 0)}, menor al monto de la transferencia.
               </Text>
             </View>
           </View>
@@ -315,7 +312,7 @@ export function AddTransferModal() {
             </View>
             <View style={[styles.summaryRow, styles.summaryAmountRow]}>
               <Text style={styles.summaryLabel}>Monto:</Text>
-              <Text style={styles.summaryAmount}>{formatAmount(amountCentavosPreview)}</Text>
+              <Text style={styles.summaryAmount}>{formatMoney(amountCentavosPreview)}</Text>
             </View>
           </View>
         )}

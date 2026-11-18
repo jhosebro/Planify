@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { formatMoney } from '@/utils/money';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ function getUserId(): string {
 }
 
 function formatCentavos(centavos: number): string {
-  return `$${(centavos / 100).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatMoney(centavos);
 }
 
 function formatDate(isoDate: string): string {

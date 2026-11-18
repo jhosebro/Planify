@@ -22,6 +22,7 @@ import type { MainStackParamList } from '@/navigation/types';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { AppIcon, resolveIconName, type IconName } from '@/components/AppIcon';
+import { formatMoney } from '@/utils/money';
 
 const ICON_OPTIONS: IconName[] = ['clipboard-list', 'shopping-cart', 'house', 'droplet', 'apple', 'pill', 'dog', 'baby', 'broom', 'wrench', 'laptop', 'smartphone'];
 const COLOR_OPTIONS = ['#007DC3', '#2EAD5D', '#F1632A', '#9B59B6', '#E74C3C', '#1ABC9C', '#F39C12', '#34495E'];
@@ -32,10 +33,6 @@ interface BudgetOption {
   monthlyLimit: number;
 }
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 export function AddTrackingListModal() {
   const themeColors = useThemeColors();
@@ -244,7 +241,7 @@ export function AddTrackingListModal() {
                     {budget.categoryName}
                   </Text>
                   <Text style={[styles.budgetOptionLimit, { color: themeColors.textTertiary }]}>
-                    Límite: {formatAmount(budget.monthlyLimit)}/mes
+                    Límite: {formatMoney(budget.monthlyLimit)}/mes
                   </Text>
                 </View>
                 <AppIcon name="chart-pie" size={16} color={themeColors.primary} />

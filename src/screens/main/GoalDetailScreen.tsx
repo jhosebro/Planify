@@ -21,11 +21,8 @@ import type { Goal, GoalContribution, GoalAction } from '@/services/goals';
 import { BottomModal } from '@/components/BottomModal';
 import { AppIcon } from '@/components/AppIcon';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 function formatWithThousands(value: string): string {
   const clean = value.replace(/[^0-9]/g, '');
@@ -143,8 +140,8 @@ export function GoalDetailScreen() {
           <View style={[styles.headerBarFill, { width: `${goal.progress}%` }]} />
         </View>
         <View style={styles.headerAmounts}>
-          <Text style={styles.headerSaved}>{formatAmount(goal.savedAmount)}</Text>
-          <Text style={styles.headerTarget}>de {formatAmount(goal.targetAmount)}</Text>
+          <Text style={styles.headerSaved}>{formatMoney(goal.savedAmount)}</Text>
+          <Text style={styles.headerTarget}>de {formatMoney(goal.targetAmount)}</Text>
         </View>
       </View>
 
@@ -169,7 +166,7 @@ export function GoalDetailScreen() {
             <AppIcon name="lightbulb" size={12} color="#999" />
             <Text style={styles.chipLabel}>Ahorra</Text>
           </View>
-          <Text style={styles.chipValue}>{formatAmount(goal.suggestedInstallment)}/{goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'qna' : 'sem'}</Text>
+          <Text style={styles.chipValue}>{formatMoney(goal.suggestedInstallment)}/{goal.installmentFrequency === 'monthly' ? 'mes' : goal.installmentFrequency === 'biweekly' ? 'qna' : 'sem'}</Text>
         </View>
       </View>
 
@@ -260,7 +257,7 @@ export function GoalDetailScreen() {
         {contributions.map((c) => (
           <View key={c.id} style={styles.contributionItem}>
             <View>
-              <Text style={styles.contributionAmount}>+{formatAmount(c.amount)}</Text>
+              <Text style={styles.contributionAmount}>+{formatMoney(c.amount)}</Text>
               {c.note && <Text style={styles.contributionNote}>{c.note}</Text>}
             </View>
             <Text style={styles.contributionDate}>{formatDate(c.createdAt)}</Text>

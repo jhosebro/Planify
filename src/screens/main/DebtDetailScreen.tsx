@@ -21,14 +21,11 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DebtService } from '@/services/debts';
 import type { Debt, DebtPayment, DebtDirection } from '@/services/debts';
 import type { MainStackParamList } from '@/navigation/types';
+import { formatMoney } from '@/utils/money';
 
 type DetailNavProp = NativeStackNavigationProp<MainStackParamList>;
 type DetailRouteProp = RouteProp<MainStackParamList, 'DebtDetail'>;
 
-function formatAmount(centavos: number): string {
-  const amount = centavos / 100;
-  return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 // Mismo formato que AddDebtModal: pesos enteros con '.' como separador de miles
 function formatWithThousands(value: string): string {
@@ -418,12 +415,12 @@ export function DebtDetailScreen() {
           <View>
             <Text style={[styles.progressLabel, { color: colors.textTertiary }]}>Pendiente</Text>
             <Text style={[styles.progressAmount, { color: isReceivable ? colors.greenEarns : colors.redExpenses }]}>
-              {formatAmount(remaining)}
+              {formatMoney(remaining)}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={[styles.progressLabel, { color: colors.textTertiary }]}>Total</Text>
-            <Text style={[styles.progressTotal, { color: colors.textPrimary }]}>{formatAmount(debt.totalAmount)}</Text>
+            <Text style={[styles.progressTotal, { color: colors.textPrimary }]}>{formatMoney(debt.totalAmount)}</Text>
           </View>
         </View>
 
@@ -438,7 +435,7 @@ export function DebtDetailScreen() {
 
         <View style={styles.progressFooter}>
           <Text style={[styles.progressPercent, { color: colors.textSecondary }]}>
-            {progress.toFixed(0)}% pagado • {formatAmount(debt.paidAmount)} abonado
+            {progress.toFixed(0)}% pagado • {formatMoney(debt.paidAmount)} abonado
           </Text>
         </View>
 
@@ -454,7 +451,7 @@ export function DebtDetailScreen() {
               <View style={styles.inlineIconRow}>
                 <AppIcon name="banknote" size={14} color={colors.textSecondary} />
                 <Text style={[styles.installmentText, { color: colors.textSecondary }]}>
-                  {formatAmount(debt.installmentAmount)} / cuota
+                  {formatMoney(debt.installmentAmount)} / cuota
                 </Text>
               </View>
             )}
@@ -568,7 +565,7 @@ export function DebtDetailScreen() {
             <View key={payment.id} style={[styles.paymentItem, { borderBottomColor: colors.borderInset }]}>
               <View>
                 <Text style={[styles.paymentAmount, { color: colors.greenEarns }]}>
-                  +{formatAmount(payment.amount)}
+                  +{formatMoney(payment.amount)}
                 </Text>
                 {payment.note && (
                   <Text style={[styles.paymentNote, { color: colors.textTertiary }]}>{payment.note}</Text>
