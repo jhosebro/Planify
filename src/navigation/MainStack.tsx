@@ -20,10 +20,30 @@ import { DebtDetailScreen } from '@/screens/main/DebtDetailScreen';
 import { TrackingListDetailScreen } from '@/screens/main/TrackingListDetailScreen';
 import { SingleInstallmentDebtsScreen } from '@/screens/main/SingleInstallmentDebtsScreen';
 import type { MainStackParamList } from './types';
+import { Platform } from 'react-native';
+import { BREAKPOINTS, useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useIsDarkTheme } from '@/hooks/useThemeColors';
+import { neuShadow } from '@/lib/neumorphic';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export function MainStack() {
+  const { width } = useResponsiveLayout();
+  const scheme = useIsDarkTheme() ? 'dark' : 'light';
+  // En web ancho los formularios se estiraban a todo el monitor: los mostramos como tarjeta centrada de ancho legible.
+  const modalContentStyle =
+    Platform.OS === 'web' && width >= BREAKPOINTS.tablet
+      ? {
+          width: '100%' as const,
+          maxWidth: 640,
+          alignSelf: 'center' as const,
+          marginVertical: 24,
+          borderRadius: 20,
+          overflow: 'hidden' as const,
+          ...neuShadow(scheme, 'raised'),
+        }
+      : undefined;
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: true }}>
       <Stack.Screen
@@ -33,7 +53,7 @@ export function MainStack() {
       />
 
       {/* Modal Stack */}
-      <Stack.Group screenOptions={{ presentation: 'modal' }}>
+      <Stack.Group screenOptions={{ presentation: 'modal', contentStyle: modalContentStyle }}>
         <Stack.Screen
           name="AddTransaction"
           component={AddTransactionModal}

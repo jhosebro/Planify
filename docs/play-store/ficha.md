@@ -33,7 +33,6 @@ Planify no se conecta a tu banco ni muestra publicidad. Tus datos son tuyos.
 | ¿El usuario puede pedir que se borren sus datos? | Sí: en la app (Ajustes → Eliminar cuenta) y en la URL de eliminación |
 | Información personal | Nombre, correo electrónico — funcionalidad de la app, gestión de cuenta |
 | Información financiera | "Otra información financiera" (saldos, movimientos, deudas introducidos a mano) — funcionalidad de la app |
-| Fotos | Foto de perfil (opcional) — funcionalidad de la app |
 
 ## Recursos gráficos pendientes
 - Ícono 512×512: exportar `assets/icon.png` a 512 px.
