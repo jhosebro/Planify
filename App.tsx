@@ -7,6 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { BudgetService } from '@/services/budgets';
+import { installWebAlert } from '@/lib/webAlert';
+
+installWebAlert();
 
 /**
  * Error boundary to catch rendering errors.
